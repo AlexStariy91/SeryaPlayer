@@ -192,6 +192,12 @@ public final class DefaultPlaybackService: PlaybackControlling {
         }
     }
 
+    public func jump(toQueueIndex index: Int) {
+        guard queue.items.indices.contains(index) else { return }
+        queue.jump(to: index)
+        loadCurrent(at: 0, autoplay: true)
+    }
+
     public func setRate(_ newRate: Float) {
         rate = newRate
         engine.setRate(newRate)

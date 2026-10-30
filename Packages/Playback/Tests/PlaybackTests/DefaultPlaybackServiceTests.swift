@@ -183,6 +183,32 @@ struct DefaultPlaybackServiceTests {
         #expect(engine.seeks == [0])
     }
 
+    // MARK: - Jump
+
+    @Test func jumpToQueueIndexLoadsAndPlaysThatItem() {
+        let service = makeService()
+        service.play(tracks, startingAt: 0, shuffled: false)
+        service.togglePlayPause()
+
+        service.jump(toQueueIndex: 3)
+
+        #expect(service.snapshot.currentIndex == 3)
+        #expect(service.snapshot.nowPlaying?.id == tracks[3].id)
+        #expect(engine.loadedURLs.last == fileURL(for: tracks[3]))
+        #expect(service.snapshot.isPlaying)
+    }
+
+    @Test func jumpToAnOutOfRangeIndexIsIgnored() {
+        let service = makeService()
+        service.play(tracks, startingAt: 1, shuffled: false)
+
+        service.jump(toQueueIndex: 99)
+        service.jump(toQueueIndex: -1)
+
+        #expect(service.snapshot.currentIndex == 1)
+        #expect(engine.loadedURLs.count == 1)
+    }
+
     // MARK: - Play count
 
     @Test func trackIsMarkedPlayedOnceWhenPlaybackStarts() async {
