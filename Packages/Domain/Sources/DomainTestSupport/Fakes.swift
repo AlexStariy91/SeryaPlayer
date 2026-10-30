@@ -166,6 +166,7 @@ public final class FakePlaybackController: PlaybackControlling {
     public var snapshot = PlaybackSnapshot()
     public var currentTime: TimeInterval = 0
     public private(set) var playCalls: [PlayCall] = []
+    public private(set) var appliedEqualizers: [EQSettings] = []
 
     public init() {}
 
@@ -192,7 +193,10 @@ public final class FakePlaybackController: PlaybackControlling {
     public func removeQueueItems(atOffsets _: IndexSet) {}
     public func jump(toQueueIndex _: Int) {}
     public func setRate(_: Float) {}
-    public func apply(_: EQSettings) {}
+    public func apply(_ equalizer: EQSettings) {
+        appliedEqualizers.append(equalizer)
+    }
+
     public func restore() async {}
     public func persist() async {}
 }
