@@ -131,6 +131,8 @@ public protocol PlaybackControlling: AnyObject {
     func addToQueue(_ tracks: [Track])
     func moveQueueItems(fromOffsets source: IndexSet, toOffset destination: Int)
     func removeQueueItems(atOffsets offsets: IndexSet)
+    /// Makes the queue item at `index` current and starts playing it. Out-of-range indices are ignored.
+    func jump(toQueueIndex index: Int)
     func setRate(_ rate: Float)
     func apply(_ equalizer: EQSettings)
 

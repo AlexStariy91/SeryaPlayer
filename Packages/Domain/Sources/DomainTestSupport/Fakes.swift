@@ -190,6 +190,7 @@ public final class FakePlaybackController: PlaybackControlling {
     public func addToQueue(_: [Track]) {}
     public func moveQueueItems(fromOffsets _: IndexSet, toOffset _: Int) {}
     public func removeQueueItems(atOffsets _: IndexSet) {}
+    public func jump(toQueueIndex _: Int) {}
     public func setRate(_: Float) {}
     public func apply(_: EQSettings) {}
     public func restore() async {}

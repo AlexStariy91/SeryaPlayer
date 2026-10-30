@@ -11,9 +11,18 @@ let package = Package(
     dependencies: [
         .package(path: "../Domain"),
         .package(path: "../DesignSystem"),
+        // Test-only: used by PlayerFeatureTests for snapshots.
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", exact: "1.17.6"),
     ],
     targets: [
-        .target(name: "PlayerFeature", dependencies: ["Domain", "DesignSystem"]),
-        .testTarget(name: "PlayerFeatureTests", dependencies: ["PlayerFeature"]),
+        .target(name: "PlayerFeature", dependencies: ["Domain", "DesignSystem"], resources: [.process("Resources")]),
+        .testTarget(
+            name: "PlayerFeatureTests",
+            dependencies: [
+                "PlayerFeature",
+                .product(name: "DomainTestSupport", package: "Domain"),
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+            ]
+        ),
     ]
 )
