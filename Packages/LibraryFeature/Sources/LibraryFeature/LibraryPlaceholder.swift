@@ -2,7 +2,8 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// Tab/screen placeholder. Replaced by the real feature in its stage.
+/// Placeholder still used by `RootView` until the orchestrator wires `LibraryFeature.makeRootView`.
+/// Delete it in the same change.
 public struct LibraryPlaceholderView: View {
     public init() {}
 
