@@ -41,7 +41,7 @@ public struct TimelineSlider: View {
                 let width = proxy.size.width
                 ZStack(alignment: .leading) {
                     Capsule().fill(SemanticColor.fill)
-                    Capsule().fill(isDragging ? Color.accentColor : Color.accentColor.opacity(0.85))
+                    Capsule().fill(.tint.opacity(isDragging ? 1 : 0.85))
                         .frame(width: max(height, width * fraction))
                 }
                 .frame(height: height)
