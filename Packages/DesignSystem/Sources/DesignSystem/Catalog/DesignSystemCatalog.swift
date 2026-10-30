@@ -105,7 +105,7 @@ public struct DesignSystemCatalog: View {
                                 }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(Text(String(localized: option.name)))
+                        .accessibilityLabel(Text(option.localizedName))
                     }
                 }
             }

@@ -13,7 +13,7 @@ let package = Package(
         .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", exact: "1.17.6"),
     ],
     targets: [
-        .target(name: "DesignSystem", dependencies: []),
+        .target(name: "DesignSystem", dependencies: [], resources: [.process("Resources")]),
         .testTarget(
             name: "DesignSystemTests",
             dependencies: [

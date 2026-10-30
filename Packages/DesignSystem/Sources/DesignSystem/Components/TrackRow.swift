@@ -76,7 +76,7 @@ public struct TrackRow: View {
                 .symbolEffect(.variableColor.iterative.reversing, options: .repeating, isActive: !reduceMotion)
         }
         .frame(width: ArtworkSize.row.points, height: ArtworkSize.row.points)
-        .accessibilityLabel(Text("Now playing"))
+        .accessibilityLabel(Text("Now playing", bundle: .module))
     }
 }
 

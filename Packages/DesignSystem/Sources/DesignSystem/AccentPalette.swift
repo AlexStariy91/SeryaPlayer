@@ -9,6 +9,11 @@ public struct AccentOption: Identifiable, Sendable {
     /// RGB hex for the dark theme.
     public let dark: UInt32
 
+    /// Name localized from DesignSystem's own String Catalog.
+    public var localizedName: String {
+        String(localized: name, bundle: .module)
+    }
+
     public var color: Color {
         Color(uiColor: UIColor { traits in
             UIColor(rgb: traits.userInterfaceStyle == .dark ? dark : light)

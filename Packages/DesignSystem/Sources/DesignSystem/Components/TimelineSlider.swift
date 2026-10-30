@@ -76,8 +76,8 @@ public struct TimelineSlider: View {
             .foregroundStyle(SemanticColor.textSecondary)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Playback position"))
-        .accessibilityValue(Text("\(TimeFormat.spoken(displayed)) of \(TimeFormat.spoken(duration))"))
+        .accessibilityLabel(Text("Playback position", bundle: .module))
+        .accessibilityValue(Text("\(TimeFormat.spoken(displayed)) of \(TimeFormat.spoken(duration))", bundle: .module))
         .accessibilityAdjustableAction { direction in
             let step = max(duration / 20, 5)
             switch direction {

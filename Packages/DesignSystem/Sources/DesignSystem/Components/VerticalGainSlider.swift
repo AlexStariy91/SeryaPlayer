@@ -37,7 +37,7 @@ public struct VerticalGainSlider: View {
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: isAtZero) { _, atZero in atZero && isDragging }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(label ?? "Gain"))
+        .accessibilityLabel(label.map { Text($0) } ?? Text("Gain", bundle: .module))
         .accessibilityValue(Text(Self.format(gain)))
         .accessibilityAdjustableAction { direction in
             switch direction {
