@@ -5,7 +5,7 @@
 
 ## Now
 
-**Stage 0 — done** (scaffold, Domain contracts, CI). **Wave 1** is starting.
+**Wave 1 — done** (stages 1–3 and DesignSystem merged, wired into `AppContainer`). **Wave 2** (screens) is next.
 
 ## Workstreams and waves
 
@@ -16,11 +16,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | Wave | Workstream | Stage | Packages | Model | Status |
 |---|---|---|---|---|---|
 | 0 | foundation | 0 | all | orchestrator | ✅ done |
-| 1 | `domain` | 1 | Domain | Sonnet | ⏳ |
-| 1 | `data` | 2 | DataLayer, Shared | Opus | ⏳ |
-| 1 | `playback` | 3 | Playback | Opus | ⏳ |
-| 1 | `design-system` | 0 (DS) | DesignSystem | Sonnet | ⏳ |
-| — | wiring-1 | 4 (part) | App | orchestrator | waits for wave 1 |
+| 1 | `domain` | 1 | Domain | Sonnet | ✅ #1 |
+| 1 | `data` | 2 | DataLayer, Shared | Opus | ✅ #4 |
+| 1 | `playback` | 3 | Playback | Opus | ✅ #2 (device checks pending) |
+| 1 | `design-system` | 0 (DS) | DesignSystem | Sonnet | ✅ #3 |
+| — | wiring-1 | 4 (part) | App | orchestrator | ✅ |
 | 2 | `player` | 4 | PlayerFeature | Opus | waiting |
 | 2 | `library` | 4–5 | LibraryFeature | Opus | waiting |
 | 2 | `folders` | 5 | FoldersFeature | Sonnet | waiting |
@@ -45,6 +45,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Open questions
 
+- Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
+  occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
+- Toolchain drift: CI runs Xcode 16.4 and the latest SwiftFormat; local is Xcode 16.1 and SwiftFormat 0.64.4.
+  CI is the reference — run `brew upgrade swiftformat` locally.
+
 - Whether to exclude `Media/` from iCloud backup (large libraries).
 - Xcode 26: once installed, verify the build and add iOS 26 to CI.
 - CI on a private repo: macOS minutes count 10× against the free quota. Keep an eye on it.
@@ -64,42 +69,43 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] Git, SwiftLint, SwiftFormat, CI (GitHub Actions)
 - [x] Domain contracts: entities, protocols, QueueEngine API
 - [x] DesignSystem: adaptiveGlass, adaptiveButtonStyle, #1C283F accent
-- [ ] DesignSystem: tokens, typography, accent palette → `design-system`
-- [ ] swift-snapshot-testing → `design-system`
+- [x] DesignSystem: tokens, typography, accent palette
+- [x] swift-snapshot-testing
 - [ ] Verification on iOS 26 (needs Xcode 26)
 
-### Stage 1. Domain layer — `domain`
-- [ ] QueueEngine: next/previous (>3 s restarts), Fisher–Yates shuffle with the current track first, restoring the original order, repeat off/all/one, Play Next, Play Last, move, remove
-- [ ] EQ math: ±12 dB, auto preamp = −max(positive gain); 16 built-in presets
-- [ ] Use cases: import, observe and search tracks, folder and playlist CRUD, save/apply preset, start playback, delete folder with a choice of what happens to its tracks
-- [ ] Unit tests: QueueEngine, EQ, use cases with mocks (duplicates, unsupported formats, folder structure)
+### Stage 1. Domain layer — ✅
+- [x] QueueEngine: next/previous (>3 s restarts), Fisher–Yates shuffle with the current track first, restoring the original order, repeat off/all/one, Play Next, Play Last, move, remove
+- [x] EQ math: ±12 dB, auto preamp = −max(positive gain); 16 built-in presets
+- [x] Use cases: import, observe and search tracks, folder and playlist CRUD, save/apply preset, start playback, delete folder with a choice of what happens to its tracks
+- [x] Unit tests: QueueEngine, EQ, use cases with mocks (duplicates, unsupported formats, folder structure)
 - Done when: Domain builds without SwiftUI/CoreData/AVFoundation; all queue scenarios are covered by tests.
 
-### Stage 2. Data layer — `data`
-- [ ] .xcdatamodeld v1, hand-written NSManagedObject classes
-- [ ] PersistenceController: store in the App Group, auto-merge, background contexts, in-memory
-- [ ] Mappers, repositories, observation via NSFetchedResultsController → AsyncStream
-- [ ] FileStore (Media, Artwork, Inbox, security-scoped access, UUID names, size)
-- [ ] MetadataReader (AVURLAsset, ID3/iTunes, artwork, file-name fallback)
-- [ ] ArtworkCache (ImageIO, one file per album)
-- [ ] SettingsRepository, PlaybackStateRepository, EQPresetRepository
-- [ ] InboxProcessor
-- [ ] Tests on an in-memory store; importing MP3, M4A, FLAC, WAV
+### Stage 2. Data layer — ✅
+- [x] .xcdatamodeld v1, hand-written NSManagedObject classes
+- [x] PersistenceController: store in the App Group, auto-merge, background contexts, in-memory
+- [x] Mappers, repositories, observation via NSFetchedResultsController → AsyncStream
+- [x] FileStore (Media, Artwork, Inbox, security-scoped access, UUID names, size)
+- [x] MetadataReader (AVURLAsset, ID3/iTunes, artwork, file-name fallback)
+- [x] ArtworkCache (ImageIO, one file per album)
+- [x] SettingsRepository, PlaybackStateRepository, EQPresetRepository
+- [x] InboxProcessor
+- [x] Tests on an in-memory store; importing MP3, M4A, FLAC, WAV
 - Done when: importing 1000 files runs in the background without UI hitches; data survives a relaunch.
 
-### Stage 3. Audio engine — `playback`
-- [ ] AudioSessionManager
-- [ ] AVAudioPlaybackEngine: Player → TimePitch → EQ → Mixer; seeking via scheduleSegment; generations
-- [ ] Sample-rate changes, AVAudioEngineConfigurationChange
-- [ ] Real-time EQ
-- [ ] DefaultPlaybackService: queue + engine + state, auto-advance, playCount, persist/restore
-- [ ] NowPlayingCenter, RemoteCommands
-- [ ] Service unit tests with a mock engine
-- [ ] Manual on-device checklist: phone call, Siri, alarm, AirPods, Bluetooth, Lock Screen, an hour in background
+### Stage 3. Audio engine — ✅ (except on-device checks)
+- [x] AudioSessionManager
+- [x] AVAudioPlaybackEngine: Player → TimePitch → EQ → Mixer; seeking via scheduleSegment; generations
+- [x] Sample-rate changes, AVAudioEngineConfigurationChange
+- [x] Real-time EQ
+- [x] DefaultPlaybackService: queue + engine + state, auto-advance, playCount, persist/restore
+- [x] NowPlayingCenter, RemoteCommands
+- [x] Service unit tests with a mock engine
+- [ ] Manual on-device checklist (see PR #2): phone call, Siri, alarm, AirPods, Bluetooth, Lock Screen, an hour in background
 - Done when: a track plays in background, is controllable from the Lock Screen and AirPods, survives a call.
 
 ### Stage 4. First sound — wiring-1 + `player`, `library`
-- [ ] RootView with real features; InboxProcessor on activation; onOpenURL (orchestrator)
+- [x] AppContainer wires DataLayer and Playback; InboxProcessor on launch/activation; onOpenURL; persist on background (orchestrator)
+- [ ] RootView with real features, miniPlayerHost (orchestrator, wiring-2)
 - [ ] Import via "+": files and folders, progress, summary (library)
 - [ ] "All Tracks" list (library)
 - [ ] Mini player via miniPlayerHost (player)
@@ -145,4 +151,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-10-30 — wave 1 merged: Domain (#1), DesignSystem (#3), DataLayer (#4), Playback (#2);
+  AppContainer wired to the real implementations.
 - 2026-10-30 — stage 0: scaffold, Domain contracts, docs, CI. Repository on GitHub.
