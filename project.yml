@@ -1,0 +1,143 @@
+name: SeryaPlayer
+options:
+  bundleIdPrefix: com.starodub
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+  configs:
+    Debug:
+      SP_BROWSER_ENABLED: "YES"
+    Release:
+      SP_BROWSER_ENABLED: "YES"
+
+packages:
+  Shared: { path: Packages/Shared }
+  Domain: { path: Packages/Domain }
+  DataLayer: { path: Packages/DataLayer }
+  Playback: { path: Packages/Playback }
+  DesignSystem: { path: Packages/DesignSystem }
+  LibraryFeature: { path: Packages/LibraryFeature }
+  FoldersFeature: { path: Packages/FoldersFeature }
+  PlayerFeature: { path: Packages/PlayerFeature }
+  EqualizerFeature: { path: Packages/EqualizerFeature }
+  BrowserFeature: { path: Packages/BrowserFeature }
+  SettingsFeature: { path: Packages/SettingsFeature }
+
+targets:
+  SeryaPlayer:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Sources
+      - path: App/Resources
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: SeryaPlayer
+        CFBundleLocalizations: [en, ru]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIBackgroundModes: [audio]
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        ITSAppUsesNonExemptEncryption: false
+        SPBrowserEnabled: $(SP_BROWSER_ENABLED)
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.audio
+              - public.mp3
+              - public.mpeg-4-audio
+              - com.apple.m4a-audio
+              - org.xiph.flac
+              - com.microsoft.waveform-audio
+              - public.aiff-audio
+    entitlements:
+      path: App/SeryaPlayer.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.starodub.SeryaPlayer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.starodub.SeryaPlayer
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - package: Shared
+      - package: Domain
+      - package: DataLayer
+      - package: Playback
+      - package: DesignSystem
+      - package: LibraryFeature
+      - package: FoldersFeature
+      - package: PlayerFeature
+      - package: EqualizerFeature
+      - package: BrowserFeature
+      - package: SettingsFeature
+
+  SeryaPlayerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [AppUITests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.starodub.SeryaPlayer.UITests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: SeryaPlayer
+
+schemes:
+  SeryaPlayer:
+    build:
+      targets:
+        SeryaPlayer: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - package: Shared/SharedTests
+        - package: Domain/DomainTests
+        - package: DataLayer/DataLayerTests
+        - package: Playback/PlaybackTests
+        - package: DesignSystem/DesignSystemTests
+        - package: LibraryFeature/LibraryFeatureTests
+        - package: FoldersFeature/FoldersFeatureTests
+        - package: PlayerFeature/PlayerFeatureTests
+        - package: EqualizerFeature/EqualizerFeatureTests
+        - package: BrowserFeature/BrowserFeatureTests
+        - package: SettingsFeature/SettingsFeatureTests
+    archive:
+      config: Release
+  SeryaPlayerUITests:
+    build:
+      targets:
+        SeryaPlayer: all
+        SeryaPlayerUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - SeryaPlayerUITests

@@ -1,0 +1,36 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Library": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Медиатека"
+          }
+        }
+      }
+    },
+    "Folders": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папки"
+          }
+        }
+      }
+    },
+    "Browser": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Браузер"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -1,0 +1,27 @@
+included:
+  - App
+  - AppUITests
+  - Packages
+excluded:
+  - Packages/*/.build
+  - build
+disabled_rules:
+  - trailing_comma
+  - todo
+  - nesting
+opt_in_rules:
+  - empty_count
+  - first_where
+  - contains_over_first_not_nil
+line_length:
+  warning: 160
+  error: 200
+  ignores_comments: true
+identifier_name:
+  min_length: 1
+type_body_length: 400
+file_length: 600
+function_parameter_count: 8
+type_name:
+  min_length: 2
+  max_length: 50
