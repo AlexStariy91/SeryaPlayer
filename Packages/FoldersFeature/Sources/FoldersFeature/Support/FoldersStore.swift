@@ -7,10 +7,21 @@ import Observation
 @MainActor
 @Observable
 final class FoldersStore {
-    private(set) var folders: [Folder] = []
-    private(set) var tracks: [Track] = []
+    private(set) var folders: [Folder] = [] {
+        didSet { rebuildFolderIndex() }
+    }
+
+    private(set) var tracks: [Track] = [] {
+        didSet { rebuildTrackIndex() }
+    }
+
     private(set) var nowPlayingID: Track.ID?
     private(set) var isLoaded = false
+
+    /// Indexes rebuilt once per observed change; accessors are dictionary lookups.
+    @ObservationIgnored private var childrenByParent: [Folder.ID?: [Folder]] = [:]
+    @ObservationIgnored private var tracksByFolder: [Folder.ID?: [Track]] = [:]
+    @ObservationIgnored private var songCountByFolder: [Folder.ID?: Int] = [:]
 
     @ObservationIgnored private let folderRepository: any FolderRepository
     @ObservationIgnored private let trackRepository: any TrackRepository
@@ -51,7 +62,7 @@ final class FoldersStore {
 
     private func observePlayer() async {
         for await snapshot in player.snapshots() {
-            let id = snapshot.isPlaying ? snapshot.nowPlaying?.id : nil
+            let id = snapshot.nowPlaying?.id
             if id != nowPlayingID {
                 nowPlayingID = id
             }
@@ -68,22 +79,58 @@ final class FoldersStore {
 
     /// Direct subfolders in manual order (`sortIndex`, then name).
     func subfolders(of parentID: Folder.ID?) -> [Folder] {
-        folders.filter { $0.parentID == parentID }.sorted { ($0.sortIndex, $0.name) < ($1.sortIndex, $1.name) }
+        childrenByParent[parentID] ?? []
     }
 
     /// Tracks stored directly in a folder (or at the library root for `nil`), sorted by title.
     func tracks(in folderID: Folder.ID?) -> [Track] {
-        tracks.filter { $0.folderID == folderID }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        tracksByFolder[folderID] ?? []
+    }
+
+    /// Songs in the folder and all its subfolders (`nil` = the whole library).
+    func songCount(in folderID: Folder.ID?) -> Int {
+        songCountByFolder[folderID] ?? 0
     }
 
     /// The folder's tracks followed by those of its subfolders, depth first in manual folder order.
-    /// This is what Play, Shuffle and the song count of a folder row use.
+    /// This is what Play and Shuffle use.
     func playableTracks(in folderID: Folder.ID?) -> [Track] {
         var result = tracks(in: folderID)
+        result.reserveCapacity(songCount(in: folderID))
         for child in subfolders(of: folderID) {
             result += playableTracks(in: child.id)
         }
         return result
+    }
+
+    private func rebuildFolderIndex() {
+        childrenByParent = Dictionary(grouping: folders, by: \.parentID)
+            .mapValues { $0.sorted { ($0.sortIndex, $0.name) < ($1.sortIndex, $1.name) } }
+        rebuildCounts()
+    }
+
+    private func rebuildTrackIndex() {
+        let sorted = tracks.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        tracksByFolder = Dictionary(grouping: sorted, by: \.folderID)
+        rebuildCounts()
+    }
+
+    /// Bottom-up: a folder's count is its own tracks plus its children's counts.
+    private func rebuildCounts() {
+        var counts: [Folder.ID?: Int] = [:]
+        func count(_ id: Folder.ID?) -> Int {
+            if let known = counts[id] {
+                return known
+            }
+            let total = (tracksByFolder[id]?.count ?? 0) + (childrenByParent[id] ?? []).reduce(0) { $0 + count($1.id) }
+            counts[id] = total
+            return total
+        }
+        _ = count(nil)
+        for folder in folders {
+            _ = count(folder.id)
+        }
+        songCountByFolder = counts
     }
 
     func descendantIDs(of id: Folder.ID) -> Set<Folder.ID> {

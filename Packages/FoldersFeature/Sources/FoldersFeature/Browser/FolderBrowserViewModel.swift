@@ -74,11 +74,11 @@ final class FolderBrowserViewModel {
 
     /// Songs in the folder and all its subfolders.
     func songCount(in folder: Folder) -> Int {
-        store.playableTracks(in: folder.id).count
+        store.songCount(in: folder.id)
     }
 
     var canPlay: Bool {
-        !store.playableTracks(in: folderID).isEmpty
+        store.songCount(in: folderID) > 0
     }
 
     var artwork: ArtworkResolver {
