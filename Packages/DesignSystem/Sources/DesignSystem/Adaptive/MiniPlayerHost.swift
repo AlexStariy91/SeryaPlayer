@@ -14,7 +14,6 @@ enum MiniPlayerMetrics {
 }
 
 extension EnvironmentValues {
-    // Bottom inset reserved for the iOS 18 mini player overlay. Zero on iOS 26, where the system manages it.
     @Entry var miniPlayerInset: CGFloat = 0
 }
 
