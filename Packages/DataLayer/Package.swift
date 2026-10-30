@@ -13,7 +13,15 @@ let package = Package(
         .package(path: "../Shared"),
     ],
     targets: [
-        .target(name: "DataLayer", dependencies: ["Domain", "Shared"]),
-        .testTarget(name: "DataLayerTests", dependencies: ["DataLayer"]),
+        .target(
+            name: "DataLayer",
+            dependencies: ["Domain", "Shared"],
+            resources: [.process("Persistence/SeryaPlayer.xcdatamodeld")]
+        ),
+        .testTarget(
+            name: "DataLayerTests",
+            dependencies: ["DataLayer"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )
