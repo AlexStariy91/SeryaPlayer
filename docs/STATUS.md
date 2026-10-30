@@ -5,7 +5,7 @@
 
 ## Now
 
-**Wave 1 — done** (stages 1–3 and DesignSystem merged, wired into `AppContainer`). **Wave 2** (screens) is next.
+**Wave 1 — done** (stages 1–3 and DesignSystem merged, wired into `AppContainer`). **Wave 2** (screens) is running.
 
 ## Workstreams and waves
 
@@ -21,11 +21,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 1 | `playback` | 3 | Playback | Opus | ✅ #2 (device checks pending) |
 | 1 | `design-system` | 0 (DS) | DesignSystem | Sonnet | ✅ #3 |
 | — | wiring-1 | 4 (part) | App | orchestrator | ✅ |
-| 2 | `player` | 4 | PlayerFeature | Opus | waiting |
-| 2 | `library` | 4–5 | LibraryFeature | Opus | waiting |
-| 2 | `folders` | 5 | FoldersFeature | Sonnet | waiting |
-| 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | waiting |
-| 2 | `settings` | 7 | SettingsFeature | Sonnet | waiting |
+| 2 | `player` | 4 | PlayerFeature | Opus | ⏳ |
+| 2 | `library` | 4–5 | LibraryFeature | Opus | ⏳ |
+| 2 | `folders` | 5 | FoldersFeature | Sonnet | ⏳ |
+| 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ⏳ |
+| 2 | `settings` | 7 | SettingsFeature | Sonnet | ⏳ |
 | — | wiring-2 | 4–7 | App | orchestrator | waits for wave 2 |
 | 3 | `browser-share` | 8 | BrowserFeature, ShareExtension | Sonnet | waiting |
 | 3 | `extras` | 9 | Playback, PlayerFeature | Opus | waiting |

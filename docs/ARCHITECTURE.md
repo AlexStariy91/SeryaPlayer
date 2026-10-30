@@ -63,6 +63,56 @@ All dependencies point inward, toward Domain. Everything is assembled only in th
 - `PreviewContainer` (previews, UI tests via the `-uiTesting` argument) uses in-memory repositories and mocks.
 - Localized strings inside packages use the package's own String Catalog and `bundle: .module`.
 
+## Feature package contract (wave 2)
+
+Every `*Feature` package exposes the same shape, so the orchestrator can wire it in `App/` without
+touching the feature:
+
+```swift
+@MainActor
+public protocol LibraryDependencies {          // one per feature: <Name>Dependencies
+    var trackRepository: any TrackRepository { get }
+    var player: any PlaybackControlling { get }
+    // …only Domain protocols, use cases and plain values
+}
+
+public enum LibraryFeature {                   // one per feature: <Name>Feature
+    @MainActor
+    public static func makeRootView(
+        dependencies: some LibraryDependencies,
+        onOpenSettings: @escaping () -> Void    // cross-feature hooks are closures or @ViewBuilder parameters
+    ) -> some View
+}
+```
+
+- `AppContainer` conforms to every `…Dependencies` protocol. Property names must match the
+  container's existing ones (`trackRepository`, `folderRepository`, `playlistRepository`,
+  `presetRepository`, `settingsRepository`, `fileStore`, `artworkStore`, `metadataReader`, `player`,
+  `importTracks`). If a feature needs something new, it adds a requirement and lists it in its report.
+- Cross-feature navigation is never an import: Player gets the equalizer sheet as a `@ViewBuilder`,
+  Library gets `onOpenSettings`, Settings gets the preset manager as a `@ViewBuilder`.
+- Artwork: features resolve `Track.artworkKey` through `ArtworkStoring.url(for:size:)` and pass the URL to `ArtworkView`.
+- Each feature has its own `Resources/Localizable.xcstrings` (`defaultLocalization: "en"`, `bundle: .module`) with `ru`.
+- Tests: view-model tests with Swift Testing and `DomainTestSupport` fakes (test target only), and
+  snapshot tests with `swift-snapshot-testing` (exact version `1.17.6`, test target only).
+  App-level UI tests are written by the orchestrator after wiring.
+
+### Shared-file ownership during wave 2
+
+Domain and DataLayer are shared. To avoid conflicts, only the owner changes these files; anyone else
+asks in their report:
+
+| Area | Owner |
+|---|---|
+| `TrackRepository`, `PlaylistRepository`, `TrackSort`, track/playlist use cases + their Core Data repos | `library` |
+| `FolderRepository`, folder use cases + `CoreDataFolderRepository` | `folders` |
+| `EQPresetRepository`, equalizer use cases + `CoreDataEQPresetRepository` | `equalizer` |
+| `PlaybackControlling`, `DefaultPlaybackService` | `player` |
+| `AppSettings`, `SettingsRepository` | `settings` |
+
+New use cases go into new files. Adding a protocol requirement means updating the Core Data/Playback
+implementation and the `DomainTestSupport` fakes in the same PR.
+
 ## Domain contracts (stage 0)
 
 - `Entities/` — `Track`, `Folder`, `Playlist`, `PlaylistEntry`, `TrackSort`, `ImportResult`,
