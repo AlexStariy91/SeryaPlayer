@@ -13,6 +13,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "Playback", dependencies: ["Domain"]),
-        .testTarget(name: "PlaybackTests", dependencies: ["Playback"]),
+        .testTarget(
+            name: "PlaybackTests",
+            dependencies: ["Playback", .product(name: "DomainTestSupport", package: "Domain")]
+        ),
     ]
 )
