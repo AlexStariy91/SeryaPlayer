@@ -74,14 +74,7 @@ public struct FileStore: FileStoring {
 
     /// Total size of `Media/`, bytes.
     public func librarySize() async -> Int64 {
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileSizeKey]
-        guard let enumerator = FileManager.default.enumerator(at: mediaURL, includingPropertiesForKeys: Array(keys)) else { return 0 }
-        var total: Int64 = 0
-        for case let url as URL in enumerator {
-            guard let values = try? url.resourceValues(forKeys: keys), values.isRegularFile == true else { continue }
-            total += Int64(values.totalFileAllocatedSize ?? values.fileSize ?? 0)
-        }
-        return total
+        Self.totalSize(of: mediaURL)
     }
 
     /// Regular, non-hidden files from both inboxes, oldest first. Missing inboxes are created.
@@ -120,6 +113,18 @@ public struct FileStore: FileStoring {
             }
         }
         return try body()
+    }
+
+    /// Synchronous on purpose: `NSDirectoryEnumerator` iteration is unavailable in async contexts.
+    static func totalSize(of directory: URL) -> Int64 {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileSizeKey]
+        guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: Array(keys)) else { return 0 }
+        var total: Int64 = 0
+        for case let url as URL in enumerator {
+            guard let values = try? url.resourceValues(forKeys: keys), values.isRegularFile == true else { continue }
+            total += Int64(values.totalFileAllocatedSize ?? values.fileSize ?? 0)
+        }
+        return total
     }
 
     static func size(of url: URL) throws -> Int64 {
