@@ -23,8 +23,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | wiring-1 | 4 (part) | App | orchestrator | ✅ |
 | 2 | `player` | 4 | PlayerFeature | Opus | ✅ #6 (device checks pending) |
 | 2 | `library` | 4–5 | LibraryFeature | Opus | ✅ #7 |
-| 2 | `folders` | 5 | FoldersFeature | Sonnet | ⏳ |
-| 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ⏳ |
+| 2 | `folders` | 5 | FoldersFeature | Sonnet | ✅ #8 |
+| 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ✅ #9 |
 | 2 | `settings` | 7 | SettingsFeature | Sonnet | ⏳ |
 | — | wiring-2 | 4–7 | App | orchestrator | waits for wave 2 |
 | 3 | `browser-share` | 8 | BrowserFeature, ShareExtension | Sonnet | waiting |
@@ -154,6 +154,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-10-31 — wave 2: FoldersFeature (#8) and EqualizerFeature (#9) merged after review fixes (folder tree
+  indexed once per change; EQ edits persist once per gesture). Next: `settings`, then wiring-2.
+  wiring-2 needs the EQ preset `UTExportedTypeDeclarations` (`com.seryaplayer.eq-presets`, `.seryaeq`, conforms to `public.json`).
 - 2026-10-30 — wave 2: PlayerFeature (#6) and LibraryFeature (#7) merged; not wired into `RootView` yet.
   Library snapshots run only on iPhone 16 / iOS 18.1. Known: a `Label` icon on a prominent button inside a
   `List` row takes the tint on iOS 18; tag edits don't refresh Now Playing until the next track.
