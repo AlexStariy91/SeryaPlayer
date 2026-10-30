@@ -97,6 +97,7 @@ final class SpyPlayer: PlaybackControlling {
     func toggleShuffle() {}
     func cycleRepeatMode() {}
     func moveQueueItems(fromOffsets _: IndexSet, toOffset _: Int) {}
+    func jump(toQueueIndex _: Int) {}
     func removeQueueItems(atOffsets _: IndexSet) {}
     func setRate(_: Float) {}
     func apply(_: EQSettings) {}
