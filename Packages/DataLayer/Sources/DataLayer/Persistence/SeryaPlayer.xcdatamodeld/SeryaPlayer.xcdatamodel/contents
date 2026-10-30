@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23231" systemVersion="24A335" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="1">
+    <entity name="CDTrack" representedClassName="CDTrack" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="title" attributeType="String" defaultValueString=""/>
+        <attribute name="artist" attributeType="String" defaultValueString=""/>
+        <attribute name="album" attributeType="String" defaultValueString=""/>
+        <attribute name="albumArtist" optional="YES" attributeType="String"/>
+        <attribute name="trackNumber" optional="YES" attributeType="Integer 32" usesScalarValueType="NO"/>
+        <attribute name="duration" attributeType="Double" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="relativePath" attributeType="String" defaultValueString=""/>
+        <attribute name="originalFileName" attributeType="String" defaultValueString=""/>
+        <attribute name="fileSize" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="contentHash" attributeType="String" defaultValueString=""/>
+        <attribute name="artworkKey" optional="YES" attributeType="String"/>
+        <attribute name="dateAdded" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="playCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="lastPlayedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="folder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDFolder" inverseName="tracks" inverseEntity="CDFolder"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDPlaylistEntry" inverseName="track" inverseEntity="CDPlaylistEntry"/>
+        <fetchIndex name="byContentHash">
+            <fetchIndexElement property="contentHash" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byDateAdded">
+            <fetchIndexElement property="dateAdded" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byTitle">
+            <fetchIndexElement property="title" type="Binary" order="ascending"/>
+        </fetchIndex>
+        <fetchIndex name="byID">
+            <fetchIndexElement property="id" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="CDFolder" representedClassName="CDFolder" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="sortIndex" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="parent" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDFolder" inverseName="subfolders" inverseEntity="CDFolder"/>
+        <relationship name="subfolders" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDFolder" inverseName="parent" inverseEntity="CDFolder"/>
+        <relationship name="tracks" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CDTrack" inverseName="folder" inverseEntity="CDTrack"/>
+        <fetchIndex name="byID">
+            <fetchIndexElement property="id" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="CDPlaylist" representedClassName="CDPlaylist" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="coverArtworkKey" optional="YES" attributeType="String"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CDPlaylistEntry" inverseName="playlist" inverseEntity="CDPlaylistEntry"/>
+        <fetchIndex name="byID">
+            <fetchIndexElement property="id" type="Binary" order="ascending"/>
+        </fetchIndex>
+    </entity>
+    <entity name="CDPlaylistEntry" representedClassName="CDPlaylistEntry" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="sortIndex" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="playlist" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDPlaylist" inverseName="entries" inverseEntity="CDPlaylist"/>
+        <relationship name="track" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CDTrack" inverseName="entries" inverseEntity="CDTrack"/>
+    </entity>
+    <entity name="CDEQPreset" representedClassName="CDEQPreset" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String" defaultValueString=""/>
+        <attribute name="gains" attributeType="Binary"/>
+        <attribute name="preamp" attributeType="Float" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+</model>
