@@ -21,8 +21,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 1 | `playback` | 3 | Playback | Opus | ✅ #2 (device checks pending) |
 | 1 | `design-system` | 0 (DS) | DesignSystem | Sonnet | ✅ #3 |
 | — | wiring-1 | 4 (part) | App | orchestrator | ✅ |
-| 2 | `player` | 4 | PlayerFeature | Opus | ⏳ |
-| 2 | `library` | 4–5 | LibraryFeature | Opus | ⏳ |
+| 2 | `player` | 4 | PlayerFeature | Opus | ✅ #6 (device checks pending) |
+| 2 | `library` | 4–5 | LibraryFeature | Opus | ✅ #7 |
 | 2 | `folders` | 5 | FoldersFeature | Sonnet | ⏳ |
 | 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ⏳ |
 | 2 | `settings` | 7 | SettingsFeature | Sonnet | ⏳ |
@@ -42,6 +42,10 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-10-30. The browser is enabled via the `SP_BROWSER_ENABLED` flag in both configurations.
 - 2026-10-30. All repository content is in English; UI strings are English in code with a Russian
   translation in the String Catalog (the plan originally had Russian as the primary language).
+- 2026-10-30. The repository is public (free GitHub Actions on macOS). Commits use the GitHub noreply address.
+- 2026-10-30. Workstreams run on Sonnet by default, one or two at a time; sessions skip simulator
+  screenshots (the orchestrator checks visuals after wiring) and don't wait for CI.
+- 2026-10-30. `PlaybackControlling.jump(toQueueIndex:)` added (player).
 
 ## Open questions
 
@@ -52,7 +56,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
 - Xcode 26: once installed, verify the build and add iOS 26 to CI.
-- CI on a private repo: macOS minutes count 10× against the free quota. Keep an eye on it.
 
 ---
 
@@ -151,6 +154,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-10-30 — wave 2: PlayerFeature (#6) and LibraryFeature (#7) merged; not wired into `RootView` yet.
+  Library snapshots run only on iPhone 16 / iOS 18.1. Known: a `Label` icon on a prominent button inside a
+  `List` row takes the tint on iOS 18; tag edits don't refresh Now Playing until the next track.
 - 2026-10-30 — wave 1 merged: Domain (#1), DesignSystem (#3), DataLayer (#4), Playback (#2);
   AppContainer wired to the real implementations.
 - 2026-10-30 — stage 0: scaffold, Domain contracts, docs, CI. Repository on GitHub.
