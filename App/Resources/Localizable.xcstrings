@@ -30,6 +30,16 @@
           }
         }
       }
+    },
+    "Can't Open the Library": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удаётся открыть медиатеку"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
