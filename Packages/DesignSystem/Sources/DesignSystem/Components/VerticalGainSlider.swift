@@ -5,16 +5,18 @@ public struct VerticalGainSlider: View {
     @Binding private var gain: Double
     private let range: ClosedRange<Double>
     private let label: String?
+    private let onEditingChanged: ((Bool) -> Void)?
 
     @State private var isDragging = false
 
     private nonisolated static let snapThreshold = 0.6
     private nonisolated static let step = 0.5
 
-    public init(gain: Binding<Double>, range: ClosedRange<Double> = -12 ... 12, label: String? = nil) {
+    public init(gain: Binding<Double>, range: ClosedRange<Double> = -12 ... 12, label: String? = nil, onEditingChanged: ((Bool) -> Void)? = nil) {
         _gain = gain
         self.range = range
         self.label = label
+        self.onEditingChanged = onEditingChanged
     }
 
     private var isAtZero: Bool {
@@ -75,11 +77,17 @@ public struct VerticalGainSlider: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
+                        if !isDragging {
+                            onEditingChanged?(true)
+                        }
                         isDragging = true
                         let position = min(max((height - thumb / 2 - value.location.y) / usable, 0), 1)
                         gain = Self.snap(range.lowerBound + position * (range.upperBound - range.lowerBound), range: range)
                     }
-                    .onEnded { _ in isDragging = false }
+                    .onEnded { _ in
+                        isDragging = false
+                        onEditingChanged?(false)
+                    }
             )
             .animation(.snappy(duration: 0.15), value: isDragging)
         }
