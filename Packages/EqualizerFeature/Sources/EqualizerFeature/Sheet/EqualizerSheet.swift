@@ -65,9 +65,12 @@ struct EqualizerSheet: View {
     }
 
     private var curve: some View {
-        EQCurveView(gains: viewModel.settings.gains, isEnabled: viewModel.settings.isEnabled) { band, gain in
-            viewModel.setGain(band: band, gain: gain)
-        }
+        EQCurveView(
+            gains: viewModel.settings.gains,
+            isEnabled: viewModel.settings.isEnabled,
+            onChange: { band, gain in viewModel.setGain(band: band, gain: gain) },
+            onEditingChanged: { viewModel.setEditing($0) }
+        )
     }
 
     private func chips(wrapped: Bool) -> some View {

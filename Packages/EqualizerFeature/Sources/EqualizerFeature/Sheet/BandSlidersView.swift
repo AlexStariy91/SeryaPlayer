@@ -15,7 +15,8 @@ struct BandSlidersView: View {
                             get: { Double(viewModel.settings.gains[safe: band] ?? 0) },
                             set: { viewModel.setGain(band: band, gain: Float($0)) }
                         ),
-                        label: Strings.frequency(EQBands.frequencies[band])
+                        label: Strings.frequency(EQBands.frequencies[band]),
+                        onEditingChanged: { viewModel.setEditing($0) }
                     )
                     .frame(maxWidth: .infinity)
                 }
@@ -36,7 +37,8 @@ struct BandSlidersView: View {
                         set: { viewModel.setPreamp(Float($0)) }
                     ),
                     in: Double(EQBands.gainRange.lowerBound) ... Double(EQBands.gainRange.upperBound),
-                    step: 0.5
+                    step: 0.5,
+                    onEditingChanged: { viewModel.setEditing($0) }
                 )
                 .accessibilityLabel(Text("Preamp", bundle: .module))
             }

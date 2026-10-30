@@ -7,6 +7,7 @@ struct EQCurveView: View {
     let gains: [Float]
     let isEnabled: Bool
     let onChange: (Int, Float) -> Void
+    let onEditingChanged: (Bool) -> Void
 
     @State private var activeBand: Int?
 
@@ -66,11 +67,17 @@ struct EQCurveView: View {
             .onChanged { value in
                 guard isEnabled else { return }
                 let plot = plot(for: size)
+                if activeBand == nil {
+                    onEditingChanged(true)
+                }
                 let band = activeBand ?? nearestBand(toX: value.startLocation.x, in: plot)
                 activeBand = band
                 onChange(band, gain(atY: value.location.y, in: plot))
             }
-            .onEnded { _ in activeBand = nil }
+            .onEnded { _ in
+                activeBand = nil
+                onEditingChanged(false)
+            }
     }
 
     // MARK: - Drawing

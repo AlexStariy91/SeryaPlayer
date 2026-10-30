@@ -186,4 +186,53 @@ struct EqualizerViewModelTests {
         await viewModel.importPresets(from: [URL(fileURLWithPath: "/nonexistent/file.seryaeq")])
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func continuousEditAppliesEveryValueButPersistsOnce() {
+        let deps = TestDependencies()
+        let viewModel = deps.makeViewModel()
+        let applied = deps.playback.appliedEqualizers.count
+
+        viewModel.setEditing(true)
+        for gain in stride(from: Float(1), through: 8, by: 1) {
+            viewModel.setGain(band: 2, gain: gain)
+        }
+        #expect(deps.settings.saveCount == 0)
+        #expect(deps.playback.appliedEqualizers.count - applied == 8)
+        #expect(deps.playback.appliedEqualizers.last?.gains[2] == 8)
+        #expect(deps.playback.appliedEqualizers.last?.preamp == -8)
+
+        viewModel.setEditing(false)
+        #expect(deps.settings.saveCount == 1)
+        #expect(deps.equalizer.gains[2] == 8)
+        #expect(deps.equalizer.preamp == -8)
+        #expect(deps.equalizer.presetID == nil)
+        #expect(viewModel.isCustom)
+    }
+
+    @Test func settingsEchoDuringEditDoesNotOverwriteLocalValue() async {
+        let deps = TestDependencies()
+        let viewModel = deps.makeViewModel()
+        let follower = Task { await viewModel.start() }
+        for _ in 0 ..< 20 {
+            await Task.yield()
+        }
+
+        viewModel.setEditing(true)
+        viewModel.setGain(band: 0, gain: 9)
+        var stale = deps.settings.load()
+        stale.equalizer.gains[0] = 3
+        deps.settings.save(stale)
+        for _ in 0 ..< 20 {
+            await Task.yield()
+        }
+        #expect(viewModel.settings.gains[0] == 9)
+
+        viewModel.setEditing(false)
+        for _ in 0 ..< 20 {
+            await Task.yield()
+        }
+        follower.cancel()
+        #expect(viewModel.settings.gains[0] == 9)
+        #expect(deps.equalizer.gains[0] == 9)
+    }
 }

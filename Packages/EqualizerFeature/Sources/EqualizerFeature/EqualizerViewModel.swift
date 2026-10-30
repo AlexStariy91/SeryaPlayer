@@ -11,6 +11,8 @@ final class EqualizerViewModel {
     /// Built-in presets followed by the user's.
     private(set) var presets: [EQPreset] = BuiltInPresets.all
     var errorMessage: String?
+    /// True while a drag or slider edit is in progress: changes go to the player only and are persisted once at the end.
+    private(set) var isEditing = false
 
     private let presetRepository: any EQPresetRepository
     private let settingsRepository: any SettingsRepository
@@ -71,7 +73,7 @@ final class EqualizerViewModel {
     }
 
     private func followSettings() async {
-        for await updated in settingsRepository.observe() where updated.equalizer != settings {
+        for await updated in settingsRepository.observe() where !isEditing && updated.equalizer != settings {
             settings = updated.equalizer
         }
     }
@@ -82,12 +84,37 @@ final class EqualizerViewModel {
         commit(applyPreset(preset))
     }
 
+    /// Brackets a continuous edit (curve drag, slider). Persists the final state once when it ends.
+    func setEditing(_ editing: Bool) {
+        guard editing != isEditing else { return }
+        isEditing = editing
+        guard !editing else { return }
+        var current = settingsRepository.load()
+        current.equalizer = settings
+        settingsRepository.save(current)
+    }
+
     func setGain(band: Int, gain: Float) {
         guard settings.gains.indices.contains(band), settings.gains[band] != EqualizerMath.clamp(gain) else { return }
-        commit(editBand(band: band, gain: gain))
+        if isEditing {
+            // Same rules as `EditEQBandUseCase`, without the save.
+            var updated = settings
+            updated.gains[band] = EqualizerMath.clamp(gain)
+            updated.preamp = EqualizerMath.autoPreamp(for: updated.gains)
+            updated.presetID = nil
+            commit(updated)
+        } else {
+            commit(editBand(band: band, gain: gain))
+        }
     }
 
     func setPreamp(_ preamp: Float) {
+        if isEditing {
+            var updated = settings
+            updated.preamp = EqualizerMath.clamp(preamp)
+            commit(updated)
+            return
+        }
         var current = settingsRepository.load()
         current.equalizer.preamp = EqualizerMath.clamp(preamp)
         settingsRepository.save(current)

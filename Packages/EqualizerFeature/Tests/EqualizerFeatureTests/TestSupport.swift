@@ -2,10 +2,33 @@ import Domain
 import DomainTestSupport
 @testable import EqualizerFeature
 
+/// Counts `save` calls. `@unchecked Sendable`: the counter is only touched from the main actor in tests.
+final class CountingSettingsRepository: SettingsRepository, @unchecked Sendable {
+    private let base: InMemorySettingsRepository
+    private(set) var saveCount = 0
+
+    init(_ base: InMemorySettingsRepository) {
+        self.base = base
+    }
+
+    func load() -> AppSettings {
+        base.load()
+    }
+
+    func observe() -> AsyncStream<AppSettings> {
+        base.observe()
+    }
+
+    func save(_ settings: AppSettings) {
+        saveCount += 1
+        base.save(settings)
+    }
+}
+
 @MainActor
 struct TestDependencies: EqualizerDependencies {
     let presets: InMemoryEQPresetRepository
-    let settings: InMemorySettingsRepository
+    let settings: CountingSettingsRepository
     let playback: FakePlaybackController
 
     var presetRepository: any EQPresetRepository {
@@ -24,7 +47,7 @@ struct TestDependencies: EqualizerDependencies {
         presets = InMemoryEQPresetRepository(presets: userPresets)
         var appSettings = AppSettings()
         appSettings.equalizer = equalizer
-        settings = InMemorySettingsRepository(settings: appSettings)
+        settings = CountingSettingsRepository(InMemorySettingsRepository(settings: appSettings))
         playback = FakePlaybackController()
     }
 
