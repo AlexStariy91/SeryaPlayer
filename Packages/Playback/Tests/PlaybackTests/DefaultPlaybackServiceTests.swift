@@ -1,4 +1,5 @@
 import Domain
+import DomainTestSupport
 import Foundation
 @testable import Playback
 import Testing
@@ -12,7 +13,7 @@ struct DefaultPlaybackServiceTests {
     let stateRepository = InMemoryPlaybackStateRepository()
 
     init() {
-        trackRepository = InMemoryTrackRepository(tracks)
+        trackRepository = InMemoryTrackRepository(tracks: tracks)
     }
 
     func makeService(seed: UInt64 = 42) -> DefaultPlaybackService {
@@ -25,6 +26,10 @@ struct DefaultPlaybackServiceTests {
             randomGenerator: SeededGenerator(seed: seed),
             now: { Date(timeIntervalSince1970: 1000) }
         )
+    }
+
+    func playCount(of track: Track) -> Int? {
+        trackRepository.snapshot.first { $0.id == track.id }?.playCount
     }
 
     // MARK: - Starting and auto-advance
@@ -105,7 +110,7 @@ struct DefaultPlaybackServiceTests {
         #expect(await waitUntil { engine.loadedURLs.count == 2 })
         #expect(engine.loadedURLs == [fileURL(for: tracks[1]), fileURL(for: tracks[1])])
         #expect(service.snapshot.isPlaying)
-        #expect(await waitUntil { await trackRepository.playedIDs.count == 2 })
+        #expect(await waitUntil { playCount(of: tracks[1]) == 2 })
 
         // A button press leaves the repeated track.
         service.next()
@@ -186,12 +191,13 @@ struct DefaultPlaybackServiceTests {
         service.togglePlayPause()
         service.togglePlayPause()
 
-        #expect(await waitUntil { await trackRepository.playedIDs == [tracks[0].id] })
-        let stored = await trackRepository.track(id: tracks[0].id)
+        #expect(await waitUntil { playCount(of: tracks[0]) == 1 })
+        for _ in 0 ..< 10 {
+            await Task.yield()
+        }
+        let stored = trackRepository.snapshot.first { $0.id == tracks[0].id }
         #expect(stored?.playCount == 1)
         #expect(stored?.lastPlayedAt == Date(timeIntervalSince1970: 1000))
-        await Task.yield()
-        #expect(await trackRepository.playedIDs.count == 1)
     }
 
     // MARK: - Persistence
@@ -204,7 +210,7 @@ struct DefaultPlaybackServiceTests {
         engine.currentTime = 42
         await service.persist()
 
-        let saved = await stateRepository.state
+        let saved = await stateRepository.load()
         #expect(saved?.queue == tracks.map(\.id))
         #expect(saved?.currentIndex == 1)
         #expect(saved?.position == 42)
