@@ -10,4 +10,5 @@ final class AppRouter {
 
     var selectedTab: Tab = .library
     var isPlayerPresented = false
+    var isSettingsPresented = false
 }

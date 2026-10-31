@@ -4,10 +4,16 @@ import SwiftUI
 
 /// The Library tab root: navigation, import, track action sheets and the live store.
 struct LibraryRootView: View {
-    let context: LibraryContext
+    /// Held in `@State` so a parent re-render (e.g. switching tabs) doesn't rebuild the store.
+    @State private var context: LibraryContext
     let onOpenSettings: () -> Void
 
     @State private var path: [LibraryRoute] = []
+
+    init(context: LibraryContext, onOpenSettings: @escaping () -> Void) {
+        _context = State(wrappedValue: context)
+        self.onOpenSettings = onOpenSettings
+    }
 
     var body: some View {
         @Bindable var importer = context.importer

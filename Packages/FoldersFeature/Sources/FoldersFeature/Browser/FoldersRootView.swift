@@ -3,9 +3,14 @@ import SwiftUI
 
 /// The Folders tab root: owns the navigation path and the live store.
 struct FoldersRootView: View {
-    let context: FoldersContext
+    /// Held in `@State` so a parent re-render (e.g. switching tabs) doesn't rebuild the store.
+    @State private var context: FoldersContext
 
     @State private var path: [FoldersRoute] = []
+
+    init(context: FoldersContext) {
+        _context = State(wrappedValue: context)
+    }
 
     var body: some View {
         NavigationStack(path: $path) {

@@ -15,6 +15,8 @@ import Shared
 final class AppContainer {
     let flags: FeatureFlags
     let router = AppRouter()
+    /// Latest settings, observed so the root view can apply the theme and accent.
+    private(set) var settings: AppSettings
 
     @ObservationIgnored let trackRepository: any TrackRepository
     @ObservationIgnored let folderRepository: any FolderRepository
@@ -73,7 +75,8 @@ final class AppContainer {
             await importTracks(urls: urls)
         }
 
-        player.apply(settingsRepository.load().equalizer)
+        settings = settingsRepository.load()
+        player.apply(settings.equalizer)
     }
 
     // MARK: - Use cases
@@ -94,6 +97,13 @@ final class AppContainer {
     func didLaunch() async {
         await player.restore()
         _ = await inboxProcessor.process()
+    }
+
+    /// Runs for the app's lifetime.
+    func observeSettings() async {
+        for await updated in settingsRepository.observe() where updated != settings {
+            settings = updated
+        }
     }
 
     func didBecomeActive() async {
