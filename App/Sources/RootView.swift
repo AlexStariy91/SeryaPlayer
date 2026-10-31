@@ -5,6 +5,7 @@ import EqualizerFeature
 import FoldersFeature
 import LibraryFeature
 import PlayerFeature
+import SettingsFeature
 import SwiftUI
 
 struct RootView: View {
@@ -35,7 +36,7 @@ struct RootView: View {
             EqualizerFeature.makeSheet(dependencies: container)
         })
         .sheet(isPresented: $router.isSettingsPresented) {
-            NavigationStack {
+            SettingsFeature.makeRootView(dependencies: container) {
                 EqualizerFeature.makePresetManager(dependencies: container)
             }
         }

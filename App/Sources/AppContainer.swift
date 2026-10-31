@@ -31,9 +31,11 @@ final class AppContainer {
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private let remoteCommands: RemoteCommands
     @ObservationIgnored private let inboxProcessor: InboxProcessor
+    @ObservationIgnored private let seedDirectory: URL?
 
     init(environment: AppEnvironment) throws {
         flags = .default
+        seedDirectory = environment.seedDirectory
         persistence = try PersistenceController(store: environment.store)
 
         trackRepository = CoreDataTrackRepository(persistence: persistence)
@@ -95,6 +97,10 @@ final class AppContainer {
 
     /// Restores the queue (paused) and picks up files dropped into the inboxes while the app was closed.
     func didLaunch() async {
+        if let seedDirectory {
+            let urls = (try? FileManager.default.contentsOfDirectory(at: seedDirectory, includingPropertiesForKeys: nil)) ?? []
+            _ = await importTracks(urls: urls.sorted { $0.lastPathComponent < $1.lastPathComponent })
+        }
         await player.restore()
         _ = await inboxProcessor.process()
     }
