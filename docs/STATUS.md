@@ -5,7 +5,7 @@
 
 ## Now
 
-**Wave 1 — done** (stages 1–3 and DesignSystem merged, wired into `AppContainer`). **Wave 2** (screens) is running.
+**Waves 1 and 2 — done.** All screens are merged and wired into `RootView`. Next: on-device checks, then wave 3.
 
 ## Workstreams and waves
 
@@ -25,8 +25,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 2 | `library` | 4–5 | LibraryFeature | Opus | ✅ #7 |
 | 2 | `folders` | 5 | FoldersFeature | Sonnet | ✅ #8 |
 | 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ✅ #9 |
-| 2 | `settings` | 7 | SettingsFeature | Sonnet | ⏳ |
-| — | wiring-2 | 4–7 | App | orchestrator | waits for wave 2 |
+| 2 | `settings` | 7 | SettingsFeature | Sonnet | ✅ #10 |
+| — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
 | 3 | `browser-share` | 8 | BrowserFeature, ShareExtension | Sonnet | waiting |
 | 3 | `extras` | 9 | Playback, PlayerFeature | Opus | waiting |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
@@ -108,7 +108,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ### Stage 4. First sound — wiring-1 + `player`, `library`
 - [x] AppContainer wires DataLayer and Playback; InboxProcessor on launch/activation; onOpenURL; persist on background (orchestrator)
-- [ ] RootView with real features, miniPlayerHost (orchestrator, wiring-2)
+- [x] RootView with real features, miniPlayerHost (orchestrator, wiring-2)
 - [ ] Import via "+": files and folders, progress, summary (library)
 - [ ] "All Tracks" list (library)
 - [ ] Mini player via miniPlayerHost (player)
@@ -154,6 +154,10 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-10-31 — wave 2 done: SettingsFeature (#10); wiring-2 (#11, #12) connects every feature, applies theme
+  and accent at the window level, and adds app UI tests (play/skip, playlist, theme) with seeded fixtures.
+  Open: on-device checklist; Xcode re-extracts preview-only strings into String Catalogs (use `Text(verbatim:)`
+  in previews; clean up in polish); a one-off `Bundle.module` crash after reinstall in the simulator, not reproduced.
 - 2026-10-31 — wave 2: FoldersFeature (#8) and EqualizerFeature (#9) merged after review fixes (folder tree
   indexed once per change; EQ edits persist once per gesture). Next: `settings`, then wiring-2.
   wiring-2 needs the EQ preset `UTExportedTypeDeclarations` (`com.seryaplayer.eq-presets`, `.seryaeq`, conforms to `public.json`).
