@@ -17,7 +17,9 @@ struct SnapshotTests {
     private func check(
         _ name: String,
         detent: PresentationDetent,
+        width: CGFloat = 390,
         height: CGFloat,
+        verticalSizeClass: UIUserInterfaceSizeClass = .regular,
         file: StaticString = #filePath,
         testName: String = #function,
         line: UInt = #line
@@ -32,10 +34,11 @@ struct SnapshotTests {
                 UITraitCollection(userInterfaceStyle: style),
                 UITraitCollection(preferredContentSizeCategory: .large),
                 UITraitCollection(displayScale: 2),
+                UITraitCollection(verticalSizeClass: verticalSizeClass),
             ])
             assertSnapshot(
                 of: view,
-                as: .image(precision: 0.95, perceptualPrecision: 0.9, layout: .fixed(width: 390, height: height), traits: traits),
+                as: .image(precision: 0.95, perceptualPrecision: 0.9, layout: .fixed(width: width, height: height), traits: traits),
                 named: "\(name)-\(variant)",
                 file: file,
                 testName: testName,
@@ -50,6 +53,10 @@ struct SnapshotTests {
 
     @Test func large() {
         check("large", detent: .large, height: 780)
+    }
+
+    @Test func landscape() {
+        check("landscape", detent: .large, width: 852, height: 393, verticalSizeClass: .compact)
     }
 }
 

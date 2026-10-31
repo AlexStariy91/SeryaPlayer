@@ -46,7 +46,7 @@ public struct DesignSystemCatalog: View {
                 accentSection
                 Section("Track rows") {
                     TrackRow(title: "Midnight City", subtitle: "M83 · Hurry Up, We're Dreaming", duration: 244)
-                    TrackRow(title: "Now Playing Track With a Really Long Title That Truncates", subtitle: "Artist", duration: 3725, isPlaying: true)
+                    TrackRow(title: "Now Playing Track With a Really Long Title That Truncates", subtitle: "Artist", duration: 3725, nowPlaying: .playing)
                     TrackRow(title: "No Subtitle")
                 }
                 Section("Artwork sizes") {

@@ -181,6 +181,20 @@ struct StartPlaybackUseCaseTests {
         #expect(player.playCalls.isEmpty)
     }
 
+    @Test func tapOnCurrentTrackTogglesInsteadOfRestarting() {
+        let player = FakePlaybackController()
+        let tracks = [Track.fixture("a"), Track.fixture("b")]
+        player.snapshot.nowPlaying = tracks[1]
+        let start = StartPlaybackUseCase(playback: player)
+
+        start.playOrToggle(tracks, at: 1)
+        #expect(player.togglePlayPauseCount == 1)
+        #expect(player.playCalls.isEmpty)
+
+        start.playOrToggle(tracks, at: 0)
+        #expect(player.playCalls == [.init(tracks: tracks, index: 0, shuffled: false)])
+    }
+
     @Test func shuffleAllStartsShuffled() {
         let player = FakePlaybackController()
         StartPlaybackUseCase(playback: player).shuffleAll([.fixture("a"), .fixture("b")])

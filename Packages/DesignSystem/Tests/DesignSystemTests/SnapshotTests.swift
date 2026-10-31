@@ -54,7 +54,7 @@ struct SnapshotTests {
         check("rows", height: 760) {
             VStack(alignment: .leading, spacing: Spacing.l) {
                 TrackRow(title: "Midnight City", subtitle: "M83 · Hurry Up, We're Dreaming", duration: 244)
-                TrackRow(title: "A Really Long Track Title That Has To Truncate", subtitle: "Artist", duration: 3725, isPlaying: true)
+                TrackRow(title: "A Really Long Track Title That Has To Truncate", subtitle: "Artist", duration: 3725, nowPlaying: .playing)
                 TrackRow(title: "No Subtitle")
             }
             .padding(Spacing.screenMargin)

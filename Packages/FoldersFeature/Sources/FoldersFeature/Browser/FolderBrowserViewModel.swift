@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -72,6 +73,10 @@ final class FolderBrowserViewModel {
         store.nowPlayingID
     }
 
+    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
+        store.nowPlaying(id)
+    }
+
     /// Songs in the folder and all its subfolders.
     func songCount(in folder: Folder) -> Int {
         store.songCount(in: folder.id)
@@ -91,7 +96,7 @@ final class FolderBrowserViewModel {
     func play(_ track: Track) {
         let list = tracks
         guard let index = list.firstIndex(of: track) else { return }
-        context.startPlayback(list, startingAt: index)
+        context.startPlayback.playOrToggle(list, at: index)
     }
 
     /// Play / Shuffle include subfolders: a folder is played as the tree below it, depth first.

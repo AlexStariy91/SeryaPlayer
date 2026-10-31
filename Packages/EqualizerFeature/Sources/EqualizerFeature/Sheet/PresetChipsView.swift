@@ -17,19 +17,21 @@ struct PresetChipsView: View {
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.s) { chips }
-                    .padding(.horizontal, Spacing.screenMargin)
             }
-            .padding(.horizontal, -Spacing.screenMargin)
+            // Edge-to-edge scrolling, but the first and last chip keep the screen margin.
+            .contentMargins(.horizontal, Spacing.screenMargin, for: .scrollContent)
         }
     }
 
     @ViewBuilder
     private var chips: some View {
-        if viewModel.isCustom {
+        // Matched once per render, not once per chip: this view redraws on every frame of a curve drag.
+        let selectedID = viewModel.selectedPreset?.id
+        if selectedID == nil {
             Chip(title: String(localized: "Custom", bundle: .module), isSelected: true) {}
         }
         ForEach(viewModel.presets) { preset in
-            Chip(title: Strings.name(of: preset), isSelected: viewModel.selectedPreset?.id == preset.id) {
+            Chip(title: Strings.name(of: preset), isSelected: selectedID == preset.id) {
                 viewModel.select(preset)
             }
             .contextMenu {

@@ -5,7 +5,7 @@ import SwiftUI
 /// A tappable `TrackRow` with asynchronously resolved artwork and the shared track actions.
 struct LibraryTrackRow: View {
     let track: Track
-    let isPlaying: Bool
+    let nowPlaying: TrackRow.NowPlaying?
     let resolver: ArtworkResolver
     let actions: TrackActionsModel
     /// In a playlist: the trailing swipe removes the entry instead of deleting the track.
@@ -21,7 +21,7 @@ struct LibraryTrackRow: View {
                 subtitle: Strings.subtitle(for: track),
                 artworkURL: artworkURL ?? resolver.cachedURL(for: track.artworkKey, size: .thumbnail),
                 duration: track.duration,
-                isPlaying: isPlaying
+                nowPlaying: nowPlaying
             )
         }
         .buttonStyle(.plain)

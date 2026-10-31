@@ -26,11 +26,11 @@ struct PlaylistDetailView: View {
                 ForEach(rows) { row in
                     LibraryTrackRow(
                         track: row.track,
-                        isPlaying: context.store.nowPlayingID == row.track.id,
+                        nowPlaying: context.store.nowPlaying(row.track.id),
                         resolver: context.artwork,
                         actions: context.actions,
                         onRemove: { Task { await viewModel.remove(entryIDs: [row.id]) } },
-                        onPlay: { context.startPlayback(rows.map(\.track), startingAt: rows.firstIndex(of: row) ?? 0) }
+                        onPlay: { context.startPlayback.playOrToggle(rows.map(\.track), at: rows.firstIndex(of: row) ?? 0) }
                     )
                 }
                 .onMove { source, destination in

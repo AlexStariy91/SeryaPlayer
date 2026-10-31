@@ -16,12 +16,12 @@ struct AllTracksView: View {
             ForEach(viewModel.visibleTracks) { track in
                 LibraryTrackRow(
                     track: track,
-                    isPlaying: context.store.nowPlayingID == track.id,
+                    nowPlaying: context.store.nowPlaying(track.id),
                     resolver: context.artwork,
                     actions: context.actions
                 ) {
                     let list = viewModel.visibleTracks
-                    context.startPlayback(list, startingAt: list.firstIndex(of: track) ?? 0)
+                    context.startPlayback.playOrToggle(list, at: list.firstIndex(of: track) ?? 0)
                 }
             }
         }

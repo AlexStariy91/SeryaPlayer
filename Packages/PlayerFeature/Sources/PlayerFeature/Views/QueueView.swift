@@ -13,7 +13,7 @@ struct QueueView: View {
             List {
                 if let item = viewModel.nowPlayingItem {
                     Section {
-                        QueueRow(track: item.track, isPlaying: viewModel.snapshot.isPlaying, resolveArtwork: viewModel.thumbnailURL)
+                        QueueRow(track: item.track, nowPlaying: viewModel.snapshot.isPlaying ? .playing : .paused, resolveArtwork: viewModel.thumbnailURL)
                     } header: {
                         Text("Now Playing", bundle: .module)
                     }
@@ -52,7 +52,7 @@ struct QueueView: View {
         Button {
             viewModel.play(item)
         } label: {
-            QueueRow(track: item.track, isPlaying: false, resolveArtwork: viewModel.thumbnailURL)
+            QueueRow(track: item.track, nowPlaying: nil, resolveArtwork: viewModel.thumbnailURL)
         }
         .buttonStyle(.plain)
     }
@@ -60,13 +60,13 @@ struct QueueView: View {
 
 private struct QueueRow: View {
     let track: Track
-    let isPlaying: Bool
+    let nowPlaying: TrackRow.NowPlaying?
     let resolveArtwork: (Track) async -> URL?
 
     @State private var artworkURL: URL?
 
     var body: some View {
-        TrackRow(title: track.title, subtitle: track.artist, artworkURL: artworkURL, duration: track.duration, isPlaying: isPlaying)
+        TrackRow(title: track.title, subtitle: track.artist, artworkURL: artworkURL, duration: track.duration, nowPlaying: nowPlaying)
             .task(id: track.artworkKey) { artworkURL = await resolveArtwork(track) }
     }
 }

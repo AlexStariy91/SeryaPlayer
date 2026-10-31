@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -16,6 +17,7 @@ final class FoldersStore {
     }
 
     private(set) var nowPlayingID: Track.ID?
+    private(set) var isPlaying = false
     private(set) var isLoaded = false
 
     /// Indexes rebuilt once per observed change; accessors are dictionary lookups.
@@ -66,7 +68,16 @@ final class FoldersStore {
             if id != nowPlayingID {
                 nowPlayingID = id
             }
+            if snapshot.isPlaying != isPlaying {
+                isPlaying = snapshot.isPlaying
+            }
         }
+    }
+
+    /// The row indicator for `id`: only the current track has one.
+    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
+        guard id == nowPlayingID else { return nil }
+        return isPlaying ? .playing : .paused
     }
 
     private func updateLoaded() {

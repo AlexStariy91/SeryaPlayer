@@ -27,25 +27,29 @@ struct EqualizerSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: Spacing.l) {
-                    Toggle(isOn: Binding(get: { viewModel.settings.isEnabled }, set: { viewModel.setEnabled($0) })) {
-                        Text("Equalizer", bundle: .module).font(AppFont.headline)
-                    }
-                    .padding(.horizontal, Spacing.screenMargin)
-
                     if isCompact {
+                        // Landscape: the curve and the bands on the left, the presets beside them.
                         HStack(alignment: .top, spacing: Spacing.xl) {
-                            curve
-                            ScrollView { chips(wrapped: true) }
+                            VStack(spacing: Spacing.l) {
+                                curve.frame(height: 150)
+                                if showsBands {
+                                    BandSlidersView(viewModel: viewModel)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            chips(wrapped: true)
+                                .frame(width: 290)
                         }
                         .padding(.horizontal, Spacing.screenMargin)
                     } else {
-                        curve.padding(.horizontal, Spacing.screenMargin)
-                        chips(wrapped: false)
-                    }
-
-                    if showsBands {
-                        BandSlidersView(viewModel: viewModel)
+                        curve
+                            .frame(height: 170)
                             .padding(.horizontal, Spacing.screenMargin)
+                        chips(wrapped: false)
+                        if showsBands {
+                            BandSlidersView(viewModel: viewModel)
+                                .padding(.horizontal, Spacing.screenMargin)
+                        }
                     }
                 }
                 .padding(.vertical, Spacing.s)
@@ -53,6 +57,16 @@ struct EqualizerSheet: View {
             .navigationTitle(Text("Equalizer", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // The switch sits in the bar next to the title instead of a row of its own: it stays
+                // close to its label in landscape and leaves the medium detent to the curve and presets.
+                ToolbarItem(placement: .topBarLeading) {
+                    Toggle(isOn: Binding(get: { viewModel.settings.isEnabled }, set: { viewModel.setEnabled($0) })) {
+                        Text("Equalizer", bundle: .module)
+                    }
+                    // Toolbars render toggles as buttons by default.
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "Done", bundle: .module)) { dismiss() }
                 }

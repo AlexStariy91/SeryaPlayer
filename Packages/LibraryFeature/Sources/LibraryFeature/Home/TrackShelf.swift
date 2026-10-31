@@ -14,7 +14,7 @@ struct TrackShelf: View {
             LazyHStack(alignment: .top, spacing: Spacing.m) {
                 ForEach(tracks) { track in
                     Button {
-                        context.startPlayback(tracks, startingAt: tracks.firstIndex(of: track) ?? 0)
+                        context.startPlayback.playOrToggle(tracks, at: tracks.firstIndex(of: track) ?? 0)
                     } label: {
                         VStack(alignment: .leading, spacing: Spacing.xs) {
                             ResolvedArtwork(key: track.artworkKey, size: Self.artwork, resolver: context.artwork)

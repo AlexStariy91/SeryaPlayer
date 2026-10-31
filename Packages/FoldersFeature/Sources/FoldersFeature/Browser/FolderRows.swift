@@ -33,7 +33,7 @@ struct FolderRow: View {
 /// A tappable `TrackRow` with asynchronously resolved artwork.
 struct FolderTrackRow: View {
     let track: Track
-    let isPlaying: Bool
+    let nowPlaying: TrackRow.NowPlaying?
     let resolver: ArtworkResolver
     let onPlay: () -> Void
 
@@ -46,7 +46,7 @@ struct FolderTrackRow: View {
                 subtitle: [track.artist, track.album].filter { !$0.isEmpty }.joined(separator: " · "),
                 artworkURL: artworkURL ?? resolver.cachedURL(for: track.artworkKey, size: .thumbnail),
                 duration: track.duration,
-                isPlaying: isPlaying
+                nowPlaying: nowPlaying
             )
         }
         .buttonStyle(.plain)

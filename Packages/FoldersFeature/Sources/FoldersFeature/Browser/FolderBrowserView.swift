@@ -40,11 +40,14 @@ struct FolderBrowserView: View {
                         .tag(FolderItem.folder(folder.id))
                         .contextMenu { folderMenu(folder) }
                         .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
+                            // No destructive role: SwiftUI would remove the row before the deletion is
+                            // confirmed, and the real removal then crashes the list.
+                            Button {
                                 Task { await viewModel.requestDelete(items: [.folder(folder.id)]) }
                             } label: {
                                 Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
                             }
+                            .tint(.red)
                         }
                     }
                     .onMove { source, destination in
@@ -59,17 +62,19 @@ struct FolderBrowserView: View {
                     ForEach(viewModel.tracks) { track in
                         FolderTrackRow(
                             track: track,
-                            isPlaying: viewModel.nowPlayingID == track.id,
+                            nowPlaying: viewModel.nowPlaying(track.id),
                             resolver: viewModel.artwork
                         ) { viewModel.play(track) }
                             .tag(FolderItem.track(track.id))
                             .contextMenu { trackMenu(track) }
                             .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
+                                // No destructive role: see the folder row above.
+                                Button {
                                     Task { await viewModel.requestDelete(items: [.track(track.id)]) }
                                 } label: {
                                     Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
                                 }
+                                .tint(.red)
                             }
                     }
                 } header: {

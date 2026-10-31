@@ -49,20 +49,38 @@ struct PresetManagerView: View {
         .task { await viewModel.start() }
     }
 
+    /// Tapping a row opens its actions; swipe keeps the quick Rename/Delete.
     private func row(for preset: EQPreset) -> some View {
+        Menu {
+            actions(for: preset)
+        } label: {
+            HStack {
+                Text(preset.name)
+                    .foregroundStyle(SemanticColor.textPrimary)
+                Spacer()
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .swipeActions(edge: .trailing) {
+            // No destructive role: SwiftUI would remove the row before the deletion is confirmed,
+            // and the real removal then crashes the list ("attempt to delete item 1 …").
+            Button(String(localized: "Delete", bundle: .module), systemImage: "trash") { edit = .delete(preset) }
+                .tint(.red)
+            Button(String(localized: "Rename", bundle: .module), systemImage: "pencil") { edit = .rename(preset) }
+                .tint(.accentColor)
+        }
+    }
+
+    @ViewBuilder
+    private func actions(for preset: EQPreset) -> some View {
         let file = viewModel.exportFile(for: [preset])
-        return Text(preset.name)
-            .swipeActions(edge: .trailing) {
-                Button(String(localized: "Delete", bundle: .module), systemImage: "trash", role: .destructive) { edit = .delete(preset) }
-                Button(String(localized: "Rename", bundle: .module), systemImage: "pencil") { edit = .rename(preset) }
-                    .tint(.accentColor)
-            }
-            .contextMenu {
-                Button(String(localized: "Rename", bundle: .module), systemImage: "pencil") { edit = .rename(preset) }
-                ShareLink(item: file, preview: SharePreview(preset.name)) {
-                    Label(String(localized: "Export", bundle: .module), systemImage: "square.and.arrow.up")
-                }
-                Button(String(localized: "Delete", bundle: .module), systemImage: "trash", role: .destructive) { edit = .delete(preset) }
-            }
+        Button(String(localized: "Rename", bundle: .module), systemImage: "pencil") { edit = .rename(preset) }
+        ShareLink(item: file, preview: SharePreview(preset.name)) {
+            Label(String(localized: "Export", bundle: .module), systemImage: "square.and.arrow.up")
+        }
+        Button(String(localized: "Delete", bundle: .module), systemImage: "trash", role: .destructive) { edit = .delete(preset) }
     }
 }

@@ -224,14 +224,23 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         timePitch.bypass = rate == 1
     }
 
+    /// Writes only what changed. The EQ is re-applied on every frame of a curve drag, and setting
+    /// `bypass` (even to the same value) resets the audio unit, which is heard as dropouts.
     private func applyEqualizer() {
         let settings = equalizerSettings
         for (index, band) in equalizer.bands.enumerated() {
             let gain = settings.gains.indices.contains(index) ? settings.gains[index] : 0
-            band.gain = min(max(gain, EQBands.gainRange.lowerBound), EQBands.gainRange.upperBound)
+            let clamped = min(max(gain, EQBands.gainRange.lowerBound), EQBands.gainRange.upperBound)
+            if band.gain != clamped {
+                band.gain = clamped
+            }
         }
-        equalizer.globalGain = settings.preamp
-        equalizer.bypass = !settings.isEnabled
+        if equalizer.globalGain != settings.preamp {
+            equalizer.globalGain = settings.preamp
+        }
+        if equalizer.bypass == settings.isEnabled {
+            equalizer.bypass = !settings.isEnabled
+        }
     }
 
     // MARK: - Scheduling

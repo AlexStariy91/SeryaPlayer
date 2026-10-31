@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -15,6 +16,7 @@ final class LibraryStore {
     private(set) var recentlyPlayed: [Track] = []
     private(set) var playlists: [Playlist] = []
     private(set) var nowPlayingID: Track.ID?
+    private(set) var isPlaying = false
     /// False until the first track list arrives, so the empty state doesn't flash on launch.
     private(set) var hasLoaded = false
 
@@ -71,9 +73,20 @@ final class LibraryStore {
     }
 
     private func observePlayer() async {
-        for await snapshot in player.snapshots() where snapshot.nowPlaying?.id != nowPlayingID {
-            nowPlayingID = snapshot.nowPlaying?.id
+        for await snapshot in player.snapshots() {
+            if snapshot.nowPlaying?.id != nowPlayingID {
+                nowPlayingID = snapshot.nowPlaying?.id
+            }
+            if snapshot.isPlaying != isPlaying {
+                isPlaying = snapshot.isPlaying
+            }
         }
+    }
+
+    /// The row indicator for `id`: only the current track has one.
+    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
+        guard id == nowPlayingID else { return nil }
+        return isPlaying ? .playing : .paused
     }
 
     func apply(_ list: [Track]) {
