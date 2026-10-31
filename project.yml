@@ -74,6 +74,13 @@ targets:
               - org.xiph.flac
               - com.microsoft.waveform-audio
               - public.aiff-audio
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.seryaplayer.eq-presets
+            UTTypeDescription: SeryaPlayer Equalizer Presets
+            UTTypeConformsTo: [public.json]
+            UTTypeTagSpecification:
+              public.filename-extension: [seryaeq]
+              public.mime-type: [application/json]
     entitlements:
       path: App/SeryaPlayer.entitlements
       properties:
