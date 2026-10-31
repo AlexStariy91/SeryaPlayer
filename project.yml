@@ -107,7 +107,12 @@ targets:
   SeryaPlayerUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [AppUITests]
+    sources:
+      - path: AppUITests
+        excludes: [Fixtures]
+      - path: AppUITests/Fixtures
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.starodub.SeryaPlayer.UITests

@@ -12,6 +12,8 @@ struct AppEnvironment {
     var documentsInboxURL: URL
     var playbackStateURL: URL
     var defaults: UserDefaults
+    /// UI tests only: audio files imported on launch (`SP_UITEST_SEED_DIR`), so tests start with a library.
+    var seedDirectory: URL?
 
     static var live: AppEnvironment {
         AppEnvironment(
@@ -33,7 +35,9 @@ struct AppEnvironment {
             libraryURL: root.appending(path: "Library", directoryHint: .isDirectory),
             documentsInboxURL: root.appending(path: "Inbox", directoryHint: .isDirectory),
             playbackStateURL: root.appending(path: "PlaybackState.json"),
-            defaults: UserDefaults(suiteName: suiteName) ?? .standard
+            defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+            seedDirectory: ProcessInfo.processInfo.environment["SP_UITEST_SEED_DIR"]
+                .map { URL(fileURLWithPath: $0, isDirectory: true) }
         )
     }
 
