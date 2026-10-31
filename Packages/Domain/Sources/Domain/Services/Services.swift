@@ -76,7 +76,17 @@ public protocol ArtworkStoring: Sendable {
     /// Stores artwork by content hash and returns its key. Identical artwork is one file.
     func store(_ data: Data) async throws -> String
     func url(for key: String, size: ArtworkSize) async -> URL?
+    /// Bytes `clearCache` would free: the rebuildable downscaled copies, not the originals.
+    func cacheSize() async -> Int64
+    /// Drops only the rebuildable downscaled copies. Originals stay, so every stored key remains valid.
     func clearCache() async throws
+}
+
+public extension ArtworkStoring {
+    /// Default for stores without a measurable cache (previews, stubs).
+    func cacheSize() async -> Int64 {
+        0
+    }
 }
 
 // MARK: - Playback

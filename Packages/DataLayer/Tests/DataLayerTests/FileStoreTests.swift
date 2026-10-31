@@ -147,7 +147,9 @@ struct ArtworkCacheTests {
         let cache = ArtworkCache(directoryURL: directory.url.appending(path: "Artwork"))
         let key = try await cache.store(Self.makeImage(width: 500, height: 500, red: 1))
 
+        #expect(await cache.cacheSize() > 0)
         try await cache.clearCache()
+        #expect(await cache.cacheSize() == 0)
         #expect(try FileManager.default.contentsOfDirectory(atPath: cache.directoryURL.path).count == 1)
 
         let thumbnail = try #require(await cache.url(for: key, size: .thumbnail))

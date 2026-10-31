@@ -122,6 +122,8 @@ public final class FakeMetadataReader: MetadataReading {
 
 public final class FakeArtworkStore: ArtworkStoring {
     private let stored = Mutex<[String]>([])
+    private let size = Mutex<Int64>(0)
+    private let failure = Mutex<Bool>(false)
 
     public init() {}
 
@@ -143,8 +145,26 @@ public final class FakeArtworkStore: ArtworkStoring {
         URL(fileURLWithPath: "/fake/artwork/\(key)")
     }
 
+    /// What `cacheSize()` reports until `clearCache()` runs.
+    public func setCacheSize(_ bytes: Int64) {
+        size.withLock { $0 = bytes }
+    }
+
+    /// Makes `clearCache()` throw.
+    public func failClearing(_ fails: Bool) {
+        failure.withLock { $0 = fails }
+    }
+
+    public func cacheSize() async -> Int64 {
+        size.withLock { $0 }
+    }
+
     public func clearCache() async throws {
+        if failure.withLock({ $0 }) {
+            throw CocoaError(.fileWriteUnknown)
+        }
         stored.withLock { $0.removeAll() }
+        size.withLock { $0 = 0 }
     }
 }
 

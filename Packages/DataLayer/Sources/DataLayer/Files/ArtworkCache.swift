@@ -61,15 +61,28 @@ public struct ArtworkCache: ArtworkStoring {
         return original
     }
 
+    public func cacheSize() async -> Int64 {
+        let keys: Set<URLResourceKey> = [.totalFileAllocatedSizeKey, .fileSizeKey]
+        var total: Int64 = 0
+        for url in resizedCopies() {
+            let values = try? url.resourceValues(forKeys: keys)
+            total += Int64(values?.totalFileAllocatedSize ?? values?.fileSize ?? 0)
+        }
+        return total
+    }
+
     public func clearCache() async throws {
-        let fileManager = FileManager.default
-        guard let contents = try? fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil) else { return }
-        for url in contents where url.lastPathComponent.hasSuffix("_thumb.jpg") || url.lastPathComponent.hasSuffix("_large.jpg") {
-            try fileManager.removeItem(at: url)
+        for url in resizedCopies() {
+            try FileManager.default.removeItem(at: url)
         }
     }
 
     // MARK: - Helpers
+
+    private func resizedCopies() -> [URL] {
+        let contents = (try? FileManager.default.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: nil)) ?? []
+        return contents.filter { $0.lastPathComponent.hasSuffix("_thumb.jpg") || $0.lastPathComponent.hasSuffix("_large.jpg") }
+    }
 
     func originalURL(key: String) -> URL? {
         let contents = (try? FileManager.default.contentsOfDirectory(atPath: directoryURL.path)) ?? []
