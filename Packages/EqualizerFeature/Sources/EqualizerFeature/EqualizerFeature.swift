@@ -12,7 +12,7 @@ public protocol EqualizerDependencies {
 }
 
 public enum EqualizerFeature {
-    /// The sheet the player presents. Detents `.medium` (presets, curve, on/off) and `.large` (plus band sliders and preamp).
+    /// The sheet the player presents: one near-full-height detent with the on/off row, curve, presets, bands and preamp.
     @MainActor
     public static func makeSheet(dependencies: some EqualizerDependencies) -> some View {
         EqualizerSheet(viewModel: EqualizerViewModel(dependencies: dependencies))

@@ -16,7 +16,7 @@ struct SnapshotTests {
 
     private func check(
         _ name: String,
-        detent: PresentationDetent,
+        isEnabled: Bool = true,
         width: CGFloat = 390,
         height: CGFloat,
         verticalSizeClass: UIUserInterfaceSizeClass = .regular,
@@ -26,9 +26,9 @@ struct SnapshotTests {
     ) {
         let deps = TestDependencies(
             userPresets: [EQPreset(name: "My Mix", gains: [3, 2, 0, 0, 0, 0, 0, 1, 2, 3], preamp: -3)],
-            equalizer: Self.equalizer
+            equalizer: EQSettings(isEnabled: isEnabled, gains: Self.equalizer.gains, preamp: Self.equalizer.preamp)
         )
-        let view = EqualizerSheet(viewModel: deps.makeViewModel(), detent: detent).tint(AccentPalette.serya.color)
+        let view = EqualizerSheet(viewModel: deps.makeViewModel()).tint(AccentPalette.serya.color)
         for (variant, style) in [("light", UIUserInterfaceStyle.light), ("dark", .dark)] {
             let traits = UITraitCollection(traitsFrom: [
                 UITraitCollection(userInterfaceStyle: style),
@@ -47,16 +47,22 @@ struct SnapshotTests {
         }
     }
 
-    @Test func medium() {
-        check("medium", detent: .medium, height: 420)
+    /// The sheet's only detent on iPhone 16: 90 % of 852 pt.
+    @Test func portrait() {
+        check("portrait", height: 767)
     }
 
-    @Test func large() {
-        check("large", detent: .large, height: 780)
+    /// Everything below the fold, to review the whole scroll content at once.
+    @Test func portraitFull() {
+        check("portrait-full", height: 1000)
+    }
+
+    @Test func disabled() {
+        check("disabled", isEnabled: false, height: 767)
     }
 
     @Test func landscape() {
-        check("landscape", detent: .large, width: 852, height: 393, verticalSizeClass: .compact)
+        check("landscape", width: 852, height: 393, verticalSizeClass: .compact)
     }
 }
 

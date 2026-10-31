@@ -18,6 +18,22 @@
         }
       }
     },
+    "Bands": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bands"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полосы"
+          }
+        }
+      }
+    },
     "Bass Booster": {
       "localizations": {
         "en": {
@@ -46,6 +62,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Отмена"
+          }
+        }
+      }
+    },
+    "Choosing a preset turns the equalizer on.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choosing a preset turns the equalizer on."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выбор пресета включает эквалайзер."
           }
         }
       }
@@ -430,6 +462,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Предусиление"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пресеты"
           }
         }
       }

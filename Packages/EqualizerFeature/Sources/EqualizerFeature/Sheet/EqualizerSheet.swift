@@ -2,92 +2,177 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// Medium detent: on/off, presets and the curve. Large detent (or landscape): plus band sliders and preamp.
+/// One near-full-height detent, laid out like an inset-grouped Settings screen: the on/off row, the curve,
+/// the presets, then the band sliders and the preamp. Landscape puts the curve and bands beside the switch and presets.
 struct EqualizerSheet: View {
     @State private var viewModel: EqualizerViewModel
-    @State private var detent: PresentationDetent
     @State private var edit: PresetEdit?
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: EqualizerViewModel, detent: PresentationDetent = .medium) {
+    /// Keeps labels and their controls close together on wide screens.
+    private static let maxContentWidth: CGFloat = 700
+
+    init(viewModel: EqualizerViewModel) {
         _viewModel = State(initialValue: viewModel)
-        _detent = State(initialValue: detent)
     }
 
-    private var isCompact: Bool {
-        verticalSizeClass == .compact
-    }
-
-    private var showsBands: Bool {
-        detent == .large || isCompact
+    private var isEnabled: Bool {
+        viewModel.settings.isEnabled
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Spacing.l) {
-                    if isCompact {
-                        // Landscape: the curve and the bands on the left, the presets beside them.
-                        HStack(alignment: .top, spacing: Spacing.xl) {
-                            VStack(spacing: Spacing.l) {
-                                curve.frame(height: 150)
-                                if showsBands {
-                                    BandSlidersView(viewModel: viewModel)
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            chips(wrapped: true)
-                                .frame(width: 290)
-                        }
-                        .padding(.horizontal, Spacing.screenMargin)
+                Group {
+                    if verticalSizeClass == .compact {
+                        landscape
                     } else {
-                        curve
-                            .frame(height: 170)
-                            .padding(.horizontal, Spacing.screenMargin)
-                        chips(wrapped: false)
-                        if showsBands {
-                            BandSlidersView(viewModel: viewModel)
-                                .padding(.horizontal, Spacing.screenMargin)
-                        }
+                        portrait
                     }
                 }
-                .padding(.vertical, Spacing.s)
+                .frame(maxWidth: Self.maxContentWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, Spacing.screenMargin)
+                .padding(.top, Spacing.s)
+                .padding(.bottom, Spacing.xl)
             }
+            .scrollBounceBehavior(.basedOnSize)
+            .background(GroupedColor.background)
             .navigationTitle(Text("Equalizer", bundle: .module))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                // The switch sits in the bar next to the title instead of a row of its own: it stays
-                // close to its label in landscape and leaves the medium detent to the curve and presets.
-                ToolbarItem(placement: .topBarLeading) {
-                    Toggle(isOn: Binding(get: { viewModel.settings.isEnabled }, set: { viewModel.setEnabled($0) })) {
-                        Text("Equalizer", bundle: .module)
-                    }
-                    // Toolbars render toggles as buttons by default.
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "Done", bundle: .module)) { dismiss() }
                 }
             }
         }
-        .presentationDetents([.medium, .large], selection: $detent)
+        // The player stays visible above; everything is reachable by scrolling, nothing hides behind a detent.
+        .presentationDetents([.fraction(0.9)])
         .presentationDragIndicator(.visible)
         .presetEditAlerts(viewModel: viewModel, edit: $edit)
         .task { await viewModel.start() }
     }
 
-    private var curve: some View {
-        EQCurveView(
-            gains: viewModel.settings.gains,
-            isEnabled: viewModel.settings.isEnabled,
-            onChange: { band, gain in viewModel.setGain(band: band, gain: gain) },
-            onEditingChanged: { viewModel.setEditing($0) }
-        )
+    // MARK: - Layouts
+
+    private var portrait: some View {
+        VStack(spacing: Spacing.xl) {
+            enabledSection
+            curveCard
+            presetsSection
+            bandsSection
+        }
     }
 
-    private func chips(wrapped: Bool) -> some View {
-        PresetChipsView(viewModel: viewModel, edit: $edit, isWrapped: wrapped)
+    private var landscape: some View {
+        HStack(alignment: .top, spacing: Spacing.l) {
+            VStack(spacing: Spacing.xl) {
+                curveCard
+                bandsSection
+            }
+            .frame(maxWidth: .infinity)
+            VStack(spacing: Spacing.xl) {
+                enabledSection
+                presetsSection
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Sections
+
+    private var enabledSection: some View {
+        GroupedSection {
+            Toggle(isOn: Binding(get: { isEnabled }, set: { viewModel.setEnabled($0) })) {
+                Text("Equalizer", bundle: .module)
+            }
+            .padding(.horizontal, Spacing.l)
+            .padding(.vertical, Spacing.s)
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("equalizer.enabled")
+        } footer: {
+            if !isEnabled {
+                // Applying a preset turns the equalizer on (`ApplyEQPresetUseCase`), so the chips stay active.
+                Text("Choosing a preset turns the equalizer on.", bundle: .module)
+            }
+        }
+    }
+
+    private var curveCard: some View {
+        GroupedSection {
+            EQCurveView(
+                gains: viewModel.settings.gains,
+                isEnabled: isEnabled,
+                onChange: { band, gain in viewModel.setGain(band: band, gain: gain) },
+                onEditingChanged: { viewModel.setEditing($0) }
+            )
+            .frame(height: verticalSizeClass == .compact ? 140 : 160)
+            .padding(.vertical, Spacing.s)
+            // Off: let drags scroll the sheet instead of being swallowed by the curve.
+            .allowsHitTesting(isEnabled)
+        }
+    }
+
+    private var presetsSection: some View {
+        GroupedSection {
+            PresetChipsView(viewModel: viewModel, edit: $edit)
+        } header: {
+            Text("Presets", bundle: .module)
+        }
+    }
+
+    private var bandsSection: some View {
+        GroupedSection {
+            BandSlidersView(viewModel: viewModel)
+                .padding(Spacing.m)
+                .disabled(!isEnabled)
+                .opacity(isEnabled ? 1 : 0.4)
+                .allowsHitTesting(isEnabled)
+        } header: {
+            Text("Bands", bundle: .module)
+        }
+    }
+}
+
+// MARK: - Grouped style
+
+private enum GroupedColor {
+    static let background = Color(uiColor: .systemGroupedBackground)
+    static let card = Color(uiColor: .secondarySystemGroupedBackground)
+}
+
+/// An inset-grouped section like Settings: an optional header, a rounded card and an optional footer.
+private struct GroupedSection<Content: View, Header: View, Footer: View>: View {
+    @ViewBuilder let content: Content
+    @ViewBuilder let header: Header
+    @ViewBuilder let footer: Footer
+
+    init(
+        @ViewBuilder content: () -> Content,
+        @ViewBuilder header: () -> Header = { EmptyView() },
+        @ViewBuilder footer: () -> Footer = { EmptyView() }
+    ) {
+        self.content = content()
+        self.header = header()
+        self.footer = footer()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.s) {
+            header
+                .font(.footnote)
+                .textCase(.uppercase)
+                .foregroundStyle(SemanticColor.textSecondary)
+                .padding(.horizontal, Spacing.l)
+                .accessibilityAddTraits(.isHeader)
+            content
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(GroupedColor.card, in: RoundedRectangle(cornerRadius: Radius.m, style: .continuous))
+            footer
+                .font(.footnote)
+                .foregroundStyle(SemanticColor.textSecondary)
+                .padding(.horizontal, Spacing.l)
+        }
     }
 }

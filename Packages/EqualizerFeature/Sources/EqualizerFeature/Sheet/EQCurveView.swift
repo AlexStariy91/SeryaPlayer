@@ -23,15 +23,21 @@ struct EQCurveView: View {
             .contentShape(Rectangle())
             .gesture(dragGesture(size: proxy.size))
         }
-        .frame(minHeight: 150)
+        .frame(minHeight: 120)
         .frame(maxWidth: .infinity)
-        .opacity(isEnabled ? 1 : 0.45)
+        // The frequency labels are drawn into the canvas at fixed positions.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .opacity(isEnabled ? 1 : 0.4)
         .accessibilityElement()
         .accessibilityLabel(Text("Equalizer curve", bundle: .module))
         .accessibilityHint(Text("Use the band sliders to adjust gains", bundle: .module))
     }
 
     // MARK: - Geometry
+
+    static func isDrawable(_ size: CGSize) -> Bool {
+        size.width.isFinite && size.height.isFinite && size.width > 0 && size.height > 0
+    }
 
     private func plot(for size: CGSize) -> CGRect {
         CGRect(
@@ -65,7 +71,7 @@ struct EQCurveView: View {
     private func dragGesture(size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
-                guard isEnabled else { return }
+                guard isEnabled, Self.isDrawable(size) else { return }
                 let plot = plot(for: size)
                 if activeBand == nil {
                     onEditingChanged(true)
@@ -83,6 +89,8 @@ struct EQCurveView: View {
     // MARK: - Drawing
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
+        // The sheet lays out once at zero (or unresolved) size while it is presented; nothing to draw then.
+        guard Self.isDrawable(size) else { return }
         let plot = plot(for: size)
         drawGrid(in: &context, plot: plot)
         let points = gains.enumerated().map { point(band: $0.offset, gain: $0.element, in: plot) }
