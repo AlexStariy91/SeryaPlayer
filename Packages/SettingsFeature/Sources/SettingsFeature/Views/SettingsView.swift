@@ -21,7 +21,6 @@ struct SettingsView<PresetManager: View>: View {
                 aboutSection
             }
             .navigationTitle(Text("Settings", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.observeSettings() }
             .task { await viewModel.refreshSizes() }
             .alert(
