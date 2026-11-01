@@ -5,7 +5,6 @@ import SwiftUI
 /// The library root or one folder: subfolders (reorderable), songs, multi-select and batch actions.
 struct FolderBrowserView: View {
     @State private var viewModel: FolderBrowserViewModel
-    @State private var editMode: EditMode = .inactive
 
     init(folderID: Folder.ID?, context: FoldersContext) {
         _viewModel = State(initialValue: FolderBrowserViewModel(folderID: folderID, context: context))
@@ -16,7 +15,14 @@ struct FolderBrowserView: View {
     }
 
     private var isEditing: Bool {
-        editMode.isEditing
+        viewModel.isEditing
+    }
+
+    private var editMode: Binding<EditMode> {
+        Binding(
+            get: { viewModel.isEditing ? .active : .inactive },
+            set: { viewModel.isEditing = $0.isEditing }
+        )
     }
 
     var body: some View {
@@ -44,11 +50,12 @@ struct FolderBrowserView: View {
         .overlay { emptyState }
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(viewModel.folderID == nil ? .large : .inline)
-        .environment(\.editMode, $editMode)
+        .environment(\.editMode, editMode)
         .toolbar { toolbar }
-        .onChange(of: editMode) { _, mode in
-            if !mode.isEditing {
-                viewModel.selection = []
+        .onChange(of: viewModel.isEmpty) { _, isEmpty in
+            // Deleted elsewhere (or by a batch here): nothing is left to select.
+            if isEmpty {
+                viewModel.isEditing = false
             }
         }
         .modifier(FolderDialogs(viewModel: viewModel))
@@ -203,12 +210,12 @@ struct FolderBrowserView: View {
                 .accessibilityIdentifier("folders.actions")
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(String(localized: "Done", bundle: .module)) { editMode = .inactive }
+                Button(String(localized: "Done", bundle: .module)) { viewModel.isEditing = false }
                     .accessibilityIdentifier("folders.done")
             }
         } else {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(String(localized: "Select", bundle: .module)) { editMode = .active }
+                Button(String(localized: "Select", bundle: .module)) { viewModel.isEditing = true }
                     .disabled(viewModel.isEmpty || viewModel.isSearching)
                     .accessibilityIdentifier("folders.select")
             }

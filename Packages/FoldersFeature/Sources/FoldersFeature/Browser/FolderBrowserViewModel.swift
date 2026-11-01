@@ -28,6 +28,15 @@ final class FolderBrowserViewModel {
     let folderID: Folder.ID?
     private let context: FoldersContext
 
+    /// Select mode. Ending it drops the selection; a finished batch delete or move ends it, like Apple's apps.
+    var isEditing = false {
+        didSet {
+            if !isEditing {
+                selection = []
+            }
+        }
+    }
+
     var selection: Set<FolderItem> = []
     var namePrompt: NamePrompt?
     var nameText = ""
@@ -212,7 +221,7 @@ final class FolderBrowserViewModel {
                 try await self.context.deleteFolder(id: id, policy: policy)
             }
         }
-        selection = []
+        isEditing = false
     }
 
     // MARK: - Move
@@ -246,7 +255,7 @@ final class FolderBrowserViewModel {
                 try await self.context.moveFolder(id: id, toParent: destination)
             }
         }
-        selection = []
+        isEditing = false
     }
 
     // MARK: - Reorder

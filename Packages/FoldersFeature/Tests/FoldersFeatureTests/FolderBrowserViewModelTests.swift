@@ -195,6 +195,44 @@ struct FolderBrowserViewModelTests {
         #expect(try await deps.tracks.tracks(inFolder: nil, includeSubfolders: false).isEmpty)
     }
 
+    @Test func batchDeleteOfEverythingEndsSelectMode() async throws {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = Set(viewModel.subfolders.map { .folder($0.id) } + viewModel.tracks.map { .track($0.id) })
+
+        await viewModel.requestDelete(items: viewModel.selection)
+        try await viewModel.performDeletion(#require(viewModel.pendingDeletion), policy: .deleteTracks)
+
+        #expect(!viewModel.isEditing)
+        #expect(viewModel.selection.isEmpty)
+        #expect(try await fixture.deps.tracks.tracks(inFolder: nil, includeSubfolders: true).isEmpty)
+    }
+
+    @Test func batchDeleteOfSomeItemsAlsoEndsSelectMode() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = [.folder(jazz.id)]
+
+        await viewModel.requestDelete(items: viewModel.selection)
+
+        #expect(!viewModel.isEditing)
+        #expect(viewModel.selection.isEmpty)
+        #expect(!viewModel.isEmpty)
+    }
+
+    @Test func leavingSelectModeClearsTheSelection() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = [.folder(rock.id)]
+
+        viewModel.isEditing = false
+
+        #expect(viewModel.selection.isEmpty)
+    }
+
     @Test func moveTracksAndFoldersTogether() async throws {
         let fixture = await makeFixture()
         let deps = fixture.deps
