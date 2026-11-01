@@ -119,6 +119,26 @@ struct SnapshotTests {
         }
     }
 
+    @Test func fullPlayerSleepTimerCountdown() async {
+        let player = RecordingPlayer(snapshot: PlaybackSnapshot(
+            nowPlaying: makeQueue(1)[0],
+            isPlaying: true,
+            queue: makeQueue(1),
+            currentIndex: 0
+        ))
+        let viewModel = PlayerViewModel(
+            player: player,
+            sleepTimer: StubSleepTimer(state: .countdown(deadline: Date().addingTimeInterval(14 * 60 + 59.5))),
+            artworkStore: StubArtworkStore(),
+            settingsRepository: InMemorySettingsRepository(),
+            colorExtractor: { _ in [.indigo, .teal] }
+        )
+        await viewModel.observePlayback()
+        check("countdown", size: CGSize(width: 393, height: 852)) {
+            FullPlayerView(viewModel: viewModel) { EmptyView() }
+        }
+    }
+
     @Test func queue() async {
         let viewModel = await makeViewModel()
         check("queue", size: CGSize(width: 393, height: 600)) {

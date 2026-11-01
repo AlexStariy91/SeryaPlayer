@@ -79,24 +79,34 @@ private struct ToggleIconButton: View {
 private struct IconButtonLabel: View {
     let systemImage: String
     let isOn: Bool
+    /// Shown instead of the icon, on a wider highlight (the sleep timer countdown).
+    var text: String?
 
     var body: some View {
-        Image(systemName: systemImage)
-            .font(.body.weight(.semibold))
-            .contentTransition(.symbolEffect(.replace))
-            .frame(width: 44, height: 44)
-            .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-            .background {
-                if isOn {
-                    RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
-                        .fill(.white.opacity(0.2))
-                }
+        Group {
+            if let text {
+                Text(text)
+                    .font(.footnote.weight(.semibold).monospacedDigit())
+            } else {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.semibold))
+                    .contentTransition(.symbolEffect(.replace))
             }
+        }
+        // A fixed width, so the digits changing don't move the other buttons.
+        .frame(width: text == nil ? 44 : 64, height: 44)
+        .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+        .background {
+            if isOn {
+                RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
+                    .fill(.white.opacity(0.2))
+            }
+        }
     }
 }
 
-/// The sleep timer menu. While a timer runs, the icon is filled and a caption under it shows the remaining
-/// time (mm:ss) or "End"; the button keeps its 44 pt size, so the row doesn't move.
+/// The sleep timer menu. A countdown shows the remaining time (mm:ss) on the highlight instead of the icon;
+/// End of Track shows the filled icon on the highlight.
 struct SleepTimerButton: View {
     let viewModel: PlayerViewModel
 
@@ -117,11 +127,11 @@ struct SleepTimerButton: View {
                     }
                 }
             } label: {
-                IconButtonLabel(systemImage: state.isActive ? "moon.zzz.fill" : "moon.zzz", isOn: state.isActive)
-                    .offset(y: state.isActive ? -4 : 0)
-                    .overlay(alignment: .bottom) {
-                        caption(at: context.date)
-                    }
+                IconButtonLabel(
+                    systemImage: state.isActive ? "moon.zzz.fill" : "moon.zzz",
+                    isOn: state.isActive,
+                    text: countdownText(at: context.date)
+                )
             }
             .menuIndicator(.hidden)
             // A Menu label takes the accent colour; the other buttons in the row are white or grey.
@@ -152,22 +162,9 @@ struct SleepTimerButton: View {
         }
     }
 
-    @ViewBuilder
-    private func caption(at date: Date) -> some View {
-        switch state {
-        case .off:
-            EmptyView()
-        case let .countdown(deadline):
-            Text(Self.format(deadline.timeIntervalSince(date)))
-                .font(.system(size: 9, weight: .semibold).monospacedDigit())
-                .foregroundStyle(.primary)
-                .padding(.bottom, 4)
-        case .endOfTrack:
-            Text("End", bundle: .module)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(.primary)
-                .padding(.bottom, 4)
-        }
+    private func countdownText(at date: Date) -> String? {
+        guard case let .countdown(deadline) = state else { return nil }
+        return Self.format(deadline.timeIntervalSince(date))
     }
 
     private func accessibilityValue(at date: Date) -> Text {

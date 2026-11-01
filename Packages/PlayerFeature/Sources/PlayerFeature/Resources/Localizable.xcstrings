@@ -51,16 +51,6 @@
         }
       }
     },
-    "End" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Конец"
-          }
-        }
-      }
-    },
     "End of Track" : {
       "localizations" : {
         "ru" : {
