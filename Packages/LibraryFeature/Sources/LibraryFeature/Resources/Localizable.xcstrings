@@ -799,16 +799,6 @@
         }
       }
     },
-    "Settings" : {
-      "localizations" : {
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Настройки"
-          }
-        }
-      }
-    },
     "Shuffle" : {
       "localizations" : {
         "ru" : {

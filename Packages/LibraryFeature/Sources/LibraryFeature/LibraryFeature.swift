@@ -26,12 +26,11 @@ public extension LibraryDependencies {
 }
 
 public enum LibraryFeature {
-    /// The Library tab: a `NavigationStack` titled "Library" with import and settings in the toolbar.
+    /// The Library tab: a `NavigationStack` titled "Library" with import in the toolbar.
     @MainActor
     public static func makeRootView(
-        dependencies: some LibraryDependencies,
-        onOpenSettings: @escaping () -> Void
+        dependencies: some LibraryDependencies
     ) -> some View {
-        LibraryRootView(context: LibraryContext(dependencies: dependencies), onOpenSettings: onOpenSettings)
+        LibraryRootView(context: LibraryContext(dependencies: dependencies))
     }
 }
