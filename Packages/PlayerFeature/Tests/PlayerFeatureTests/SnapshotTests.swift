@@ -19,6 +19,7 @@ struct SnapshotTests {
         let player = RecordingPlayer(snapshot: PlaybackSnapshot(nowPlaying: tracks[1], isPlaying: true, queue: tracks, currentIndex: 1))
         let viewModel = PlayerViewModel(
             player: player,
+            sleepTimer: StubSleepTimer(),
             artworkStore: StubArtworkStore(),
             settingsRepository: InMemorySettingsRepository(),
             colorExtractor: { _ in [.indigo, .pink, .orange, .teal] }
@@ -104,6 +105,7 @@ struct SnapshotTests {
         ))
         let pausedViewModel = PlayerViewModel(
             player: paused,
+            sleepTimer: StubSleepTimer(state: .endOfTrack),
             artworkStore: StubArtworkStore(),
             settingsRepository: InMemorySettingsRepository(settings: AppSettings(equalizer: EQSettings(
                 isEnabled: true,

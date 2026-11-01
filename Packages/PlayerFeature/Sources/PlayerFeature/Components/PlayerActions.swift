@@ -2,7 +2,7 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// Bottom row: shuffle, repeat, AirPlay, equalizer, queue.
+/// Bottom row: shuffle, repeat, AirPlay, equalizer, sleep timer, queue.
 struct PlayerActions: View {
     let viewModel: PlayerViewModel
     let onShowEqualizer: () -> Void
@@ -39,6 +39,8 @@ struct PlayerActions: View {
                 .accessibilityLabel(Text("Equalizer", bundle: .module))
                 .accessibilityValue(viewModel.isEqualizerActive ? Text("On", bundle: .module) : Text("Off", bundle: .module))
             Spacer()
+            SleepTimerButton(viewModel: viewModel)
+            Spacer()
             ToggleIconButton(systemImage: "list.bullet", isOn: false, action: onShowQueue)
                 .accessibilityLabel(Text("Queue", bundle: .module))
         }
@@ -67,19 +69,118 @@ private struct ToggleIconButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
-                .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-                .background {
-                    if isOn {
-                        RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
-                            .fill(.white.opacity(0.2))
-                    }
-                }
+            IconButtonLabel(systemImage: systemImage, isOn: isOn)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+}
+
+private struct IconButtonLabel: View {
+    let systemImage: String
+    let isOn: Bool
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.body.weight(.semibold))
+            .contentTransition(.symbolEffect(.replace))
+            .frame(width: 44, height: 44)
+            .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+            .background {
+                if isOn {
+                    RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
+                        .fill(.white.opacity(0.2))
+                }
+            }
+    }
+}
+
+/// The sleep timer menu. While a timer runs, the icon is filled and a caption under it shows the remaining
+/// time (mm:ss) or "End"; the button keeps its 44 pt size, so the row doesn't move.
+struct SleepTimerButton: View {
+    let viewModel: PlayerViewModel
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1, paused: !isCountdown)) { context in
+            Menu {
+                ForEach(SleepTimerOption.all, id: \.self) { option in
+                    Button {
+                        viewModel.startSleepTimer(option)
+                    } label: {
+                        optionTitle(option)
+                    }
+                }
+                if state.isActive {
+                    Divider()
+                    Button(role: .destructive, action: viewModel.cancelSleepTimer) {
+                        Text("Off", bundle: .module)
+                    }
+                }
+            } label: {
+                IconButtonLabel(systemImage: state.isActive ? "moon.zzz.fill" : "moon.zzz", isOn: state.isActive)
+                    .offset(y: state.isActive ? -4 : 0)
+                    .overlay(alignment: .bottom) {
+                        caption(at: context.date)
+                    }
+            }
+            .menuIndicator(.hidden)
+            // A Menu label takes the accent colour; the other buttons in the row are white or grey.
+            .tint(state.isActive ? .primary : .secondary)
+            .accessibilityLabel(Text("Sleep Timer", bundle: .module))
+            .accessibilityValue(accessibilityValue(at: context.date))
+            .accessibilityAddTraits(state.isActive ? .isSelected : [])
+        }
+        .animation(.snappy, value: state.isActive)
+    }
+
+    private var state: SleepTimerState {
+        viewModel.sleepTimerState
+    }
+
+    private var isCountdown: Bool {
+        if case .countdown = state {
+            true
+        } else {
+            false
+        }
+    }
+
+    private func optionTitle(_ option: SleepTimerOption) -> Text {
+        switch option {
+        case let .minutes(minutes): Text("\(minutes) min", bundle: .module)
+        case .endOfTrack: Text("End of Track", bundle: .module)
+        }
+    }
+
+    @ViewBuilder
+    private func caption(at date: Date) -> some View {
+        switch state {
+        case .off:
+            EmptyView()
+        case let .countdown(deadline):
+            Text(Self.format(deadline.timeIntervalSince(date)))
+                .font(.system(size: 9, weight: .semibold).monospacedDigit())
+                .foregroundStyle(.primary)
+                .padding(.bottom, 4)
+        case .endOfTrack:
+            Text("End", bundle: .module)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.primary)
+                .padding(.bottom, 4)
+        }
+    }
+
+    private func accessibilityValue(at date: Date) -> Text {
+        switch state {
+        case .off: Text("Off", bundle: .module)
+        case let .countdown(deadline): Text(Self.format(deadline.timeIntervalSince(date)))
+        case .endOfTrack: Text("End of Track", bundle: .module)
+        }
+    }
+
+    /// mm:ss, rounded up so the caption reads 0:01 until the very end.
+    static func format(_ remaining: TimeInterval) -> String {
+        let seconds = max(Int(remaining.rounded(.up)), 0)
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }

@@ -44,6 +44,7 @@
             settings.equalizer = EQSettings(isEnabled: true, gains: [3, 2, 1, 0, 0, 0, 1, 2, 3, 3])
             let viewModel = PlayerViewModel(
                 player: player,
+                sleepTimer: PreviewSleepTimer(),
                 artworkStore: PreviewArtworkStore(),
                 settingsRepository: PreviewSettingsRepository(settings: settings),
                 colorExtractor: { _ in [] }
@@ -119,6 +120,30 @@
         func apply(_: EQSettings) {}
         func restore() async {}
         func persist() async {}
+    }
+
+    @MainActor
+    final class PreviewSleepTimer: SleepTimerControlling {
+        private(set) var state: SleepTimerState
+
+        init(state: SleepTimerState = .off) {
+            self.state = state
+        }
+
+        func states() -> AsyncStream<SleepTimerState> {
+            AsyncStream { $0.yield(state) }
+        }
+
+        func start(_ option: SleepTimerOption) {
+            state = switch option {
+            case let .minutes(minutes): .countdown(deadline: Date().addingTimeInterval(TimeInterval(minutes) * 60))
+            case .endOfTrack: .endOfTrack
+            }
+        }
+
+        func cancel() {
+            state = .off
+        }
     }
 
     struct PreviewArtworkStore: ArtworkStoring {

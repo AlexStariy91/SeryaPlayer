@@ -76,6 +76,34 @@ final class RecordingPlayer: PlaybackControlling {
     func persist() async {}
 }
 
+/// Holds the state and records what the view model asks for.
+@MainActor
+final class StubSleepTimer: SleepTimerControlling {
+    private(set) var state: SleepTimerState
+    private(set) var started: [SleepTimerOption] = []
+    private(set) var cancelCount = 0
+
+    init(state: SleepTimerState = .off) {
+        self.state = state
+    }
+
+    func states() -> AsyncStream<SleepTimerState> {
+        let state = state
+        return AsyncStream { continuation in
+            continuation.yield(state)
+            continuation.finish()
+        }
+    }
+
+    func start(_ option: SleepTimerOption) {
+        started.append(option)
+    }
+
+    func cancel() {
+        cancelCount += 1
+    }
+}
+
 /// Returns `/art/<key>-<size>` URLs, or nil for every key when `returnsNil`; counts lookups.
 final class StubArtworkStore: ArtworkStoring {
     private let lookups = Mutex(0)
