@@ -52,7 +52,12 @@ targets:
         CFBundleLocalizations: [en, ru]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        UILaunchScreen: {}
+        # Native launch screen: the icon's background color with its waveform centered.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+        # Light status bar on the dark launch screen only: view controllers still pick their own style.
+        UIStatusBarStyle: UIStatusBarStyleLightContent
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
