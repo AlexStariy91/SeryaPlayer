@@ -31,7 +31,7 @@ public final class NowPlayingCenter: NowPlayingPublishing {
             MPMediaItemPropertyPlaybackDuration: info.duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: info.position,
             MPNowPlayingInfoPropertyPlaybackRate: info.rate,
-            MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: info.defaultRate,
             MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
         ]
         if let artwork = artwork(for: info.artworkURL) ?? placeholder {

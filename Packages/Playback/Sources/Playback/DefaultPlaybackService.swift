@@ -8,6 +8,10 @@ import os
 /// starts for a loaded file, i.e. once per `load` generation. Restoring a paused queue doesn't count;
 /// pressing Play on it does. Repeat One counts every repetition; "Previous" past 3 s (a restart via
 /// seek) doesn't.
+///
+/// Position memory (`PositionMemory`): a track of 20 minutes or longer is saved when it stops being the loaded
+/// one (another track, the end of the queue, background) and resumed when it is loaded again without an
+/// explicit position. Positions near the start or the end are dropped instead.
 @MainActor
 public final class DefaultPlaybackService: PlaybackControlling {
     public private(set) var snapshot = PlaybackSnapshot() {
@@ -25,6 +29,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
     private let engine: any PlaybackEngine
     private let trackRepository: any TrackRepository
     private let stateRepository: any PlaybackStateRepository
+    private let positionMemory: PositionMemory?
     private let nowPlaying: any NowPlayingPublishing
     private let urlForTrack: @Sendable (Track) -> URL
     private let artworkURLForTrack: @Sendable (Track) async -> URL?
@@ -40,6 +45,8 @@ public final class DefaultPlaybackService: PlaybackControlling {
     private var rate: Float = 1
     /// Generation returned by the last `engine.load`; `.didFinish` with any other value is stale.
     private var loadedGeneration: Int?
+    /// The track behind `loadedGeneration`, whose position is saved when it is replaced.
+    private var loadedTrackID: Track.ID?
     private var countedGeneration: Int?
     private var resumeAfterInterruption = false
     private var artwork: (trackID: Track.ID, url: URL?)?
@@ -49,12 +56,14 @@ public final class DefaultPlaybackService: PlaybackControlling {
     /// - Parameters:
     ///   - urlForTrack: absolute file URL for a track (resolves `relativePath` against the library root).
     ///   - artworkURLForTrack: large artwork for Now Playing; may return nil.
+    ///   - positionRepository: remembers where long tracks were left; `nil` turns the memory off.
     ///   - randomGenerator: used for shuffling; inject a seeded generator in tests.
     ///   - sleepTimer: defaults to a real-time timer on `engine`; inject one with a fake clock in tests.
     public init(
         engine: any PlaybackEngine,
         trackRepository: any TrackRepository,
         stateRepository: any PlaybackStateRepository,
+        positionRepository: (any TrackPositionRepository)? = nil,
         nowPlaying: any NowPlayingPublishing,
         urlForTrack: @escaping @Sendable (Track) -> URL,
         artworkURLForTrack: @escaping @Sendable (Track) async -> URL? = { _ in nil },
@@ -66,6 +75,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
         self.sleepTimer = sleepTimer ?? SleepTimer(engine: engine)
         self.trackRepository = trackRepository
         self.stateRepository = stateRepository
+        self.positionMemory = positionRepository.map(PositionMemory.init)
         self.nowPlaying = nowPlaying
         self.urlForTrack = urlForTrack
         self.artworkURLForTrack = artworkURLForTrack
@@ -111,7 +121,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
         guard tracks.indices.contains(index) else { return }
         remember(tracks)
         queue.start(with: tracks.map(\.id), at: index, shuffled: shuffled, using: &randomGenerator)
-        loadCurrent(at: 0, autoplay: true)
+        loadCurrent(autoplay: true)
     }
 
     public func togglePlayPause() {
@@ -124,7 +134,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
             queue.jump(to: 0)
         }
         if loadedGeneration == nil {
-            loadCurrent(at: 0, autoplay: true)
+            loadCurrent(autoplay: true)
         } else {
             startEngine()
         }
@@ -132,7 +142,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func next() {
         if queue.advance(userInitiated: true) != nil {
-            loadCurrent(at: 0, autoplay: isPlaying)
+            loadCurrent(autoplay: isPlaying)
         } else {
             finishQueue()
         }
@@ -145,7 +155,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
             seek(to: 0)
             return
         }
-        loadCurrent(at: 0, autoplay: isPlaying)
+        loadCurrent(autoplay: isPlaying)
     }
 
     public func seek(to time: TimeInterval) {
@@ -196,7 +206,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
         if queue.current == nil {
             stopPlayback()
         } else if queue.current != currentBefore || currentIndexBefore.map(offsets.contains) == true {
-            loadCurrent(at: 0, autoplay: isPlaying)
+            loadCurrent(autoplay: isPlaying)
         } else {
             refresh()
         }
@@ -204,6 +214,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func removeFromQueue(trackIDs: Set<Track.ID>) async {
         guard !trackIDs.isEmpty else { return }
+        positionMemory?.repository.remove(trackIDs: trackIDs)
         for id in trackIDs {
             tracksByID[id] = nil
         }
@@ -219,7 +230,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
         if queue.current == nil {
             stopPlayback()
         } else if currentWasRemoved {
-            loadCurrent(at: 0, autoplay: wasPlaying)
+            loadCurrent(autoplay: wasPlaying)
         } else {
             refresh()
         }
@@ -229,12 +240,12 @@ public final class DefaultPlaybackService: PlaybackControlling {
     public func jump(toQueueIndex index: Int) {
         guard queue.items.indices.contains(index) else { return }
         queue.jump(to: index)
-        loadCurrent(at: 0, autoplay: true)
+        loadCurrent(autoplay: true)
     }
 
     public func setRate(_ newRate: Float) {
-        rate = newRate
-        engine.setRate(newRate)
+        rate = PlaybackRate.nearestOption(to: newRate)
+        engine.setRate(rate)
         refresh()
     }
 
@@ -261,6 +272,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
     }
 
     public func persist() async {
+        savePosition(ofLoadedTrackAt: engine.currentTime)
         let state = queue.state(position: loadedGeneration == nil ? 0 : engine.currentTime)
         do {
             try await stateRepository.save(state)
@@ -275,10 +287,15 @@ public final class DefaultPlaybackService: PlaybackControlling {
         switch event {
         case let .didFinish(generation):
             guard generation == loadedGeneration else { return }
+            // Played to the end: there is nothing to resume.
+            if let id = loadedTrackID {
+                positionMemory?.repository.remove(trackIDs: [id])
+                loadedTrackID = nil
+            }
             // "End of Track": move on to the next item, but leave it paused.
             let autoplay = !sleepTimer.trackDidEnd()
             if queue.advance(userInitiated: false) != nil {
-                loadCurrent(at: 0, autoplay: autoplay)
+                loadCurrent(autoplay: autoplay)
             } else {
                 finishQueue()
             }
@@ -324,16 +341,19 @@ public final class DefaultPlaybackService: PlaybackControlling {
         if queue.current == nil {
             queue.jump(to: 0)
         }
-        loadCurrent(at: 0, autoplay: true)
+        loadCurrent(autoplay: true)
     }
 
-    /// Loads `queue.current`. A file that fails to load is skipped (once per queue item, so a queue
-    /// of broken files ends instead of looping forever).
-    private func loadCurrent(at position: TimeInterval, autoplay: Bool) {
+    /// Loads `queue.current`. Without an explicit `position` a long track resumes where it was left.
+    /// A file that fails to load is skipped (once per queue item, so a queue of broken files ends
+    /// instead of looping forever).
+    private func loadCurrent(at position: TimeInterval? = nil, autoplay: Bool) {
+        commitPosition()
         var attempts = 0
         while let id = queue.current, let track = tracksByID[id] {
             do {
-                loadedGeneration = try engine.load(url: urlForTrack(track), startingAt: position)
+                loadedGeneration = try engine.load(url: urlForTrack(track), startingAt: position ?? positionMemory?.resumePosition(for: track) ?? 0)
+                loadedTrackID = track.id
                 isPlaying = false
                 if autoplay {
                     startEngine()
@@ -365,26 +385,9 @@ public final class DefaultPlaybackService: PlaybackControlling {
         refresh()
     }
 
-    private func markPlayed(_ id: Track.ID) {
-        let date = now()
-        if var track = tracksByID[id] {
-            track.playCount += 1
-            track.lastPlayedAt = date
-            tracksByID[id] = track
-        }
-        let repository = trackRepository
-        Task {
-            do {
-                try await repository.markPlayed(id: id, at: date)
-            } catch {
-                Logger(subsystem: "com.starodub.SeryaPlayer", category: "PlaybackService")
-                    .error("Failed to mark a track as played: \(error.localizedDescription)")
-            }
-        }
-    }
-
     /// End of the queue with repeat off: rewind to the first item, paused, like Apple Music.
     private func finishQueue() {
+        commitPosition()
         sleepTimer.playbackDidStop()
         engine.stop()
         isPlaying = false
@@ -393,10 +396,11 @@ public final class DefaultPlaybackService: PlaybackControlling {
             return
         }
         queue.jump(to: 0)
-        loadCurrent(at: 0, autoplay: false)
+        loadCurrent(autoplay: false)
     }
 
     private func stopPlayback() {
+        commitPosition()
         sleepTimer.playbackDidStop()
         engine.stop()
         isPlaying = false
@@ -445,7 +449,8 @@ public final class DefaultPlaybackService: PlaybackControlling {
             artworkURL: artwork?.url,
             duration: engine.duration > 0 ? engine.duration : track.duration,
             position: engine.currentTime,
-            rate: isPlaying ? rate : 0
+            rate: isPlaying ? rate : 0,
+            defaultRate: rate
         ))
     }
 
@@ -462,6 +467,39 @@ public final class DefaultPlaybackService: PlaybackControlling {
 }
 
 extension DefaultPlaybackService {
+    private func markPlayed(_ id: Track.ID) {
+        let date = now()
+        if var track = tracksByID[id] {
+            track.playCount += 1
+            track.lastPlayedAt = date
+            tracksByID[id] = track
+        }
+        let repository = trackRepository
+        Task {
+            do {
+                try await repository.markPlayed(id: id, at: date)
+            } catch {
+                Logger(subsystem: "com.starodub.SeryaPlayer", category: "PlaybackService")
+                    .error("Failed to mark a track as played: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    // MARK: - Position memory
+
+    /// Saves (or clears) the position of the loaded track without unloading it.
+    private func savePosition(ofLoadedTrackAt position: TimeInterval) {
+        // A deleted track is gone from `tracksByID`; don't bring its entry back.
+        guard let memory = positionMemory, loadedGeneration != nil, let id = loadedTrackID, let track = tracksByID[id] else { return }
+        memory.record(position, for: track)
+    }
+
+    /// The loaded track is about to stop being current: remember where it was, then forget it.
+    private func commitPosition() {
+        savePosition(ofLoadedTrackAt: engine.currentTime)
+        loadedTrackID = nil
+    }
+
     /// Removes tracks deleted since the state was saved and keeps the current item when possible.
     /// Returns the cleaned state and whether the saved position still applies to the current item.
     static func dropMissingTracks(from state: PlaybackState, available: Set<Track.ID>) -> (PlaybackState, keptPosition: Bool) {
