@@ -21,68 +21,26 @@ struct FolderBrowserView: View {
 
     var body: some View {
         @Bindable var viewModel = viewModel
-        List(selection: $viewModel.selection) {
-            if viewModel.folderID != nil, viewModel.canPlay, !isEditing {
-                PlayShuffleButtons(
-                    isEnabled: true,
-                    onPlay: { viewModel.playAll(shuffled: false) },
-                    onShuffle: { viewModel.playAll(shuffled: true) }
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-            }
-            if !viewModel.subfolders.isEmpty {
-                Section {
-                    ForEach(viewModel.subfolders) { folder in
-                        NavigationLink(value: FoldersRoute.folder(folder.id)) {
-                            FolderRow(folder: folder, songCount: viewModel.songCount(in: folder))
-                        }
-                        .tag(FolderItem.folder(folder.id))
-                        .contextMenu { folderMenu(folder) }
-                        .swipeActions(edge: .trailing) {
-                            // No destructive role: SwiftUI would remove the row before the deletion is
-                            // confirmed, and the real removal then crashes the list.
-                            Button {
-                                Task { await viewModel.requestDelete(items: [.folder(folder.id)]) }
-                            } label: {
-                                Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
-                            }
-                            .tint(.red)
-                        }
-                    }
-                    .onMove { source, destination in
-                        Task { await viewModel.moveFolders(fromOffsets: source, toOffset: destination) }
-                    }
-                } header: {
-                    Text("Folders", bundle: .module)
-                }
-            }
-            if !viewModel.tracks.isEmpty {
-                Section {
-                    ForEach(viewModel.tracks) { track in
-                        FolderTrackRow(
-                            track: track,
-                            nowPlaying: viewModel.nowPlaying(track.id),
-                            resolver: viewModel.artwork
-                        ) { viewModel.play(track) }
-                            .tag(FolderItem.track(track.id))
-                            .contextMenu { trackMenu(track) }
-                            .swipeActions(edge: .trailing) {
-                                // No destructive role: see the folder row above.
-                                Button {
-                                    Task { await viewModel.requestDelete(items: [.track(track.id)]) }
-                                } label: {
-                                    Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
-                                }
-                                .tint(.red)
-                            }
-                    }
-                } header: {
-                    Text("Songs", bundle: .module)
-                }
+        // Selection exists only while editing. Bound outside edit mode, the list mirrors it into the
+        // collection view's own selection: a tapped folder can stay highlighted after navigating back,
+        // and every cell pays for selection bookkeeping while scrolling.
+        List(selection: isEditing ? $viewModel.selection : nil) {
+            if let results = viewModel.searchResults, viewModel.isSearching {
+                searchContent(results)
+            } else {
+                browseContent
             }
         }
         .listStyle(.plain)
+        .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: searchPrompt)
+        .task(id: viewModel.searchKey) {
+            // Debounce: a newer keystroke cancels this task before it searches.
+            if viewModel.isSearching, viewModel.searchResults != nil {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+            }
+            await viewModel.search()
+        }
         .overlay { emptyState }
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(viewModel.folderID == nil ? .large : .inline)
@@ -97,8 +55,112 @@ struct FolderBrowserView: View {
     }
 
     @ViewBuilder
+    private var browseContent: some View {
+        if viewModel.folderID != nil, viewModel.canPlay, !isEditing {
+            PlayShuffleButtons(
+                isEnabled: true,
+                onPlay: { viewModel.playAll(shuffled: false) },
+                onShuffle: { viewModel.playAll(shuffled: true) }
+            )
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+        if !viewModel.subfolders.isEmpty {
+            Section {
+                ForEach(viewModel.subfolders) { folder in
+                    NavigationLink(value: FoldersRoute.folder(folder.id)) {
+                        FolderRow(folder: folder, songCount: viewModel.songCount(in: folder))
+                    }
+                    .tag(FolderItem.folder(folder.id))
+                    .contextMenu { folderMenu(folder) }
+                    .swipeActions(edge: .trailing) {
+                        // No destructive role: SwiftUI would remove the row before the deletion is
+                        // confirmed, and the real removal then crashes the list.
+                        Button {
+                            Task { await viewModel.requestDelete(items: [.folder(folder.id)]) }
+                        } label: {
+                            Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
+                        }
+                        .tint(.red)
+                    }
+                }
+                .onMove { source, destination in
+                    Task { await viewModel.moveFolders(fromOffsets: source, toOffset: destination) }
+                }
+            } header: {
+                Text("Folders", bundle: .module)
+            }
+        }
+        if !viewModel.tracks.isEmpty {
+            Section {
+                ForEach(viewModel.tracks) { track in
+                    FolderTrackRow(
+                        track: track,
+                        playback: viewModel.playback,
+                        resolver: viewModel.artwork,
+                        isEditing: isEditing
+                    ) { viewModel.play(track) }
+                        .tag(FolderItem.track(track.id))
+                        .contextMenu { trackMenu(track) }
+                        .swipeActions(edge: .trailing) {
+                            // No destructive role: see the folder row above.
+                            Button {
+                                Task { await viewModel.requestDelete(items: [.track(track.id)]) }
+                            } label: {
+                                Label(String(localized: "Delete", bundle: .module), systemImage: "trash")
+                            }
+                            .tint(.red)
+                        }
+                }
+            } header: {
+                Text("Songs", bundle: .module)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func searchContent(_ results: FolderSearchResults) -> some View {
+        if !results.folders.isEmpty {
+            Section {
+                ForEach(results.folders) { folder in
+                    NavigationLink(value: FoldersRoute.folder(folder.id)) {
+                        FolderRow(folder: folder, songCount: viewModel.songCount(in: folder))
+                    }
+                    .contextMenu { folderMenu(folder) }
+                }
+            } header: {
+                Text("Folders", bundle: .module)
+            }
+        }
+        if !results.tracks.isEmpty {
+            Section {
+                ForEach(results.tracks) { track in
+                    FolderTrackRow(
+                        track: track,
+                        playback: viewModel.playback,
+                        resolver: viewModel.artwork
+                    ) { viewModel.playSearchResult(track) }
+                        .contextMenu { trackMenu(track) }
+                }
+            } header: {
+                Text("Songs", bundle: .module)
+            }
+        }
+    }
+
+    private var searchPrompt: Text {
+        viewModel.folderID == nil
+            ? Text("Folders and Songs", bundle: .module)
+            : Text("Search in This Folder", bundle: .module)
+    }
+
+    @ViewBuilder
     private var emptyState: some View {
-        if viewModel.isMissing {
+        if viewModel.isSearching {
+            if viewModel.searchResults?.isEmpty == true {
+                ContentUnavailableView.search(text: viewModel.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+        } else if viewModel.isMissing {
             ContentUnavailableView(String(localized: "Folder Not Found", bundle: .module), systemImage: "folder.badge.questionmark")
         } else if viewModel.isLoaded, viewModel.isEmpty {
             if viewModel.folderID == nil {
@@ -147,7 +209,7 @@ struct FolderBrowserView: View {
         } else {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(String(localized: "Select", bundle: .module)) { editMode = .active }
-                    .disabled(viewModel.isEmpty)
+                    .disabled(viewModel.isEmpty || viewModel.isSearching)
                     .accessibilityIdentifier("folders.select")
             }
             ToolbarItem(placement: .topBarTrailing) {

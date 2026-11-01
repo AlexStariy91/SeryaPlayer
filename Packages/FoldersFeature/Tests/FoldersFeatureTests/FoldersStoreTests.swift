@@ -37,4 +37,15 @@ struct FoldersStoreTests {
         #expect(store.subfolders(of: nil).map(\.name).first == "Top 0")
         #expect(elapsed < 5, "rebuild of 10k tracks took \(elapsed)s")
     }
+
+    @Test func loadingTracksPrefetchesTheirArtworkURLs() async {
+        var withArt = Track.fixture("With Art")
+        withArt.artworkKey = "cover"
+        let deps = TestDependencies(tracks: [withArt, .fixture("Without Art")])
+        let context = FoldersContext(dependencies: deps)
+        let observer = Task { await context.store.observe() }
+        defer { observer.cancel() }
+        #expect(await eventually { context.artwork.cachedURL(for: "cover", size: .thumbnail) != nil })
+        #expect(context.artwork.cachedURL(for: "cover", size: .large) == nil)
+    }
 }

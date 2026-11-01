@@ -27,6 +27,8 @@ final class PlayerViewModel {
     /// Track whose artwork is resolved (or being resolved), so play/pause doesn't reload it.
     @ObservationIgnored private var artworkTrackID: Track.ID?
     @ObservationIgnored private var artworkKey: String?
+    /// Queue row thumbnails by artwork key, so rows that scroll back into view get theirs synchronously.
+    @ObservationIgnored private var thumbnailCache: [String: URL] = [:]
 
     init(
         player: any PlaybackControlling,
@@ -138,7 +140,17 @@ final class PlayerViewModel {
     /// Small artwork for a queue row.
     func thumbnailURL(for track: Track) async -> URL? {
         guard let key = track.artworkKey else { return nil }
-        return await artworkStore.url(for: key, size: .thumbnail)
+        if let hit = thumbnailCache[key] {
+            return hit
+        }
+        let url = await artworkStore.url(for: key, size: .thumbnail)
+        thumbnailCache[key] = url
+        return url
+    }
+
+    /// The queue row thumbnail if it was resolved before.
+    func cachedThumbnailURL(for track: Track) -> URL? {
+        track.artworkKey.flatMap { thumbnailCache[$0] }
     }
 
     // MARK: - Actions

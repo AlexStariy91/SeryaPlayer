@@ -46,6 +46,46 @@ struct FolderBrowserViewModelTests {
         #expect(viewModel.tracks.map(\.title) == ["Anthem"])
     }
 
+    @Test func searchInAFolderCoversItsSubfoldersAndPlaysTheResults() async throws {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: rock.id, context: fixture.context)
+        viewModel.searchQuery = "  e "
+        #expect(viewModel.isSearching)
+        await viewModel.search()
+        #expect(viewModel.searchResults?.folders.map(\.name) == ["Live"])
+        #expect(viewModel.searchResults?.tracks.map(\.title) == ["Anthem", "Encore"])
+
+        let encore = try #require(viewModel.searchResults?.tracks.last)
+        viewModel.playSearchResult(encore)
+        #expect(fixture.deps.playback.playCalls.first?.tracks.map(\.title) == ["Anthem", "Encore"])
+        #expect(fixture.deps.playback.playCalls.first?.index == 1)
+    }
+
+    @Test func clearingTheQueryEndsTheSearch() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.searchQuery = "Loose"
+        await viewModel.search()
+        #expect(viewModel.searchResults?.tracks.map(\.title) == ["Loose"])
+        viewModel.searchQuery = ""
+        #expect(!viewModel.isSearching)
+        await viewModel.search()
+        #expect(viewModel.searchResults == nil)
+    }
+
+    @Test func libraryChangesChangeTheSearchKey() async throws {
+        let fixture = await makeFixture()
+        let context = fixture.context
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: context)
+        viewModel.searchQuery = "Loose"
+        let before = viewModel.searchKey
+        let observer = Task { await context.store.observe() }
+        defer { observer.cancel() }
+        _ = try await context.createFolder(name: "New", parentID: nil)
+        #expect(await eventually { viewModel.searchKey != before })
+        #expect(viewModel.searchKey.query == "Loose")
+    }
+
     @Test func playAllIncludesSubfoldersDepthFirst() async {
         let fixture = await makeFixture()
         let deps = fixture.deps

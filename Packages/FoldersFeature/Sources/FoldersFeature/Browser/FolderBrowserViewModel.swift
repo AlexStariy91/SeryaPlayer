@@ -1,4 +1,3 @@
-import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -10,6 +9,11 @@ struct DeletionRequest: Equatable {
     var title: String
     /// Songs inside the folders (subfolders included) that the policy decides about.
     var folderTrackCount: Int
+}
+
+struct SearchKey: Hashable {
+    let query: String
+    let revision: Int
 }
 
 enum NamePrompt: Equatable {
@@ -31,6 +35,9 @@ final class FolderBrowserViewModel {
     /// Items waiting for a destination in the move picker.
     var movingItems: Set<FolderItem>?
     var errorMessage: String?
+    var searchQuery = ""
+    /// Results for the last searched query; `nil` while not searching.
+    private(set) var searchResults: FolderSearchResults?
 
     init(folderID: Folder.ID?, context: FoldersContext) {
         self.folderID = folderID
@@ -69,12 +76,10 @@ final class FolderBrowserViewModel {
         subfolders.isEmpty && tracks.isEmpty
     }
 
-    var nowPlayingID: Track.ID? {
-        store.nowPlayingID
-    }
-
-    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
-        store.nowPlaying(id)
+    /// Rows read the now-playing state from here themselves, so a track change re-renders the rows on
+    /// screen instead of re-running this screen's body (and re-diffing the whole list).
+    var playback: FoldersStore {
+        store
     }
 
     /// Songs in the folder and all its subfolders.
@@ -88,6 +93,39 @@ final class FolderBrowserViewModel {
 
     var artwork: ArtworkResolver {
         context.artwork
+    }
+
+    // MARK: - Search
+
+    var isSearching: Bool {
+        !trimmedQuery.isEmpty
+    }
+
+    private var trimmedQuery: String {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// What the search task depends on: a change in the library re-runs the search.
+    var searchKey: SearchKey {
+        SearchKey(query: trimmedQuery, revision: store.revision)
+    }
+
+    /// Searches this folder and everything below it (the whole library at the root), off the main actor.
+    func search() async {
+        let query = trimmedQuery
+        guard !query.isEmpty else {
+            searchResults = nil
+            return
+        }
+        let results = await FolderSearch.run(query, in: folderID, folders: store.folders, tracks: store.tracks)
+        guard !Task.isCancelled else { return }
+        searchResults = results
+    }
+
+    /// Tapping a found song plays the found songs, starting with it.
+    func playSearchResult(_ track: Track) {
+        guard let list = searchResults?.tracks, let index = list.firstIndex(of: track) else { return }
+        context.startPlayback.playOrToggle(list, at: index)
     }
 
     // MARK: - Playback

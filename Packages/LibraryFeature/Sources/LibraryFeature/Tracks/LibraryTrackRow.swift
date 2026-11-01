@@ -2,7 +2,7 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// A tappable `TrackRow` with asynchronously resolved artwork and the shared track actions.
+/// A tappable `TrackRow` with resolved artwork and the shared track actions.
 struct LibraryTrackRow: View {
     let track: Track
     let nowPlaying: TrackRow.NowPlaying?
@@ -12,22 +12,19 @@ struct LibraryTrackRow: View {
     var onRemove: (() -> Void)?
     let onPlay: () -> Void
 
-    @State private var artworkURL: URL?
-
     var body: some View {
         Button(action: onPlay) {
-            TrackRow(
-                title: track.title,
-                subtitle: Strings.subtitle(for: track),
-                artworkURL: artworkURL ?? resolver.cachedURL(for: track.artworkKey, size: .thumbnail),
-                duration: track.duration,
-                nowPlaying: nowPlaying
-            )
+            ResolvingArtworkURL(key: track.artworkKey, size: .thumbnail, resolver: resolver) { url in
+                TrackRow(
+                    title: track.title,
+                    subtitle: Strings.subtitle(for: track),
+                    artworkURL: url,
+                    duration: track.duration,
+                    nowPlaying: nowPlaying
+                )
+            }
         }
         .buttonStyle(.plain)
-        .task(id: track.artworkKey) {
-            artworkURL = await resolver.url(for: track.artworkKey, size: .thumbnail)
-        }
         .trackActions(for: track, actions: actions, onRemove: onRemove)
     }
 }

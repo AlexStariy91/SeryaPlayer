@@ -13,7 +13,7 @@ struct QueueView: View {
             List {
                 if let item = viewModel.nowPlayingItem {
                     Section {
-                        QueueRow(track: item.track, nowPlaying: viewModel.snapshot.isPlaying ? .playing : .paused, resolveArtwork: viewModel.thumbnailURL)
+                        QueueRow(track: item.track, nowPlaying: viewModel.snapshot.isPlaying ? .playing : .paused, viewModel: viewModel)
                     } header: {
                         Text("Now Playing", bundle: .module)
                     }
@@ -52,7 +52,7 @@ struct QueueView: View {
         Button {
             viewModel.play(item)
         } label: {
-            QueueRow(track: item.track, nowPlaying: nil, resolveArtwork: viewModel.thumbnailURL)
+            QueueRow(track: item.track, nowPlaying: nil, viewModel: viewModel)
         }
         .buttonStyle(.plain)
     }
@@ -61,18 +61,34 @@ struct QueueView: View {
 private struct QueueRow: View {
     let track: Track
     let nowPlaying: TrackRow.NowPlaying?
-    let resolveArtwork: (Track) async -> URL?
+    let viewModel: PlayerViewModel
 
-    @State private var artworkURL: URL?
+    /// Resolved on a cache miss, kept with the key so a reused row never shows another track's artwork.
+    @State private var resolved: (key: String, url: URL?)?
 
     var body: some View {
-        TrackRow(title: track.title, subtitle: track.artist, artworkURL: artworkURL, duration: track.duration, nowPlaying: nowPlaying)
-            .task(id: track.artworkKey) { artworkURL = await resolveArtwork(track) }
+        let cached = viewModel.cachedThumbnailURL(for: track)
+        TrackRow(
+            title: track.title,
+            subtitle: track.artist,
+            artworkURL: cached ?? resolved.flatMap { $0.key == track.artworkKey ? $0.url : nil },
+            duration: track.duration,
+            nowPlaying: nowPlaying
+        )
+        .background {
+            if cached == nil, let key = track.artworkKey {
+                Color.clear.task(id: key) {
+                    resolved = await (key, viewModel.thumbnailURL(for: track))
+                }
+            }
+        }
     }
 }
 
-#Preview("Queue") {
-    let preview = PreviewPlayer.playing()
-    QueueView(viewModel: preview.viewModel)
-        .task { await preview.viewModel.observe() }
-}
+#if DEBUG
+    #Preview("Queue") {
+        let preview = PreviewPlayer.playing()
+        QueueView(viewModel: preview.viewModel)
+            .task { await preview.viewModel.observe() }
+    }
+#endif
