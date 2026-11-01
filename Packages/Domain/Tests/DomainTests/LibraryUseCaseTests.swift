@@ -68,7 +68,9 @@ struct FolderUseCaseTests {
     }
 }
 
+@MainActor
 struct DeleteFolderUseCaseTests {
+    @MainActor
     private struct Setup {
         let root = Folder(name: "Root")
         let child: Folder
@@ -76,6 +78,7 @@ struct DeleteFolderUseCaseTests {
         let folders: InMemoryFolderRepository
         let tracks: InMemoryTrackRepository
         let files = FakeFileStore()
+        let player = FakePlaybackController()
         let inRoot: Track
         let inChild: Track
         let inOther: Track
@@ -92,7 +95,7 @@ struct DeleteFolderUseCaseTests {
         }
 
         var useCase: DeleteFolderUseCase {
-            DeleteFolderUseCase(folders: folders, tracks: tracks, files: files)
+            DeleteFolderUseCase(folders: folders, tracks: tracks, files: files, player: player)
         }
     }
 
@@ -106,6 +109,7 @@ struct DeleteFolderUseCaseTests {
         #expect(byTitle["c"] == .some(nil))
         #expect(byTitle["o"] == s.other.id)
         #expect(s.files.deletedPaths.isEmpty)
+        #expect(s.player.removedFromQueue.isEmpty)
     }
 
     @Test func deleteTracksRemovesNestedTracksAndFiles() async throws {
@@ -114,6 +118,7 @@ struct DeleteFolderUseCaseTests {
         #expect(s.folders.snapshot.map(\.name) == ["Other"])
         #expect(Set(s.tracks.snapshot.map(\.title)) == ["o", "l"])
         #expect(Set(s.files.deletedPaths) == [s.inRoot.relativePath, s.inChild.relativePath])
+        #expect(s.player.removedFromQueue == [[s.inRoot.id, s.inChild.id]])
     }
 
     @Test func deletingSubfolderLeavesParent() async throws {
@@ -179,6 +184,20 @@ struct StartPlaybackUseCaseTests {
         start([.fixture("a")], startingAt: 3)
         start.shuffleAll([])
         #expect(player.playCalls.isEmpty)
+    }
+
+    @Test func tapOnCurrentTrackTogglesInsteadOfRestarting() {
+        let player = FakePlaybackController()
+        let tracks = [Track.fixture("a"), Track.fixture("b")]
+        player.snapshot.nowPlaying = tracks[1]
+        let start = StartPlaybackUseCase(playback: player)
+
+        start.playOrToggle(tracks, at: 1)
+        #expect(player.togglePlayPauseCount == 1)
+        #expect(player.playCalls.isEmpty)
+
+        start.playOrToggle(tracks, at: 0)
+        #expect(player.playCalls == [.init(tracks: tracks, index: 0, shuffled: false)])
     }
 
     @Test func shuffleAllStartsShuffled() {

@@ -192,6 +192,30 @@ public final class DefaultPlaybackService: PlaybackControlling {
         }
     }
 
+    public func removeFromQueue(trackIDs: Set<Track.ID>) async {
+        guard !trackIDs.isEmpty else { return }
+        for id in trackIDs {
+            tracksByID[id] = nil
+        }
+        let offsets = IndexSet(queue.items.indices.filter { trackIDs.contains(queue.items[$0]) })
+        guard !offsets.isEmpty else { return }
+        let wasPlaying = isPlaying
+        let currentWasRemoved = queue.currentIndex.map(offsets.contains) ?? false
+        queue.remove(atOffsets: offsets)
+        if queue.current == nil, currentWasRemoved, !queue.items.isEmpty {
+            // The deleted track was the last one: carry on from the start of what is left.
+            queue.jump(to: 0)
+        }
+        if queue.current == nil {
+            stopPlayback()
+        } else if currentWasRemoved {
+            loadCurrent(at: 0, autoplay: wasPlaying)
+        } else {
+            refresh()
+        }
+        await persist()
+    }
+
     public func jump(toQueueIndex index: Int) {
         guard queue.items.indices.contains(index) else { return }
         queue.jump(to: index)

@@ -19,18 +19,17 @@ struct LibraryRootView: View {
         @Bindable var importer = context.importer
         NavigationStack(path: $path) {
             LibraryHomeView(context: context)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if let progress = importer.activeProgress {
+                        ImportProgressBanner(progress: progress)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .animation(.default, value: importer.isImporting)
                 .navigationTitle(Text("Library", bundle: .module))
                 .toolbar { toolbar }
                 .navigationDestination(for: LibraryRoute.self, destination: destination)
         }
-        .overlay(alignment: .bottom) {
-            if let progress = importer.progress {
-                ImportProgressBanner(progress: progress)
-                    .padding(.bottom, Spacing.xxl)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.default, value: importer.isImporting)
         .fileImporter(
             isPresented: $importer.isPickerPresented,
             allowedContentTypes: importer.source.contentTypes,
@@ -49,6 +48,9 @@ struct LibraryRootView: View {
         .trackActionsPresenter(context)
         .task {
             await context.store.observe()
+        }
+        .task {
+            await importer.observeActivity()
         }
     }
 

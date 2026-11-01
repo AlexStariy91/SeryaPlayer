@@ -25,9 +25,13 @@ public struct VerticalGainSlider: View {
 
     public var body: some View {
         VStack(spacing: Spacing.s) {
-            Text(Self.format(gain))
+            // Just the number: ten "+10.5 dB" labels don't fit a phone's width. The unit is in the
+            // accessibility value.
+            Text(Self.shortFormat(gain))
                 .font(AppFont.time)
                 .foregroundStyle(isDragging ? Color.accentColor : SemanticColor.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
             track
             if let label {
                 Text(label)
@@ -92,7 +96,8 @@ public struct VerticalGainSlider: View {
             .animation(.snappy(duration: 0.15), value: isDragging)
         }
         .frame(minHeight: 160)
-        .frame(width: 44)
+        // Flexible so ten bands fit the narrowest screen; 44 pt when there's room.
+        .frame(minWidth: 24, maxWidth: 44)
     }
 
     /// Rounds to 0.5 dB and pulls values near 0 dB to exactly 0.
@@ -102,6 +107,10 @@ public struct VerticalGainSlider: View {
             return 0
         }
         return (clamped / step).rounded() * step
+    }
+
+    nonisolated static func shortFormat(_ gain: Double) -> String {
+        gain == 0 ? "0" : String(format: "%+.1f", gain)
     }
 
     nonisolated static func format(_ gain: Double) -> String {

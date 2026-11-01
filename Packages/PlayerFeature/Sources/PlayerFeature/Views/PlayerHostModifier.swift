@@ -21,7 +21,16 @@ struct PlayerHostModifier<EqualizerSheet: View>: ViewModifier {
         content
             .miniPlayerHost(isVisible: viewModel.isQueued) {
                 MiniPlayerView(viewModel: viewModel) { showsFullPlayer = true }
-                    .matchedTransitionSource(id: Self.transitionID, in: namespace)
+                    // Fill the host's pill so the zoom starts and ends exactly on it.
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .matchedTransitionSource(id: Self.transitionID, in: namespace) { source in
+                        // The zoom snapshots the source: give it the mini player's own background and
+                        // corners (a solid color: the source only takes `Color` backgrounds), otherwise
+                        // collapsing ends on a plain sharp-cornered rectangle.
+                        source
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
+                    }
             }
             .fullScreenCover(isPresented: $showsFullPlayer) {
                 FullPlayerView(viewModel: viewModel, equalizerSheet: equalizerSheet)

@@ -142,6 +142,7 @@
         func moveQueueItems(fromOffsets _: IndexSet, toOffset _: Int) {}
         func removeQueueItems(atOffsets _: IndexSet) {}
         func jump(toQueueIndex _: Int) {}
+        func removeFromQueue(trackIDs _: Set<Track.ID>) async {}
         func setRate(_: Float) {}
         func apply(_: EQSettings) {}
         func restore() async {}

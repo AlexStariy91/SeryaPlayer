@@ -64,14 +64,16 @@ struct MiniPlayerView: View {
     }
 }
 
-#Preview("Mini player") {
-    let preview = PreviewPlayer.playing()
-    VStack {
-        Spacer()
-        MiniPlayerView(viewModel: preview.viewModel) {}
-            .frame(height: 60)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
-            .padding(Spacing.s)
+#if DEBUG
+    #Preview("Mini player") {
+        let preview = PreviewPlayer.playing()
+        VStack {
+            Spacer()
+            MiniPlayerView(viewModel: preview.viewModel) {}
+                .frame(height: 60)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
+                .padding(Spacing.s)
+        }
+        .task { await preview.viewModel.observe() }
     }
-    .task { await preview.viewModel.observe() }
-}
+#endif

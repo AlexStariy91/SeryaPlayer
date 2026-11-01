@@ -2,12 +2,12 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// Ten vertical sliders and the preamp.
+/// Ten vertical sliders and the preamp. The sheet dims and disables it while the equalizer is off.
 struct BandSlidersView: View {
     let viewModel: EqualizerViewModel
 
     var body: some View {
-        VStack(spacing: Spacing.l) {
+        VStack(spacing: Spacing.m) {
             HStack(spacing: 0) {
                 ForEach(EQBands.frequencies.indices, id: \.self) { band in
                     VerticalGainSlider(
@@ -21,7 +21,10 @@ struct BandSlidersView: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .disabled(!viewModel.settings.isEnabled)
+            // Ten labelled columns: past this size the numbers stop fitting a phone's width.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+
+            Divider()
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack {
@@ -29,7 +32,7 @@ struct BandSlidersView: View {
                     Spacer()
                     Text(String(format: "%+.1f dB", viewModel.settings.preamp))
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(SemanticColor.textSecondary)
                 }
                 Slider(
                     value: Binding(
@@ -42,7 +45,7 @@ struct BandSlidersView: View {
                 )
                 .accessibilityLabel(Text("Preamp", bundle: .module))
             }
-            .disabled(!viewModel.settings.isEnabled)
+            .padding(.horizontal, Spacing.xs)
         }
     }
 }

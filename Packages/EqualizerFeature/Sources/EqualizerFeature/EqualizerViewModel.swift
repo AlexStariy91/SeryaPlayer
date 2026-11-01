@@ -67,7 +67,9 @@ final class EqualizerViewModel {
     }
 
     private func followPresets() async {
-        for await list in observePresets() {
+        // Skip repeats: a list that already matches (e.g. after an optimistic delete) must not
+        // trigger another List update.
+        for await list in observePresets() where list != presets {
             presets = list
         }
     }
@@ -154,6 +156,10 @@ final class EqualizerViewModel {
     }
 
     func delete(_ preset: EQPreset) async {
+        // Drop the row right away so the List sees exactly one removal; the store's update then matches.
+        if !preset.isBuiltIn {
+            presets.removeAll { $0.id == preset.id }
+        }
         await run {
             try await deletePreset(preset)
             settings = settingsRepository.load().equalizer

@@ -11,6 +11,11 @@ struct DeletionRequest: Equatable {
     var folderTrackCount: Int
 }
 
+struct SearchKey: Hashable {
+    let query: String
+    let revision: Int
+}
+
 enum NamePrompt: Equatable {
     case create
     case rename(Folder.ID)
@@ -23,13 +28,39 @@ final class FolderBrowserViewModel {
     let folderID: Folder.ID?
     private let context: FoldersContext
 
+    /// Select mode. Ending it drops the selection; a finished batch delete or move ends it, like Apple's apps.
+    var isEditing = false {
+        didSet {
+            if !isEditing {
+                selection = []
+            }
+        }
+    }
+
     var selection: Set<FolderItem> = []
+
+    /// Every folder and song on this screen, for Select All.
+    private var allItems: Set<FolderItem> {
+        Set(subfolders.map { .folder($0.id) } + tracks.map { .track($0.id) })
+    }
+
+    var isAllSelected: Bool {
+        !allItems.isEmpty && selection.isSuperset(of: allItems)
+    }
+
+    func toggleSelectAll() {
+        selection = isAllSelected ? [] : allItems
+    }
+
     var namePrompt: NamePrompt?
     var nameText = ""
     var pendingDeletion: DeletionRequest?
     /// Items waiting for a destination in the move picker.
     var movingItems: Set<FolderItem>?
     var errorMessage: String?
+    var searchQuery = ""
+    /// Results for the last searched query; `nil` while not searching.
+    private(set) var searchResults: FolderSearchResults?
 
     init(folderID: Folder.ID?, context: FoldersContext) {
         self.folderID = folderID
@@ -68,8 +99,10 @@ final class FolderBrowserViewModel {
         subfolders.isEmpty && tracks.isEmpty
     }
 
-    var nowPlayingID: Track.ID? {
-        store.nowPlayingID
+    /// Rows read the now-playing state from here themselves, so a track change re-renders the rows on
+    /// screen instead of re-running this screen's body (and re-diffing the whole list).
+    var playback: FoldersStore {
+        store
     }
 
     /// Songs in the folder and all its subfolders.
@@ -77,12 +110,41 @@ final class FolderBrowserViewModel {
         store.songCount(in: folder.id)
     }
 
-    var canPlay: Bool {
-        store.songCount(in: folderID) > 0
-    }
-
     var artwork: ArtworkResolver {
         context.artwork
+    }
+
+    // MARK: - Search
+
+    var isSearching: Bool {
+        !trimmedQuery.isEmpty
+    }
+
+    private var trimmedQuery: String {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// What the search task depends on: a change in the library re-runs the search.
+    var searchKey: SearchKey {
+        SearchKey(query: trimmedQuery, revision: store.revision)
+    }
+
+    /// Searches this folder and everything below it (the whole library at the root), off the main actor.
+    func search() async {
+        let query = trimmedQuery
+        guard !query.isEmpty else {
+            searchResults = nil
+            return
+        }
+        let results = await FolderSearch.run(query, in: folderID, folders: store.folders, tracks: store.tracks)
+        guard !Task.isCancelled else { return }
+        searchResults = results
+    }
+
+    /// Tapping a found song plays the found songs, starting with it.
+    func playSearchResult(_ track: Track) {
+        guard let list = searchResults?.tracks, let index = list.firstIndex(of: track) else { return }
+        context.startPlayback.playOrToggle(list, at: index)
     }
 
     // MARK: - Playback
@@ -91,14 +153,10 @@ final class FolderBrowserViewModel {
     func play(_ track: Track) {
         let list = tracks
         guard let index = list.firstIndex(of: track) else { return }
-        context.startPlayback(list, startingAt: index)
+        context.startPlayback.playOrToggle(list, at: index)
     }
 
-    /// Play / Shuffle include subfolders: a folder is played as the tree below it, depth first.
-    func playAll(shuffled: Bool) {
-        play(folder: folderID, shuffled: shuffled)
-    }
-
+    /// A folder row's Play / Shuffle: the folder is played as the tree below it, depth first.
     func play(folder id: Folder.ID?, shuffled: Bool) {
         let list = store.playableTracks(in: id)
         if shuffled {
@@ -169,7 +227,7 @@ final class FolderBrowserViewModel {
                 try await self.context.deleteFolder(id: id, policy: policy)
             }
         }
-        selection = []
+        isEditing = false
     }
 
     // MARK: - Move
@@ -203,7 +261,7 @@ final class FolderBrowserViewModel {
                 try await self.context.moveFolder(id: id, toParent: destination)
             }
         }
-        selection = []
+        isEditing = false
     }
 
     // MARK: - Reorder

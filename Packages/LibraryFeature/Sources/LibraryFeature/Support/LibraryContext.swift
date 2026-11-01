@@ -30,7 +30,7 @@ final class LibraryContext {
             files: dependencies.fileStore,
             artwork: dependencies.artworkStore
         )
-        importer = ImportViewModel(importTracks: dependencies.importTracks)
+        importer = ImportViewModel(importTracks: dependencies.importTracks, activity: dependencies.importProgress)
         artwork = ArtworkResolver(store: dependencies.artworkStore)
         startPlayback = StartPlaybackUseCase(playback: dependencies.player)
     }

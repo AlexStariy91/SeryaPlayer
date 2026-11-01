@@ -50,7 +50,13 @@ public final class InMemoryFolderRepository: FolderRepository {
 
 public final class InMemoryTrackRepository: TrackRepository {
     private let box: ObservableBox<[Track]>
+    private let batches = ObservableBox<[Int]>([])
     private let folders: InMemoryFolderRepository?
+
+    /// The size of every `add` call, in order (tests of batched writes).
+    public var addedBatchSizes: [Int] {
+        batches.value
+    }
 
     /// `folders` is needed only to resolve `includeSubfolders`.
     public init(tracks: [Track] = [], folders: InMemoryFolderRepository? = nil) {
@@ -109,6 +115,7 @@ public final class InMemoryTrackRepository: TrackRepository {
     }
 
     public func add(_ tracks: [Track]) async throws {
+        batches.mutate { $0.append(tracks.count) }
         box.mutate { $0.append(contentsOf: tracks) }
     }
 

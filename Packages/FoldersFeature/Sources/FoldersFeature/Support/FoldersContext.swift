@@ -22,15 +22,15 @@ final class FoldersContext {
         let tracks = dependencies.trackRepository
         let files = dependencies.fileStore
         player = dependencies.player
-        store = FoldersStore(folders: folders, tracks: tracks, player: dependencies.player)
         artwork = ArtworkResolver(store: dependencies.artworkStore)
+        store = FoldersStore(folders: folders, tracks: tracks, player: dependencies.player, artwork: artwork)
         createFolder = CreateFolderUseCase(folders: folders)
         renameFolder = RenameFolderUseCase(folders: folders)
         moveFolder = MoveFolderUseCase(folders: folders)
-        deleteFolder = DeleteFolderUseCase(folders: folders, tracks: tracks, files: files)
+        deleteFolder = DeleteFolderUseCase(folders: folders, tracks: tracks, files: files, player: dependencies.player)
         reorderFolders = ReorderFoldersUseCase(folders: folders)
         moveTracks = MoveTracksUseCase(tracks: tracks)
-        deleteTracks = DeleteTracksUseCase(tracks: tracks, files: files)
+        deleteTracks = DeleteTracksUseCase(tracks: tracks, files: files, player: dependencies.player)
         startPlayback = StartPlaybackUseCase(playback: dependencies.player)
     }
 }

@@ -3,15 +3,18 @@ import DomainTestSupport
 import Foundation
 import Testing
 
+@MainActor
 struct TrackUseCaseTests {
-    @Test func deleteRemovesRecordsAndFiles() async throws {
+    @Test func deleteRemovesRecordsFilesAndQueueItems() async throws {
         let keep = Track.fixture("Keep")
         let doomed = Track.fixture("Doomed")
         let repo = InMemoryTrackRepository(tracks: [keep, doomed])
         let files = FakeFileStore()
-        try await DeleteTracksUseCase(tracks: repo, files: files)([doomed])
+        let player = FakePlaybackController()
+        try await DeleteTracksUseCase(tracks: repo, files: files, player: player)([doomed])
         #expect(repo.snapshot.map(\.id) == [keep.id])
         #expect(files.deletedPaths == [doomed.relativePath])
+        #expect(player.removedFromQueue == [[doomed.id]])
     }
 
     @Test func editTagsTrimsAndStoresArtwork() async throws {

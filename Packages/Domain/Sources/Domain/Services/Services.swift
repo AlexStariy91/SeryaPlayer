@@ -122,8 +122,9 @@ public protocol PlaybackEngine: AnyObject {
 }
 
 /// What features use. Implemented by `DefaultPlaybackService` in the Playback package.
+/// `Sendable` (conformers are main-actor classes) so delete use cases can hold one.
 @MainActor
-public protocol PlaybackControlling: AnyObject {
+public protocol PlaybackControlling: AnyObject, Sendable {
     var snapshot: PlaybackSnapshot { get }
     /// A new stream per subscriber; the current snapshot comes first.
     func snapshots() -> AsyncStream<PlaybackSnapshot>
@@ -143,6 +144,9 @@ public protocol PlaybackControlling: AnyObject {
     func removeQueueItems(atOffsets offsets: IndexSet)
     /// Makes the queue item at `index` current and starts playing it. Out-of-range indices are ignored.
     func jump(toQueueIndex index: Int)
+    /// Drops deleted tracks from the queue and the persisted state. If the current track goes, the next
+    /// remaining one becomes current (keeping play/pause); with nothing left, playback stops.
+    func removeFromQueue(trackIDs: Set<Track.ID>) async
     func setRate(_ rate: Float)
     func apply(_ equalizer: EQSettings)
 

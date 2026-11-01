@@ -15,8 +15,10 @@ import Shared
 final class AppContainer {
     let flags: FeatureFlags
     let router = AppRouter()
-    /// Latest settings, observed so the root view can apply the theme and accent.
-    private(set) var settings: AppSettings
+    /// Theme and accent, observed by the root view. Kept apart from the rest of `AppSettings` so that
+    /// equalizer or sort changes don't re-render the whole tree (and rebuild open sheets mid-update).
+    private(set) var theme: AppTheme
+    private(set) var accentColorID: String
 
     @ObservationIgnored let trackRepository: any TrackRepository
     @ObservationIgnored let folderRepository: any FolderRepository
@@ -31,6 +33,10 @@ final class AppContainer {
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private let remoteCommands: RemoteCommands
     @ObservationIgnored private let inboxProcessor: InboxProcessor
+    /// Shared by every import path so the Library shows progress for all of them.
+    /// Optional to match `LibraryDependencies.importProgress`; a non-optional property would not satisfy
+    /// the requirement and the protocol extension's `nil` would be used instead.
+    let importProgress: ImportProgressCenter?
     @ObservationIgnored private let seedDirectory: URL?
 
     init(environment: AppEnvironment) throws {
@@ -66,18 +72,23 @@ final class AppContainer {
         remoteCommands.attach(to: player)
         self.remoteCommands = remoteCommands
 
+        let progressCenter = ImportProgressCenter()
+        importProgress = progressCenter
         let importTracks = ImportTracksUseCase(
             files: fileStore,
             metadata: metadataReader,
             artwork: artworkStore,
             tracks: trackRepository,
-            folders: folderRepository
+            folders: folderRepository,
+            progressCenter: progressCenter
         )
         inboxProcessor = InboxProcessor(fileStore: fileStore) { urls in
             await importTracks(urls: urls)
         }
 
-        settings = settingsRepository.load()
+        let settings = settingsRepository.load()
+        theme = settings.theme
+        accentColorID = settings.accentColorID
         player.apply(settings.equalizer)
     }
 
@@ -89,7 +100,8 @@ final class AppContainer {
             metadata: metadataReader,
             artwork: artworkStore,
             tracks: trackRepository,
-            folders: folderRepository
+            folders: folderRepository,
+            progressCenter: importProgress
         )
     }
 
@@ -107,8 +119,13 @@ final class AppContainer {
 
     /// Runs for the app's lifetime.
     func observeSettings() async {
-        for await updated in settingsRepository.observe() where updated != settings {
-            settings = updated
+        for await updated in settingsRepository.observe() {
+            if updated.theme != theme {
+                theme = updated.theme
+            }
+            if updated.accentColorID != accentColorID {
+                accentColorID = updated.accentColorID
+            }
         }
     }
 

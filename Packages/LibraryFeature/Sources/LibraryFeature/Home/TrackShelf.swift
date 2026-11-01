@@ -14,25 +14,18 @@ struct TrackShelf: View {
             LazyHStack(alignment: .top, spacing: Spacing.m) {
                 ForEach(tracks) { track in
                     Button {
-                        context.startPlayback(tracks, startingAt: tracks.firstIndex(of: track) ?? 0)
+                        context.startPlayback.playOrToggle(tracks, at: tracks.firstIndex(of: track) ?? 0)
                     } label: {
-                        VStack(alignment: .leading, spacing: Spacing.xs) {
-                            ResolvedArtwork(key: track.artworkKey, size: Self.artwork, resolver: context.artwork)
-                            Text(track.title)
-                                .font(AppFont.rowSubtitle)
-                                .foregroundStyle(SemanticColor.textPrimary)
-                                .lineLimit(1)
-                            Text(Strings.artist(track.artist))
-                                .font(AppFont.caption)
-                                .foregroundStyle(SemanticColor.textSecondary)
-                                .lineLimit(1)
-                        }
-                        .frame(width: Self.artwork.points, alignment: .leading)
-                        .accessibilityElement(children: .combine)
+                        card(track)
                     }
                     .buttonStyle(.plain)
+                    // Lift only this card and show its own actions.
+                    .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Self.artwork.cornerRadius))
                     .contextMenu {
                         TrackActionButtons(track: track, actions: context.actions)
+                    } preview: {
+                        card(track)
+                            .padding(Spacing.m)
                     }
                 }
             }
@@ -41,5 +34,21 @@ struct TrackShelf: View {
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollIndicators(.hidden)
+    }
+
+    private func card(_ track: Track) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            ResolvedArtwork(key: track.artworkKey, size: Self.artwork, resolver: context.artwork)
+            Text(track.title)
+                .font(AppFont.rowSubtitle)
+                .foregroundStyle(SemanticColor.textPrimary)
+                .lineLimit(1)
+            Text(Strings.artist(track.artist))
+                .font(AppFont.caption)
+                .foregroundStyle(SemanticColor.textSecondary)
+                .lineLimit(1)
+        }
+        .frame(width: Self.artwork.points, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }

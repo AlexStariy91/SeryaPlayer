@@ -1,8 +1,8 @@
 import Domain
 import Foundation
 
-/// Resolves `Track.artworkKey` to a file URL and remembers the answer, so rows that scroll back
-/// into view get their URL synchronously instead of flashing the placeholder.
+/// Resolves `Track.artworkKey` to a file URL and remembers the answer, so rows get their URL
+/// synchronously instead of resolving it (and re-rendering) every time they scroll into view.
 @MainActor
 final class ArtworkResolver {
     private struct CacheKey: Hashable {
@@ -31,5 +31,13 @@ final class ArtworkResolver {
         let url = await store.url(for: key, size: size)
         cache[cacheKey] = url
         return url
+    }
+
+    /// Resolves the keys not cached yet, so the rows that show them render their artwork URL synchronously.
+    func prefetch(_ keys: some Sequence<String>, size: Domain.ArtworkSize) async {
+        for key in Set(keys) where cachedURL(for: key, size: size) == nil {
+            guard !Task.isCancelled else { return }
+            _ = await url(for: key, size: size)
+        }
     }
 }

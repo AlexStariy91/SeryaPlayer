@@ -397,6 +397,86 @@ struct DefaultPlaybackServiceTests {
         #expect(engine.loadedURLs.last == fileURL(for: tracks[2]))
     }
 
+    // MARK: - Deleted tracks
+
+    @Test func deletingThePlayingTrackPlaysTheNextRemainingOne() async {
+        let service = makeService()
+        service.play(tracks, startingAt: 1, shuffled: false)
+
+        await service.removeFromQueue(trackIDs: [tracks[1].id, tracks[2].id])
+
+        let remaining = [tracks[0], tracks[3], tracks[4]].map(\.id)
+        #expect(service.snapshot.queue.map(\.id) == remaining)
+        #expect(service.snapshot.nowPlaying?.id == tracks[3].id)
+        #expect(service.snapshot.currentIndex == 1)
+        #expect(service.snapshot.isPlaying)
+        #expect(engine.loadedURLs.last == fileURL(for: tracks[3]))
+        let saved = await stateRepository.load()
+        #expect(saved?.queue == remaining)
+        #expect(saved?.currentIndex == 1)
+    }
+
+    @Test func deletingThePausedTrackLoadsTheNextOnePaused() async {
+        let service = makeService()
+        service.play(tracks, startingAt: 4, shuffled: false)
+        service.togglePlayPause()
+
+        await service.removeFromQueue(trackIDs: [tracks[4].id])
+
+        // It was the last item: carry on from the start of what is left.
+        #expect(service.snapshot.nowPlaying?.id == tracks[0].id)
+        #expect(!service.snapshot.isPlaying)
+        #expect(!engine.isPlaying)
+        #expect(engine.loadedURLs.last == fileURL(for: tracks[0]))
+    }
+
+    @Test func deletingEveryQueuedTrackStopsAndClearsNowPlaying() async {
+        let service = makeService()
+        service.play(Array(tracks.prefix(2)), startingAt: 0, shuffled: true)
+
+        await service.removeFromQueue(trackIDs: Set(tracks.map(\.id)))
+
+        #expect(service.snapshot.nowPlaying == nil)
+        #expect(service.snapshot.queue.isEmpty)
+        #expect(service.snapshot.currentIndex == nil)
+        #expect(!service.snapshot.isPlaying)
+        #expect(!engine.isPlaying)
+        #expect(nowPlaying.clearCount > 0)
+        let saved = await stateRepository.load()
+        #expect(saved?.queue == [])
+        #expect(saved?.originalQueue == [])
+
+        // Nothing is left to resume.
+        service.togglePlayPause()
+        #expect(service.snapshot.nowPlaying == nil)
+    }
+
+    @Test func deletingAnotherTrackKeepsTheCurrentOnePlaying() async {
+        let service = makeService()
+        service.play(tracks, startingAt: 2, shuffled: false)
+        engine.currentTime = 50
+
+        await service.removeFromQueue(trackIDs: [tracks[0].id, tracks[4].id])
+
+        #expect(service.snapshot.queue.map(\.id) == tracks[1 ... 3].map(\.id))
+        #expect(service.snapshot.nowPlaying?.id == tracks[2].id)
+        #expect(service.snapshot.currentIndex == 1)
+        #expect(service.snapshot.isPlaying)
+        #expect(engine.loadedURLs.count == 1)
+        #expect(engine.currentTime == 50)
+    }
+
+    @Test func deletingTracksOutsideTheQueueChangesNothing() async {
+        let service = makeService()
+        service.play(Array(tracks.prefix(2)), startingAt: 0, shuffled: false)
+        let before = service.snapshot
+
+        await service.removeFromQueue(trackIDs: [tracks[4].id])
+
+        #expect(service.snapshot == before)
+        #expect(await stateRepository.load() == nil)
+    }
+
     @Test func playNextOnAnEmptyQueueStartsPlaying() {
         let service = makeService()
 

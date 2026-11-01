@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -8,14 +9,24 @@ import Observation
 @Observable
 final class FoldersStore {
     private(set) var folders: [Folder] = [] {
-        didSet { rebuildFolderIndex() }
+        didSet {
+            rebuildFolderIndex()
+            revision += 1
+        }
     }
 
     private(set) var tracks: [Track] = [] {
-        didSet { rebuildTrackIndex() }
+        didSet {
+            rebuildTrackIndex()
+            revision += 1
+        }
     }
 
+    /// Bumped on every change of folders or tracks, so derived work (search) knows when to re-run.
+    private(set) var revision = 0
+
     private(set) var nowPlayingID: Track.ID?
+    private(set) var isPlaying = false
     private(set) var isLoaded = false
 
     /// Indexes rebuilt once per observed change; accessors are dictionary lookups.
@@ -26,13 +37,16 @@ final class FoldersStore {
     @ObservationIgnored private let folderRepository: any FolderRepository
     @ObservationIgnored private let trackRepository: any TrackRepository
     @ObservationIgnored private let player: any PlaybackControlling
+    @ObservationIgnored private let artwork: ArtworkResolver?
     @ObservationIgnored private var hasFolders = false
     @ObservationIgnored private var hasTracks = false
 
-    init(folders: any FolderRepository, tracks: any TrackRepository, player: any PlaybackControlling) {
+    /// - Parameter artwork: when given, artwork URLs of new tracks are resolved ahead of the rows that show them.
+    init(folders: any FolderRepository, tracks: any TrackRepository, player: any PlaybackControlling, artwork: ArtworkResolver? = nil) {
         folderRepository = folders
         trackRepository = tracks
         self.player = player
+        self.artwork = artwork
     }
 
     /// Runs until cancelled.
@@ -57,6 +71,7 @@ final class FoldersStore {
             tracks = list
             hasTracks = true
             updateLoaded()
+            await artwork?.prefetch(list.lazy.compactMap(\.artworkKey), size: .thumbnail)
         }
     }
 
@@ -66,7 +81,16 @@ final class FoldersStore {
             if id != nowPlayingID {
                 nowPlayingID = id
             }
+            if snapshot.isPlaying != isPlaying {
+                isPlaying = snapshot.isPlaying
+            }
         }
+    }
+
+    /// The row indicator for `id`: only the current track has one.
+    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
+        guard id == nowPlayingID else { return nil }
+        return isPlaying ? .playing : .paused
     }
 
     private func updateLoaded() {

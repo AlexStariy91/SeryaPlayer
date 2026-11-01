@@ -19,11 +19,11 @@ struct TrackGroupView: View {
                     ForEach(group.tracks) { track in
                         LibraryTrackRow(
                             track: track,
-                            isPlaying: context.store.nowPlayingID == track.id,
+                            playback: context.store,
                             resolver: context.artwork,
                             actions: context.actions
                         ) {
-                            context.startPlayback(group.tracks, startingAt: group.tracks.firstIndex(of: track) ?? 0)
+                            context.startPlayback.playOrToggle(group.tracks, at: group.tracks.firstIndex(of: track) ?? 0)
                         }
                     }
                 }

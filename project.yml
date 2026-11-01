@@ -5,6 +5,9 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
   developmentLanguage: en
+configFiles:
+  Debug: Configs/Base.xcconfig
+  Release: Configs/Base.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -13,7 +16,6 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
-    DEVELOPMENT_TEAM: ""
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_EMIT_LOC_STRINGS: YES
@@ -50,7 +52,12 @@ targets:
         CFBundleLocalizations: [en, ru]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        UILaunchScreen: {}
+        # Native launch screen: the icon's background color with its waveform centered.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+        # Light status bar on the dark launch screen only: view controllers still pick their own style.
+        UIStatusBarStyle: UIStatusBarStyleLightContent
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:

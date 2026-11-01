@@ -172,3 +172,38 @@ private final class ProgressLog: @unchecked Sendable { // test-only; guarded by 
         lock.withLock { storage }
     }
 }
+
+struct ImportBatchingTests {
+    private static func urls(_ count: Int) -> [URL] {
+        (0 ..< count).map { URL(fileURLWithPath: "/nonexistent/\($0).mp3") }
+    }
+
+    @Test func writesTracksInChunks() async {
+        let files = FakeFileStore()
+        let folders = InMemoryFolderRepository()
+        let tracks = InMemoryTrackRepository(folders: folders)
+        let useCase = ImportTracksUseCase(
+            files: files, metadata: FakeMetadataReader(), artwork: FakeArtworkStore(),
+            tracks: tracks, folders: folders, batchSize: 3
+        )
+        let result = await useCase(urls: Self.urls(7))
+        #expect(result.added.count == 7)
+        #expect(tracks.addedBatchSizes == [3, 3, 1])
+        #expect(tracks.snapshot.count == 7)
+    }
+
+    @Test func centerReportsProgressAndClearsWhenDone() async {
+        let center = ImportProgressCenter()
+        let folders = InMemoryFolderRepository()
+        let useCase = ImportTracksUseCase(
+            files: FakeFileStore(), metadata: FakeMetadataReader(), artwork: FakeArtworkStore(),
+            tracks: InMemoryTrackRepository(folders: folders), folders: folders, progressCenter: center
+        )
+        var updates = center.updates().makeAsyncIterator()
+        #expect(await updates.next() == .some(nil))
+        let importing = Task { await useCase(urls: Self.urls(2)) }
+        _ = await importing.value
+        // Only the newest value is kept for a slow reader: the import is over, so it is `nil`.
+        #expect(await updates.next() == .some(nil))
+    }
+}

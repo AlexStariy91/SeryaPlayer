@@ -40,8 +40,8 @@ struct RootView: View {
                 EqualizerFeature.makePresetManager(dependencies: container)
             }
         }
-        .tint(AccentPalette.option(id: container.settings.accentColorID).color)
-        .background(WindowInterfaceStyle(style: container.settings.theme.interfaceStyle))
+        .tint(AccentPalette.option(id: container.accentColorID).color)
+        .background(WindowInterfaceStyle(style: container.theme.interfaceStyle))
         .task { await container.observeSettings() }
     }
 }

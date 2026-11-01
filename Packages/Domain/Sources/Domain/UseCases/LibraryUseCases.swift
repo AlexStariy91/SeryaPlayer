@@ -98,16 +98,19 @@ public struct MoveFolderUseCase: Sendable {
     }
 }
 
-/// Deletes a folder with all its subfolders. What happens to the tracks inside is decided by `policy`.
+/// Deletes a folder with all its subfolders. What happens to the tracks inside is decided by `policy`;
+/// deleted tracks are also dropped from playback.
 public struct DeleteFolderUseCase: Sendable {
     private let folders: any FolderRepository
     private let tracks: any TrackRepository
     private let files: any FileStoring
+    private let player: any PlaybackControlling
 
-    public init(folders: any FolderRepository, tracks: any TrackRepository, files: any FileStoring) {
+    public init(folders: any FolderRepository, tracks: any TrackRepository, files: any FileStoring, player: any PlaybackControlling) {
         self.folders = folders
         self.tracks = tracks
         self.files = files
+        self.player = player
     }
 
     public func callAsFunction(id: Folder.ID, policy: FolderDeletionPolicy) async throws {
@@ -118,6 +121,7 @@ public struct DeleteFolderUseCase: Sendable {
             try await tracks.move(trackIDs: affected.map(\.id), toFolder: nil)
         case .deleteTracks:
             try await tracks.delete(ids: affected.map(\.id))
+            await player.removeFromQueue(trackIDs: Set(affected.map(\.id)))
             for track in affected {
                 try? await files.deleteFile(relativePath: track.relativePath)
             }

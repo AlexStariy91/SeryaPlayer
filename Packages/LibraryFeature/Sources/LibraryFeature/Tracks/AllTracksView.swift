@@ -16,12 +16,12 @@ struct AllTracksView: View {
             ForEach(viewModel.visibleTracks) { track in
                 LibraryTrackRow(
                     track: track,
-                    isPlaying: context.store.nowPlayingID == track.id,
+                    playback: context.store,
                     resolver: context.artwork,
                     actions: context.actions
                 ) {
                     let list = viewModel.visibleTracks
-                    context.startPlayback(list, startingAt: list.firstIndex(of: track) ?? 0)
+                    context.startPlayback.playOrToggle(list, at: list.firstIndex(of: track) ?? 0)
                 }
             }
         }
@@ -41,7 +41,11 @@ struct AllTracksView: View {
             }
         }
         .navigationTitle(Text("All Tracks", bundle: .module))
-        .searchable(text: $viewModel.query, prompt: Text("Songs, artists, albums", bundle: .module))
+        .searchable(
+            text: $viewModel.query,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: Text("Songs, artists, albums", bundle: .module)
+        )
         .searchScopes($viewModel.scope) {
             ForEach(SearchScope.allCases, id: \.self) { scope in
                 Text(Strings.scope(scope)).tag(scope)

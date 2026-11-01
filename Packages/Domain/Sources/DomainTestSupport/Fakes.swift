@@ -201,7 +201,12 @@ public final class FakePlaybackController: PlaybackControlling {
         playCalls.append(PlayCall(tracks: tracks, index: index, shuffled: shuffled))
     }
 
-    public func togglePlayPause() {}
+    public private(set) var togglePlayPauseCount = 0
+
+    public func togglePlayPause() {
+        togglePlayPauseCount += 1
+    }
+
     public func next() {}
     public func previous() {}
     public func seek(to _: TimeInterval) {}
@@ -212,6 +217,11 @@ public final class FakePlaybackController: PlaybackControlling {
     public func moveQueueItems(fromOffsets _: IndexSet, toOffset _: Int) {}
     public func removeQueueItems(atOffsets _: IndexSet) {}
     public func jump(toQueueIndex _: Int) {}
+    public private(set) var removedFromQueue: [Set<Track.ID>] = []
+    public func removeFromQueue(trackIDs: Set<Track.ID>) async {
+        removedFromQueue.append(trackIDs)
+    }
+
     public func setRate(_: Float) {}
     public func apply(_ equalizer: EQSettings) {
         appliedEqualizers.append(equalizer)

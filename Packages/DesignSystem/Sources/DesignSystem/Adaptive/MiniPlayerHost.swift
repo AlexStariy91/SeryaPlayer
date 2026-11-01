@@ -28,7 +28,7 @@ public extension View {
     }
 
     /// Reserves space at the bottom of a tab's root view for the mini player. No-op when it's hidden or on iOS 26.
-    /// Apply it to the scrollable content (`List`, `ScrollView`) inside each tab.
+    /// Apply it to a tab's root view; it adds a bottom content margin to every scroll view inside.
     func miniPlayerContentInset() -> some View {
         modifier(MiniPlayerContentInsetModifier())
     }
@@ -88,8 +88,10 @@ private struct MiniPlayerContentInsetModifier: ViewModifier {
     @Environment(\.miniPlayerInset) private var inset
 
     func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .bottom, spacing: 0) {
-            Color.clear.frame(height: inset)
-        }
+        // `contentMargins` reaches every scroll view below, including those inside a `NavigationStack`;
+        // a `safeAreaInset` on the stack doesn't reliably reach its pushed `List`s.
+        content
+            .contentMargins(.bottom, inset, for: .scrollContent)
+            .contentMargins(.bottom, inset, for: .scrollIndicators)
     }
 }

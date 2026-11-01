@@ -7,7 +7,7 @@ struct VolumeRow: View {
             Image(systemName: "speaker.fill")
             VolumeSlider()
                 .frame(height: 34)
-                .accessibilityLabel(Text("Volume", bundle: .module))
+                .tint(.white)
             Image(systemName: "speaker.wave.3.fill")
         }
         .font(.caption)

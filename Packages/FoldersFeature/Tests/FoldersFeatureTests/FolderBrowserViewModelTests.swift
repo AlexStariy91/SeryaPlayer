@@ -46,20 +46,60 @@ struct FolderBrowserViewModelTests {
         #expect(viewModel.tracks.map(\.title) == ["Anthem"])
     }
 
-    @Test func playAllIncludesSubfoldersDepthFirst() async {
+    @Test func searchInAFolderCoversItsSubfoldersAndPlaysTheResults() async throws {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: rock.id, context: fixture.context)
+        viewModel.searchQuery = "  e "
+        #expect(viewModel.isSearching)
+        await viewModel.search()
+        #expect(viewModel.searchResults?.folders.map(\.name) == ["Live"])
+        #expect(viewModel.searchResults?.tracks.map(\.title) == ["Anthem", "Encore"])
+
+        let encore = try #require(viewModel.searchResults?.tracks.last)
+        viewModel.playSearchResult(encore)
+        #expect(fixture.deps.playback.playCalls.first?.tracks.map(\.title) == ["Anthem", "Encore"])
+        #expect(fixture.deps.playback.playCalls.first?.index == 1)
+    }
+
+    @Test func clearingTheQueryEndsTheSearch() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.searchQuery = "Loose"
+        await viewModel.search()
+        #expect(viewModel.searchResults?.tracks.map(\.title) == ["Loose"])
+        viewModel.searchQuery = ""
+        #expect(!viewModel.isSearching)
+        await viewModel.search()
+        #expect(viewModel.searchResults == nil)
+    }
+
+    @Test func libraryChangesChangeTheSearchKey() async throws {
+        let fixture = await makeFixture()
+        let context = fixture.context
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: context)
+        viewModel.searchQuery = "Loose"
+        let before = viewModel.searchKey
+        let observer = Task { await context.store.observe() }
+        defer { observer.cancel() }
+        _ = try await context.createFolder(name: "New", parentID: nil)
+        #expect(await eventually { viewModel.searchKey != before })
+        #expect(viewModel.searchKey.query == "Loose")
+    }
+
+    @Test func playingAFolderIncludesSubfoldersDepthFirst() async {
         let fixture = await makeFixture()
         let deps = fixture.deps
         let context = fixture.context
-        FolderBrowserViewModel(folderID: rock.id, context: context).playAll(shuffled: false)
+        FolderBrowserViewModel(folderID: nil, context: context).play(folder: rock.id, shuffled: false)
         #expect(deps.playback.playCalls.first?.tracks.map(\.title) == ["Anthem", "Encore"])
         #expect(deps.playback.playCalls.first?.shuffled == false)
     }
 
-    @Test func shuffleStartsShuffledPlayback() async {
+    @Test func shufflingAFolderStartsShuffledPlayback() async {
         let fixture = await makeFixture()
         let deps = fixture.deps
         let context = fixture.context
-        FolderBrowserViewModel(folderID: rock.id, context: context).playAll(shuffled: true)
+        FolderBrowserViewModel(folderID: nil, context: context).play(folder: rock.id, shuffled: true)
         #expect(deps.playback.playCalls.first?.shuffled == true)
         #expect(deps.playback.playCalls.first?.tracks.count == 2)
     }
@@ -153,6 +193,58 @@ struct FolderBrowserViewModelTests {
         #expect(request.folderTrackCount == 0)
         await viewModel.performDeletion(request, policy: .moveTracksToRoot)
         #expect(try await deps.tracks.tracks(inFolder: nil, includeSubfolders: false).isEmpty)
+    }
+
+    @Test func selectAllTogglesEveryItemOnTheScreen() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        #expect(!viewModel.isAllSelected)
+
+        viewModel.toggleSelectAll()
+        #expect(viewModel.selection == [.folder(rock.id), .folder(jazz.id), .track(viewModel.tracks[0].id)])
+        #expect(viewModel.isAllSelected)
+
+        viewModel.toggleSelectAll()
+        #expect(viewModel.selection.isEmpty)
+    }
+
+    @Test func batchDeleteOfEverythingEndsSelectMode() async throws {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = Set(viewModel.subfolders.map { .folder($0.id) } + viewModel.tracks.map { .track($0.id) })
+
+        await viewModel.requestDelete(items: viewModel.selection)
+        try await viewModel.performDeletion(#require(viewModel.pendingDeletion), policy: .deleteTracks)
+
+        #expect(!viewModel.isEditing)
+        #expect(viewModel.selection.isEmpty)
+        #expect(try await fixture.deps.tracks.tracks(inFolder: nil, includeSubfolders: true).isEmpty)
+    }
+
+    @Test func batchDeleteOfSomeItemsAlsoEndsSelectMode() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = [.folder(jazz.id)]
+
+        await viewModel.requestDelete(items: viewModel.selection)
+
+        #expect(!viewModel.isEditing)
+        #expect(viewModel.selection.isEmpty)
+        #expect(!viewModel.isEmpty)
+    }
+
+    @Test func leavingSelectModeClearsTheSelection() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        viewModel.selection = [.folder(rock.id)]
+
+        viewModel.isEditing = false
+
+        #expect(viewModel.selection.isEmpty)
     }
 
     @Test func moveTracksAndFoldersTogether() async throws {
