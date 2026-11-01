@@ -53,6 +53,10 @@ Packages that use SwiftUI or AVAudioSession are tested only through `scripts/tes
 
 - Swift Testing (`import Testing`, `@Test`, `#expect`) in packages; XCTest only for UI tests.
 - Before committing: `swiftformat .`, `swiftlint --strict`, `scripts/test.sh unit` — all green.
+- After editing a String Catalog by hand, run `scripts/format-xcstrings.swift` so the file is in Xcode's own
+  format (otherwise Xcode rewrites it on the next build). Strings only seen in previews or the design catalog
+  are marked "Don't translate" (`"shouldTranslate" : false`) instead of translated. Look up translations with
+  literal keys (`String(localized: "Rock", bundle: .module)`), never a computed key: Xcode marks those stale.
 
 ## Parallel work
 

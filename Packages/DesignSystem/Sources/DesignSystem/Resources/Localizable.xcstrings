@@ -1,152 +1,206 @@
 {
-  "sourceLanguage": "en",
-  "version": "1.0",
-  "strings": {
-    "%@ of %@": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ из %@"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ of %@" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ из %@"
           }
         }
       }
     },
-    "Amber": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Янтарный"
+    "Accent" : {
+      "shouldTranslate" : false
+    },
+    "Amber" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Янтарный"
           }
         }
       }
     },
-    "Crimson": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Малиновый"
+    "Artwork background" : {
+      "shouldTranslate" : false
+    },
+    "Artwork sizes" : {
+      "shouldTranslate" : false
+    },
+    "Crimson" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Малиновый"
           }
         }
       }
     },
-    "Gain": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Усиление"
+    "Design System" : {
+      "shouldTranslate" : false
+    },
+    "Folders" : {
+      "shouldTranslate" : false
+    },
+    "Gain" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Усиление"
           }
         }
       }
     },
-    "Green": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зелёный"
+    "Gain sliders" : {
+      "shouldTranslate" : false
+    },
+    "Glass" : {
+      "shouldTranslate" : false
+    },
+    "Green" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зелёный"
           }
         }
       }
     },
-    "Indigo": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Индиго"
+    "Import audio files to get started." : {
+      "shouldTranslate" : false
+    },
+    "Import Files" : {
+      "shouldTranslate" : false
+    },
+    "Indigo" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Индиго"
           }
         }
       }
     },
-    "Now playing": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сейчас играет"
+    "Library" : {
+      "shouldTranslate" : false
+    },
+    "Midnight City" : {
+      "shouldTranslate" : false
+    },
+    "No Music Yet" : {
+      "shouldTranslate" : false
+    },
+    "Now playing" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сейчас играет"
           }
         }
       }
     },
-    "Orange": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Оранжевый"
+    "Orange" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оранжевый"
           }
         }
       }
     },
-    "Paused": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Paused"
+    "Paused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
           }
         },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "На паузе"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "На паузе"
           }
         }
       }
     },
-    "Pink": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Розовый"
+    "Pink" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розовый"
           }
         }
       }
     },
-    "Playback position": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Позиция воспроизведения"
+    "Play" : {
+      "shouldTranslate" : false
+    },
+    "Playback position" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Позиция воспроизведения"
           }
         }
       }
     },
-    "Purple": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Фиолетовый"
+    "Purple" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фиолетовый"
           }
         }
       }
     },
-    "Serya Blue": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Синий Серя"
+    "Repeat" : {
+      "shouldTranslate" : false
+    },
+    "Seek to %@" : {
+      "shouldTranslate" : false
+    },
+    "Serya Blue" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синий Серя"
           }
         }
       }
     },
-    "Teal": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Бирюзовый"
+    "Shuffle" : {
+      "shouldTranslate" : false
+    },
+    "Teal" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бирюзовый"
           }
         }
       }
+    },
+    "Timeline slider" : {
+      "shouldTranslate" : false
+    },
+    "Track rows" : {
+      "shouldTranslate" : false
     }
-  }
+  },
+  "version" : "1.0"
 }
