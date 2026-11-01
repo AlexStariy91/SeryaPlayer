@@ -13,7 +13,6 @@ import Shared
 @MainActor
 @Observable
 final class AppContainer {
-    let flags: FeatureFlags
     let router = AppRouter()
     /// Theme and accent, observed by the root view. Kept apart from the rest of `AppSettings` so that
     /// equalizer or sort changes don't re-render the whole tree (and rebuild open sheets mid-update).
@@ -40,7 +39,6 @@ final class AppContainer {
     @ObservationIgnored private let seedDirectory: URL?
 
     init(environment: AppEnvironment) throws {
-        flags = .default
         seedDirectory = environment.seedDirectory
         persistence = try PersistenceController(store: environment.store)
 

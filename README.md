@@ -2,7 +2,7 @@
 
 An offline audio player for iPhone, built with SwiftUI.
 
-- Music from your own files: Files app, Finder, Share sheet, a download link, the built-in browser
+- Music from your own files: Files app, Finder, Share sheet
 - Folders (how files are stored) and playlists (collections)
 - 10-band equalizer with 16 built-in presets and custom presets
 - Apple Music–style design; Liquid Glass on iOS 26, materials on iOS 18
@@ -58,7 +58,7 @@ Packages/
   Playback/          AVAudioEngine, audio session, Now Playing, PlaybackService
   Shared/            App Group, storage paths
   DesignSystem/      colors, typography, adaptiveGlass, shared components
-  *Feature/          screens: Library, Folders, Player, Equalizer, Browser, Settings
+  *Feature/          screens: Library, Folders, Player, Equalizer, Settings
 docs/                ARCHITECTURE.md, STATUS.md
 ```
 

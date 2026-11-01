@@ -8,6 +8,6 @@ final class LaunchTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Library"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.tabBars.buttons["Folders"].exists)
-        XCTAssertTrue(app.tabBars.buttons["Browser"].exists)
+        XCTAssertTrue(app.tabBars.buttons["Settings"].exists)
     }
 }

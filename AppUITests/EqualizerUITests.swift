@@ -40,11 +40,7 @@ final class EqualizerUITests: XCTestCase {
         // Close the full player and delete the active preset in Settings.
         XCTAssertTrue(app.navigationBars["Equalizer"].waitForNonExistence(timeout: 5))
         app.buttons["Close Player"].tap()
-        // Back from All Tracks to the library root, where Settings lives.
-        let back = app.navigationBars.buttons.element(boundBy: 0)
-        XCTAssertTrue(back.waitForExistence(timeout: 5))
-        back.tap()
-        let settings = app.buttons["Settings"].firstMatch
+        let settings = app.tabBars.buttons["Settings"]
         XCTAssertTrue(settings.waitForExistence(timeout: 5))
         settings.tap()
         app.buttons["Equalizer Presets"].firstMatch.tap()

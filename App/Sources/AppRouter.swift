@@ -5,10 +5,9 @@ import Observation
 @Observable
 final class AppRouter {
     enum Tab: Hashable {
-        case library, folders, browser
+        case library, folders, settings
     }
 
     var selectedTab: Tab = .library
     var isPlayerPresented = false
-    var isSettingsPresented = false
 }

@@ -15,7 +15,7 @@ holds what you need to keep in mind while writing code. Update it whenever a dec
 | Audio | AVAudioEngine + AVAudioUnitEQ | EQ, rate, gapless and visualizer in one graph |
 | Files | Copied into the App Group container | Survive deletion of the original; reachable from the Share Extension |
 | Project | XcodeGen (`project.yml`), `.xcodeproj` not in git | No pbxproj conflicts during parallel work |
-| Tabs | Library · Folders · Browser (behind a flag) | Search lives in lists; EQ opens from the player |
+| Tabs | Library · Folders · Settings | Search lives in lists; EQ opens from the player |
 | Devices | iPhone only, portrait + landscape | Requirement |
 | Localization | English source strings, Russian translation | Requirement |
 
@@ -25,7 +25,7 @@ All dependencies point inward, toward Domain. Everything is assembled only in th
 
 ```
                        ┌──────────── App (Composition Root) ────────────┐
-                       │ AppContainer · RootView · AppRouter · Flags     │
+                       │ AppContainer · RootView · AppRouter             │
                        └──┬──────────┬──────────┬──────────┬─────────────┘
                           │          │          │          │
                  *Feature packages  DataLayer  Playback   Shared
@@ -44,8 +44,8 @@ All dependencies point inward, toward Domain. Everything is assembled only in th
 | `Playback` | `AudioSessionManager`, `AVAudioPlaybackEngine`, `NowPlayingCenter`, `RemoteCommands`, `DefaultPlaybackService` | Domain |
 | `Shared` | `AppGroup.id`, `StoragePaths`, `InboxWriter` (for extensions) | — |
 | `DesignSystem` | Colors, typography, `adaptiveGlass`, `adaptiveButtonStyle`, `miniPlayerHost`, `ArtworkView`, `TrackRow`, sliders | — |
-| `LibraryFeature`, `FoldersFeature`, `PlayerFeature`, `EqualizerFeature`, `BrowserFeature`, `SettingsFeature` | SwiftUI views + `@Observable` view models + a feature factory | Domain, DesignSystem |
-| `App` | `AppContainer`, `PreviewContainer`, `RootView`, `AppRouter`, `FeatureFlags` | everything |
+| `LibraryFeature`, `FoldersFeature`, `PlayerFeature`, `EqualizerFeature`, `SettingsFeature` | SwiftUI views + `@Observable` view models + a feature factory | Domain, DesignSystem |
+| `App` | `AppContainer`, `PreviewContainer`, `RootView`, `AppRouter` | everything |
 | `ShareExtension` (stage 8) | Drops received files into the Inbox | Shared |
 
 > The data package is named `DataLayer`, not `Data`, to avoid clashing with `Foundation.Data`.
