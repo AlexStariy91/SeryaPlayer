@@ -10,16 +10,32 @@ public struct AppSettings: Sendable, Equatable, Codable {
     public var accentColorID: String
     public var librarySort: TrackSort
     public var equalizer: EQSettings
+    /// The full player shows the spectrum visualizer instead of the artwork.
+    public var showsVisualizer: Bool
 
     public init(
         theme: AppTheme = .system,
         accentColorID: String = "serya",
         librarySort: TrackSort = TrackSort(),
-        equalizer: EQSettings = EQSettings()
+        equalizer: EQSettings = EQSettings(),
+        showsVisualizer: Bool = false
     ) {
         self.theme = theme
         self.accentColorID = accentColorID
         self.librarySort = librarySort
         self.equalizer = equalizer
+        self.showsVisualizer = showsVisualizer
+    }
+
+    /// Keys missing from settings saved by an older version take their defaults, so adding a setting
+    /// never resets the others.
+    public init(from decoder: any Decoder) throws {
+        let defaults = AppSettings()
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        theme = try container.decodeIfPresent(AppTheme.self, forKey: .theme) ?? defaults.theme
+        accentColorID = try container.decodeIfPresent(String.self, forKey: .accentColorID) ?? defaults.accentColorID
+        librarySort = try container.decodeIfPresent(TrackSort.self, forKey: .librarySort) ?? defaults.librarySort
+        equalizer = try container.decodeIfPresent(EQSettings.self, forKey: .equalizer) ?? defaults.equalizer
+        showsVisualizer = try container.decodeIfPresent(Bool.self, forKey: .showsVisualizer) ?? defaults.showsVisualizer
     }
 }
