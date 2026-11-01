@@ -3,6 +3,9 @@ import Domain
 import SwiftUI
 
 /// Library home: category rows and the Recently Added / Recently Played shelves.
+///
+/// A `ScrollView`, not a `List`: a List cell owns one context-menu interaction for the whole row, so a
+/// long press anywhere on a shelf lifted the row and showed the first card's menu instead of the pressed card's.
 struct LibraryHomeView: View {
     let context: LibraryContext
 
@@ -19,48 +22,84 @@ struct LibraryHomeView: View {
             }
             .accessibilityIdentifier("library.empty")
         } else {
-            List {
-                Section {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    CategoryDivider()
                     category(.allTracks, String(localized: "All Tracks", bundle: .module), "music.note", id: "library.allTracks")
                     category(.artists, String(localized: "Artists", bundle: .module), "music.mic", id: "library.artists")
                     category(.albums, String(localized: "Albums", bundle: .module), "square.stack", id: "library.albums")
                     category(.playlists, String(localized: "Playlists", bundle: .module), "music.note.list", id: "library.playlists")
+                    shelf(String(localized: "Recently Added", bundle: .module), tracks: store.recentlyAdded)
+                    shelf(String(localized: "Recently Played", bundle: .module), tracks: store.recentlyPlayed)
                 }
-                shelf(String(localized: "Recently Added", bundle: .module), tracks: store.recentlyAdded)
-                shelf(String(localized: "Recently Played", bundle: .module), tracks: store.recentlyPlayed)
+                .padding(.bottom, Spacing.xl)
             }
-            .listStyle(.plain)
             // Batched imports add tracks a chunk at a time: ease the shelves instead of snapping.
             .animation(.default, value: store.recentlyAdded.map(\.id))
         }
     }
 
     private func category(_ route: LibraryRoute, _ title: String, _ systemImage: String, id: String) -> some View {
-        NavigationLink(value: route) {
-            Label {
-                Text(title).font(AppFont.sectionTitle.weight(.regular))
-            } icon: {
-                Image(systemName: systemImage).foregroundStyle(Color.accentColor)
+        VStack(spacing: 0) {
+            NavigationLink(value: route) {
+                HStack(spacing: Spacing.m) {
+                    Image(systemName: systemImage)
+                        .font(AppFont.sectionTitle.weight(.regular))
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: CategoryDivider.iconWidth)
+                    Text(title)
+                        .font(AppFont.sectionTitle.weight(.regular))
+                        .foregroundStyle(SemanticColor.textPrimary)
+                    Spacer(minLength: Spacing.s)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(SemanticColor.textTertiary)
+                        .accessibilityHidden(true)
+                }
+                .padding(.vertical, Spacing.m)
+                .padding(.leading, Spacing.screenMargin)
+                .padding(.trailing, Spacing.screenMargin + Spacing.xs)
+                .frame(minHeight: 52)
+                .contentShape(.rect)
             }
-            .padding(.vertical, Spacing.xs)
+            .buttonStyle(CategoryRowStyle())
+            .accessibilityIdentifier(id)
+            CategoryDivider()
         }
-        .accessibilityIdentifier(id)
     }
 
     @ViewBuilder
     private func shelf(_ title: String, tracks: [Track]) -> some View {
         if !tracks.isEmpty {
-            Section {
-                TrackShelf(tracks: tracks, context: context)
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-            } header: {
-                Text(title)
-                    .font(AppFont.sectionTitle)
-                    .foregroundStyle(SemanticColor.textPrimary)
-                    .textCase(nil)
-            }
-            .listSectionSeparator(.hidden)
+            Text(title)
+                .font(AppFont.sectionTitle)
+                .foregroundStyle(SemanticColor.textPrimary)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.horizontal, Spacing.screenMargin + Spacing.xs)
+                .padding(.top, Spacing.xl)
+                .padding(.bottom, Spacing.s)
+            TrackShelf(tracks: tracks, context: context)
         }
+    }
+}
+
+/// A row separator inset to the category titles, like a plain `List`'s.
+private struct CategoryDivider: View {
+    static let iconWidth: CGFloat = 36
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        Rectangle()
+            .fill(SemanticColor.separator)
+            .frame(height: 1 / displayScale)
+            .padding(.leading, Spacing.screenMargin + Self.iconWidth + Spacing.m)
+    }
+}
+
+/// The List-like pressed highlight for the category rows.
+private struct CategoryRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Color(uiColor: .systemFill) : .clear)
     }
 }

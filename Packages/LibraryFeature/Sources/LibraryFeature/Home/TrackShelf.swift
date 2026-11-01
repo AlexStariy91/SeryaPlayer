@@ -19,7 +19,7 @@ struct TrackShelf: View {
                         card(track)
                     }
                     .buttonStyle(.plain)
-                    // Lift only this card (not the whole List row) and show its own actions.
+                    // Lift only this card and show its own actions.
                     .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: Self.artwork.cornerRadius))
                     .contextMenu {
                         TrackActionButtons(track: track, actions: context.actions)
