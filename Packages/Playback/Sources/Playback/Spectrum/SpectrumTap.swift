@@ -11,8 +11,8 @@ import Synchronization
 /// display rate instead of jumping once per chunk. Every buffer is allocated up front: `ingest` and
 /// `popFrame` allocate nothing (except `ingest` after a sample-rate change, which rebuilds the analyzer).
 final class SpectrumTap: Sendable {
-    /// Analyses per second of audio; the display loop pops at the same rate. 30 rather than 60: with the
-    /// smoothing it looks as fluid, and every frame redraws the bars (measured ~17% → ~12% CPU in the simulator).
+    /// Analyses per second of audio; the display loop pops at the same rate, so nothing is analysed
+    /// that is never shown. 30 rather than 60: with the smoothing it looks as fluid at half the work.
     static let framesPerSecond = 30.0
     /// Queued analyses beyond this are dropped (oldest first) so the bars never lag the music.
     static let maxQueuedFrames = 8
