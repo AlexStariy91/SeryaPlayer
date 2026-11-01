@@ -71,8 +71,10 @@ private struct QueueRow: View {
     }
 }
 
-#Preview("Queue") {
-    let preview = PreviewPlayer.playing()
-    QueueView(viewModel: preview.viewModel)
-        .task { await preview.viewModel.observe() }
-}
+#if DEBUG
+    #Preview("Queue") {
+        let preview = PreviewPlayer.playing()
+        QueueView(viewModel: preview.viewModel)
+            .task { await preview.viewModel.observe() }
+    }
+#endif

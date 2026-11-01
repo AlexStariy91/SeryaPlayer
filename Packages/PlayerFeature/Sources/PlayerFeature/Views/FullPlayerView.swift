@@ -89,18 +89,20 @@ struct FullPlayerView<EqualizerSheet: View>: View {
     }
 }
 
-#Preview("Full player") {
-    let preview = PreviewPlayer.playing()
-    FullPlayerView(viewModel: preview.viewModel) {
-        Text(verbatim: "Equalizer")
+#if DEBUG
+    #Preview("Full player") {
+        let preview = PreviewPlayer.playing()
+        FullPlayerView(viewModel: preview.viewModel) {
+            Text(verbatim: "Equalizer")
+        }
+        .task { await preview.viewModel.observe() }
     }
-    .task { await preview.viewModel.observe() }
-}
 
-#Preview("Full player, landscape", traits: .landscapeLeft) {
-    let preview = PreviewPlayer.playing()
-    FullPlayerView(viewModel: preview.viewModel) {
-        Text(verbatim: "Equalizer")
+    #Preview("Full player, landscape", traits: .landscapeLeft) {
+        let preview = PreviewPlayer.playing()
+        FullPlayerView(viewModel: preview.viewModel) {
+            Text(verbatim: "Equalizer")
+        }
+        .task { await preview.viewModel.observe() }
     }
-    .task { await preview.viewModel.observe() }
-}
+#endif
