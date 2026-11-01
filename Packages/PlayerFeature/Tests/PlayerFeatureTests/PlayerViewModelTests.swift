@@ -23,6 +23,20 @@ struct PlayerViewModelTests {
         PlaybackSnapshot(nowPlaying: tracks[index], isPlaying: isPlaying, queue: tracks, currentIndex: index)
     }
 
+    // MARK: - Playback speed
+
+    @Test func chosenSpeedIsAppliedAndSavedInTheSettings() {
+        let player = RecordingPlayer()
+        let settings = InMemorySettingsRepository(settings: AppSettings(theme: .dark))
+        let viewModel = makeViewModel(player: player, settings: settings)
+
+        viewModel.progress.setRate(1.5)
+
+        #expect(player.rates == [1.5])
+        #expect(settings.load().playbackRate == 1.5)
+        #expect(settings.load().theme == .dark)
+    }
+
     // MARK: - Sleep timer
 
     @Test func followsTheSleepTimerState() async {

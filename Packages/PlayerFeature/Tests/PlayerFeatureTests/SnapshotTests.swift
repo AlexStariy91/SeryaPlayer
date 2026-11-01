@@ -119,6 +119,32 @@ struct SnapshotTests {
         }
     }
 
+    @Test(arguments: [(1.0 as Float, "rate-1x"), (1.5, "rate-1_5x")])
+    func fullPlayerPlaybackRate(rate: Float, name: String) async {
+        let track = makeQueue(1)[0]
+        let player = RecordingPlayer(snapshot: PlaybackSnapshot(
+            nowPlaying: track,
+            isPlaying: true,
+            queue: [track],
+            currentIndex: 0,
+            rate: rate
+        ))
+        let viewModel = PlayerViewModel(
+            player: player,
+            sleepTimer: StubSleepTimer(),
+            artworkStore: StubArtworkStore(),
+            settingsRepository: InMemorySettingsRepository(),
+            colorExtractor: { _ in [.indigo, .teal] }
+        )
+        await viewModel.observePlayback()
+        player.currentTime = 83
+        viewModel.progress.tick()
+        check(name, size: CGSize(width: 393, height: 852)) {
+            FullPlayerView(viewModel: viewModel) { EmptyView() }
+                .environment(\.locale, Locale(identifier: "en_US"))
+        }
+    }
+
     @Test func fullPlayerSleepTimerCountdown() async {
         let player = RecordingPlayer(snapshot: PlaybackSnapshot(
             nowPlaying: makeQueue(1)[0],
