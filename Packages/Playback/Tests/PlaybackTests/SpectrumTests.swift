@@ -1,5 +1,6 @@
 import AVFAudio
 import Domain
+import DomainTestSupport
 import Foundation
 @testable import Playback
 import Testing
@@ -7,11 +8,14 @@ import Testing
 struct SpectrumAnalyzerTests {
     let analyzer = SpectrumAnalyzer(fftSize: 2048, bandCount: 28, sampleRate: 44100)
 
+    /// Analyses the same window for 3 s of 30 fps frames, so the automatic gain settles, and returns the last.
     private func analyze(_ samples: [Float]) -> [Float] {
         var bands = [Float](repeating: -1, count: analyzer.bandCount)
-        samples.withUnsafeBufferPointer { input in
-            bands.withUnsafeMutableBufferPointer { output in
-                analyzer.analyze(input.baseAddress!, into: output.baseAddress!)
+        for _ in 0 ..< 90 {
+            samples.withUnsafeBufferPointer { input in
+                bands.withUnsafeMutableBufferPointer { output in
+                    analyzer.analyze(input.baseAddress!, into: output.baseAddress!, elapsed: 1.0 / 30)
+                }
             }
         }
         return bands
@@ -53,6 +57,107 @@ struct SpectrumAnalyzerTests {
         // Each band of the upper half is wider than the one before it.
         let upperHalf = ranges.suffix(14).map(\.bins.count)
         #expect(zip(upperHalf, upperHalf.dropFirst()).allSatisfy { $0 <= $1 })
+    }
+}
+
+/// Calibration on signals closer to real music than sines, through the whole tap (ring, hop, gain).
+struct SpectrumCalibrationTests {
+    static let sampleRate = 44100.0
+
+    /// Pink noise (Paul Kellet's filter on seeded white noise), roughly -12 dBFS RMS before `gain`.
+    static func pinkNoise(seconds: Double, gain: Float, seed: UInt64 = 7) -> [Float] {
+        var generator = SeededGenerator(seed: seed)
+        var b0: Float = 0, b1: Float = 0, b2: Float = 0
+        return (0 ..< Int(seconds * sampleRate)).map { _ in
+            let white = Float.random(in: -1 ... 1, using: &generator)
+            b0 = 0.99765 * b0 + white * 0.0990460
+            b1 = 0.96300 * b1 + white * 0.2965164
+            b2 = 0.57000 * b2 + white * 1.0526913
+            return (b0 + b1 + b2 + white * 0.1848) * 0.12 * gain
+        }
+    }
+
+    /// A loud, soft-clipped chord with bass, mids and treble partials, like a loudly mastered track.
+    static func compressedMultiTone(seconds: Double, gain: Float) -> [Float] {
+        let partials: [(frequency: Double, amplitude: Double)] = [
+            (55, 1), (110, 0.8), (220, 0.6), (330, 0.5), (440, 0.5), (660, 0.4), (880, 0.35),
+            (1320, 0.3), (1760, 0.25), (2640, 0.2), (3520, 0.16), (5280, 0.12), (7040, 0.1), (10560, 0.07),
+        ]
+        return (0 ..< Int(seconds * sampleRate)).map { frame in
+            let time = Double(frame) / sampleRate
+            let sum = partials.reduce(0) { $0 + $1.amplitude * sin(2 * .pi * $1.frequency * time) }
+            return Float(tanh(sum * 0.9)) * gain
+        }
+    }
+
+    /// Feeds `samples` through a fresh tap and returns every queued analysis left at the end (up to 8).
+    private func levels(after samples: [Float], tap: SpectrumTap = SpectrumTap(bandCount: 28)) -> [[Float]] {
+        tap.ingest(mono: samples, sampleRate: Self.sampleRate)
+        var frames: [[Float]] = []
+        var bands = [Float](repeating: 0, count: 28)
+        while tap.popFrame(into: &bands) {
+            frames.append(bands)
+        }
+        return frames
+    }
+
+    private func checkLively(_ frames: [[Float]]) {
+        let all = frames.flatMap(\.self)
+        let loudest = all.max() ?? 0
+        let pinned = Double(all.filter { $0 >= 0.99 }.count) / Double(all.count)
+        let mean = all.reduce(0, +) / Float(all.count)
+        #expect(loudest > 0.6, "peaks use most of the height")
+        #expect(pinned < 0.1, "bars are not stuck at the ceiling: \(pinned)")
+        #expect((0.2 ... 0.75).contains(mean), "mean level \(mean)")
+        // Bands differ: not a wall of equal bars, and neither end of the spectrum is dead.
+        for bands in frames {
+            let spread = (bands.max() ?? 0) - (bands.min() ?? 0)
+            #expect(spread > 0.25)
+            #expect(bands.prefix(6).reduce(0, +) / 6 > 0.1, "lows")
+            #expect(bands.suffix(6).reduce(0, +) / 6 > 0.1, "highs")
+        }
+    }
+
+    @Test func loudPinkNoiseIsLively() {
+        checkLively(levels(after: Self.pinkNoise(seconds: 4, gain: 1)))
+    }
+
+    @Test func quietPinkNoiseUsesTheRangeToo() {
+        checkLively(levels(after: Self.pinkNoise(seconds: 6, gain: 0.1)))
+    }
+
+    @Test func loudCompressedMixIsNotPinned() {
+        let frames = levels(after: Self.compressedMultiTone(seconds: 4, gain: 1))
+        let all = frames.flatMap(\.self)
+        #expect((all.max() ?? 0) > 0.6)
+        #expect(Double(all.filter { $0 >= 0.99 }.count) / Double(all.count) < 0.1)
+    }
+
+    @Test func quietCompressedMixUsesTheRange() {
+        let frames = levels(after: Self.compressedMultiTone(seconds: 6, gain: 0.1))
+        let all = frames.flatMap(\.self)
+        #expect((all.max() ?? 0) > 0.6)
+        #expect(Double(all.filter { $0 >= 0.99 }.count) / Double(all.count) < 0.1)
+    }
+
+    @Test func silenceStaysAtZero() {
+        let frames = levels(after: [Float](repeating: 0, count: Int(2 * Self.sampleRate)))
+        #expect(!frames.isEmpty)
+        #expect(frames.allSatisfy { $0.allSatisfy { $0 == 0 } })
+    }
+
+    @Test func nearSilenceIsNotAmplified() {
+        let frames = levels(after: Self.pinkNoise(seconds: 6, gain: 0.0005))
+        #expect(frames.flatMap(\.self).allSatisfy { $0 < 0.3 })
+    }
+
+    @Test func transientAfterAQuietPartReachesTheTop() {
+        let tap = SpectrumTap(bandCount: 28)
+        _ = levels(after: Self.pinkNoise(seconds: 5, gain: 0.03), tap: tap)
+        // 1/15 s of a loud hit: the first analyses that contain it.
+        let hit = Self.pinkNoise(seconds: 1.0 / 15, gain: 1, seed: 11)
+        let frames = levels(after: hit, tap: tap)
+        #expect((frames.flatMap(\.self).max() ?? 0) > 0.95)
     }
 }
 

@@ -197,7 +197,7 @@ private final class Buffers {
             queuedCount -= 1
         }
         let slot = (frameHead + queuedCount) % SpectrumTap.maxQueuedFrames
-        analyzer.analyze(window, into: frames + slot * bandCount)
+        analyzer.analyze(window, into: frames + slot * bandCount, elapsed: Double(hop) / analyzer.sampleRate)
         queuedCount += 1
     }
 

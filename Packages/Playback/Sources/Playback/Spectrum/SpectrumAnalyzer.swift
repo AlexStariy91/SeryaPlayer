@@ -5,8 +5,8 @@ import Foundation
 ///
 /// Hann window → real FFT (vDSP) → power per bin → the loudest bin of each band in dB, tilted by
 /// +3 dB per octave around 1 kHz (music, like pink noise, has less energy per bin up high) and mapped
-/// from `floor...ceiling` dB to 0...1. Every buffer is allocated once in `init`; `analyze` allocates
-/// nothing, so it can run on the audio tap thread.
+/// to 0...1 by `AutoGain` against the recent loudness. Every buffer is allocated once in `init`;
+/// `analyze` allocates nothing, so it can run on the audio tap thread.
 final class SpectrumAnalyzer {
     let fftSize: Int
     let bandCount: Int
@@ -14,8 +14,6 @@ final class SpectrumAnalyzer {
 
     static let minFrequency = 40.0
     static let maxFrequency = 16000.0
-    static let floorDecibels: Float = -72
-    static let ceilingDecibels: Float = -12
     static let tiltPerOctave: Float = 3
 
     private let log2n: vDSP_Length
@@ -28,6 +26,7 @@ final class SpectrumAnalyzer {
     /// Half-open bin ranges, one per band.
     private let bandBins: [Range<Int>]
     private let bandTilt: [Float]
+    private var gain = AutoGain()
 
     /// - Parameter fftSize: a power of two.
     init(fftSize: Int = 2048, bandCount: Int, sampleRate: Double) {
@@ -87,7 +86,8 @@ final class SpectrumAnalyzer {
     /// - Parameters:
     ///   - samples: exactly `fftSize` mono samples, oldest first.
     ///   - bands: room for `bandCount` levels.
-    func analyze(_ samples: UnsafePointer<Float>, into bands: UnsafeMutablePointer<Float>) {
+    ///   - elapsed: seconds of audio since the previous analysis, for the automatic gain.
+    func analyze(_ samples: UnsafePointer<Float>, into bands: UnsafeMutablePointer<Float>, elapsed: Double) {
         let half = fftSize / 2
         vDSP_vmul(samples, 1, window, 1, windowed, 1, vDSP_Length(fftSize))
         var split = DSPSplitComplex(realp: real, imagp: imaginary)
@@ -102,13 +102,12 @@ final class SpectrumAnalyzer {
         // `zrip` returns twice the DFT, and the Hann window halves a sine's peak: a full-scale sine
         // has |X| = N / 2. Scale the power so that sine reads 0 dB.
         let scale = 4 / Float(fftSize * fftSize)
-        let range = Self.ceilingDecibels - Self.floorDecibels
         for band in 0 ..< bandCount {
             let bins = bandBins[band]
             var peak: Float = 0
             vDSP_maxv(power + bins.lowerBound, 1, &peak, vDSP_Length(bins.count))
-            let decibels = 10 * log10f(peak * scale + 1e-12) + bandTilt[band]
-            bands[band] = min(max((decibels - Self.floorDecibels) / range, 0), 1)
+            bands[band] = 10 * log10f(peak * scale + 1e-12) + bandTilt[band]
         }
+        gain.normalize(bands, count: bandCount, elapsed: elapsed)
     }
 }
