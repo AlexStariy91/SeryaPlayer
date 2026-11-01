@@ -236,3 +236,9 @@ struct EqualizerViewModelTests {
         #expect(deps.equalizer.gains[0] == 9)
     }
 }
+
+struct BuiltInPresetNameTests {
+    @Test func everyBuiltInPresetHasALocalizedName() {
+        #expect(BuiltInPresets.all.allSatisfy { Strings.builtInNames[$0.name] != nil })
+    }
+}
