@@ -2,26 +2,28 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// Floating "Importing 3 of 10" capsule shown while an import runs.
+/// "Importing 3 of 10" bar pinned under the navigation bar while an import runs.
 struct ImportProgressBanner: View {
     let progress: ImportProgress
 
     var body: some View {
-        HStack(spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
             if progress.total > 0 {
-                ProgressView(value: Double(progress.completed), total: Double(progress.total))
-                    .frame(width: 80)
                 Text("Importing \(progress.completed) of \(progress.total)", bundle: .module)
                     .monospacedDigit()
+                ProgressView(value: Double(progress.completed), total: Double(progress.total))
             } else {
-                ProgressView()
                 Text("Preparing Import…", bundle: .module)
+                ProgressView()
+                    .progressViewStyle(.linear)
             }
         }
         .font(AppFont.rowSubtitle)
-        .padding(.horizontal, Spacing.l)
-        .padding(.vertical, Spacing.m)
-        .adaptiveGlass()
+        .foregroundStyle(SemanticColor.textSecondary)
+        .padding(.horizontal, Spacing.screenMargin)
+        .padding(.vertical, Spacing.s)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("library.importProgress")
     }

@@ -30,6 +30,8 @@ struct LibraryHomeView: View {
                 shelf(String(localized: "Recently Played", bundle: .module), tracks: store.recentlyPlayed)
             }
             .listStyle(.plain)
+            // Batched imports add tracks a chunk at a time: ease the shelves instead of snapping.
+            .animation(.default, value: store.recentlyAdded.map(\.id))
         }
     }
 

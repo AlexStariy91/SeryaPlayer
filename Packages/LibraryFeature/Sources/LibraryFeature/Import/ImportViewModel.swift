@@ -28,14 +28,31 @@ final class ImportViewModel {
     private(set) var progress: ImportProgress?
     private(set) var summary: ImportSummary?
     var isShowingSummary = false
+    /// Progress of an import started elsewhere (inbox, "Open in…"), from `ImportProgressCenter`.
+    private(set) var externalProgress: ImportProgress?
+    /// What the banner shows: this view model's own import, else one running elsewhere.
+    var activeProgress: ImportProgress? {
+        progress ?? externalProgress
+    }
+
     var isImporting: Bool {
-        progress != nil
+        activeProgress != nil
     }
 
     @ObservationIgnored private let importTracks: ImportTracksUseCase
+    @ObservationIgnored private let activity: ImportProgressCenter?
 
-    init(importTracks: ImportTracksUseCase) {
+    init(importTracks: ImportTracksUseCase, activity: ImportProgressCenter? = nil) {
         self.importTracks = importTracks
+        self.activity = activity
+    }
+
+    /// Follows imports started outside the Library until the calling task is cancelled.
+    func observeActivity() async {
+        guard let activity else { return }
+        for await update in activity.updates() where update != externalProgress {
+            externalProgress = update
+        }
     }
 
     func present(_ source: Source) {

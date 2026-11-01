@@ -41,3 +41,28 @@ struct ImportViewModelTests {
         #expect(importer.source.allowsMultipleSelection)
     }
 }
+
+@MainActor
+struct ImportActivityTests {
+    @Test func externalProgressIsShownAndCleared() async {
+        let center = ImportProgressCenter()
+        let deps = TestDependencies()
+        let importer = ImportViewModel(importTracks: deps.importTracks, activity: center)
+        let observing = Task { await importer.observeActivity() }
+        defer { observing.cancel() }
+
+        center.report(ImportProgress(completed: 3, total: 10))
+        await waitUntil { importer.activeProgress == ImportProgress(completed: 3, total: 10) }
+        #expect(importer.isImporting)
+
+        center.finish()
+        await waitUntil { importer.activeProgress == nil }
+        #expect(!importer.isImporting)
+    }
+
+    private func waitUntil(_ condition: () -> Bool) async {
+        for _ in 0 ..< 200 where !condition() {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+    }
+}

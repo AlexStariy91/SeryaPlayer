@@ -15,6 +15,14 @@ public protocol LibraryDependencies {
     var artworkStore: any ArtworkStoring { get }
     var player: any PlaybackControlling { get }
     var importTracks: ImportTracksUseCase { get }
+    /// Progress of imports started outside the Library (inbox, "Open in…"). `nil` shows only picker imports.
+    var importProgress: ImportProgressCenter? { get }
+}
+
+public extension LibraryDependencies {
+    var importProgress: ImportProgressCenter? {
+        nil
+    }
 }
 
 public enum LibraryFeature {
