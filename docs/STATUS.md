@@ -6,7 +6,7 @@
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
-artwork added (#14). Wave 3 step 1 done: Settings tab (#15), sleep timer (#16). Next: step 2, `visualizer` + `rate`.
+artwork added (#14). Wave 3 step 1 done: Settings tab (#15), sleep timer (#16). Step 2 in progress: `visualizer`, `rate`.
 
 ## Workstreams and waves
 
@@ -30,8 +30,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
 | 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | ✅ #15 |
 | 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | ✅ #16 |
-| 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | waiting |
-| 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | waiting |
+| 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | in progress |
+| 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | in progress |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
