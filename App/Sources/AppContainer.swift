@@ -29,6 +29,8 @@ final class AppContainer {
     @ObservationIgnored let artworkStore: any ArtworkStoring
     @ObservationIgnored let metadataReader: any MetadataReading
     @ObservationIgnored let player: any PlaybackControlling
+    /// Owned by the playback service (it fades the engine and pauses it); exposed under its Domain contract.
+    @ObservationIgnored let sleepTimer: any SleepTimerControlling
 
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private let remoteCommands: RemoteCommands
@@ -68,6 +70,7 @@ final class AppContainer {
             }
         )
         self.player = player
+        sleepTimer = player.sleepTimer
         let remoteCommands = RemoteCommands()
         remoteCommands.attach(to: player)
         self.remoteCommands = remoteCommands
