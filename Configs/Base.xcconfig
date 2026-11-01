@@ -1,0 +1,7 @@
+// Shared by every configuration. Signing is personal, so it lives in Local.xcconfig next to this
+// file, which git ignores. Create it with your team ID to build on a device:
+//
+//     DEVELOPMENT_TEAM = ABCDE12345
+//
+// Settings from project.yml override this file, so DEVELOPMENT_TEAM must not be set there.
+#include? "Local.xcconfig"

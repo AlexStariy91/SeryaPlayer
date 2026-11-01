@@ -80,4 +80,5 @@ Not done / risks / manual on-device checks: …
 - `main` is protected by convention: only the orchestrator commits directly (docs, Composition Root).
 - Keep history clean: one logical change per commit, imperative mood, scope prefix —
   `Domain: implement QueueEngine`, `CI: cache SPM packages`. Squash fixups before pushing a PR.
-- No secrets, keys or `DEVELOPMENT_TEAM` in the repository. Signing is configured locally.
+- No secrets, keys or `DEVELOPMENT_TEAM` in the repository. Signing is configured locally in the git-ignored
+  `Configs/Local.xcconfig` (`DEVELOPMENT_TEAM = …`), which `Configs/Base.xcconfig` includes; it survives `xcodegen generate`.
