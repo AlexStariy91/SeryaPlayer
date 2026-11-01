@@ -217,6 +217,11 @@ public final class FakePlaybackController: PlaybackControlling {
     public func moveQueueItems(fromOffsets _: IndexSet, toOffset _: Int) {}
     public func removeQueueItems(atOffsets _: IndexSet) {}
     public func jump(toQueueIndex _: Int) {}
+    public private(set) var removedFromQueue: [Set<Track.ID>] = []
+    public func removeFromQueue(trackIDs: Set<Track.ID>) async {
+        removedFromQueue.append(trackIDs)
+    }
+
     public func setRate(_: Float) {}
     public func apply(_ equalizer: EQSettings) {
         appliedEqualizers.append(equalizer)

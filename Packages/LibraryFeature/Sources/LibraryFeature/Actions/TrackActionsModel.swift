@@ -46,7 +46,7 @@ final class TrackActionsModel {
         addToPlaylist = AddTracksToPlaylistUseCase(playlists: playlists)
         createPlaylist = CreatePlaylistUseCase(playlists: playlists)
         moveTracks = MoveTracksUseCase(tracks: tracks)
-        deleteTracks = DeleteTracksUseCase(tracks: tracks, files: files)
+        deleteTracks = DeleteTracksUseCase(tracks: tracks, files: files, player: player)
         editTags = EditTrackTagsUseCase(tracks: tracks, artwork: artwork)
     }
 

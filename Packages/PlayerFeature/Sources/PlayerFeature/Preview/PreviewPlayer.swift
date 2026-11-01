@@ -104,6 +104,10 @@
             snapshot.queue.remove(atOffsets: offsets)
         }
 
+        func removeFromQueue(trackIDs: Set<Track.ID>) async {
+            snapshot.queue.removeAll { trackIDs.contains($0.id) }
+        }
+
         func jump(toQueueIndex index: Int) {
             guard snapshot.queue.indices.contains(index) else { return }
             snapshot.currentIndex = index

@@ -64,6 +64,8 @@ final class RecordingPlayer: PlaybackControlling {
         calls.append(.remove(offsets))
     }
 
+    func removeFromQueue(trackIDs _: Set<Track.ID>) async {}
+
     func jump(toQueueIndex index: Int) {
         calls.append(.jump(index))
     }

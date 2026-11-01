@@ -141,6 +141,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         engine.stop()
         isPlaying = false
         resumePosition = 0
+        // Let go of the file: it may be about to be deleted. The next `load` opens a new one.
+        file = nil
     }
 
     public func seek(to time: TimeInterval) {

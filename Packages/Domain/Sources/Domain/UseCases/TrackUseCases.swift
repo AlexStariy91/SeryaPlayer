@@ -1,19 +1,23 @@
 import Foundation
 
-/// Deletes tracks from the library and removes their audio files.
+/// Deletes tracks from the library, drops them from playback and removes their audio files.
 /// File removal is best effort: a missing file never blocks deleting the record.
 public struct DeleteTracksUseCase: Sendable {
     private let tracks: any TrackRepository
     private let files: any FileStoring
+    private let player: any PlaybackControlling
 
-    public init(tracks: any TrackRepository, files: any FileStoring) {
+    public init(tracks: any TrackRepository, files: any FileStoring, player: any PlaybackControlling) {
         self.tracks = tracks
         self.files = files
+        self.player = player
     }
 
     public func callAsFunction(_ doomed: [Track]) async throws {
         guard !doomed.isEmpty else { return }
         try await tracks.delete(ids: doomed.map(\.id))
+        // Before the files go, so the engine moves off a file that is about to disappear.
+        await player.removeFromQueue(trackIDs: Set(doomed.map(\.id)))
         for track in doomed {
             try? await files.deleteFile(relativePath: track.relativePath)
         }
