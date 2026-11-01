@@ -6,7 +6,7 @@
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
-artwork added (#14). Wave 3 in progress: `settings-tab`, `extras`.
+artwork added (#14). Wave 3 step 1 in progress: `settings-tab`, `sleep-timer`.
 
 ## Workstreams and waves
 
@@ -29,7 +29,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 2 | `settings` | 7 | SettingsFeature | Sonnet | ✅ #10 |
 | — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
 | 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | in progress |
-| 3 | `extras` | 9 | Playback, PlayerFeature | Opus | in progress |
+| 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | in progress |
+| 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | waiting |
+| 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | waiting |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -67,7 +69,10 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   force-push and deletion), so PRs are merged by hand after CI is green.
 - 2026-11-01. Scope cut for wave 3 (user decision): no in-app browser and no download by link; the Browser tab
   becomes a Settings tab (Settings leave the Library toolbar); `BrowserFeature` and the browser flag are removed.
-  "Share to SeryaPlayer" stays. Smart playlists are dropped from `extras`.
+  "Share to SeryaPlayer" already works through the app's audio document types (checked on device), so no Share
+  Extension. Smart playlists and gapless playback are dropped from `extras` (gapless rewrites the engine's
+  scheduling, which works on device; revisit only if gaps bother the user). `extras` is split into sessions,
+  at most two at a time: step 1 `settings-tab` + `sleep-timer`; step 2 `visualizer` + `rate`.
 
 ## Open questions
 
@@ -169,12 +174,14 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ### Stage 8. Settings tab and sharing — `settings-tab`
 - [ ] Settings tab replaces Browser; BrowserFeature package and flag removed
-- [ ] "Share to SeryaPlayer": check the existing document types on device first; a Share Extension only if needed
+- [x] "Share to SeryaPlayer" works through the audio document types (checked on device); no Share Extension
 - ~~Download by link; BrowserFeature (WKWebView, bookmarks, history, downloads)~~ dropped 2026-11-01
 
-### Stage 9. Advanced — `extras`
-- [ ] Gapless, sleep timer, 0.5–2× rate and position memory for long files, visualizer (vDSP)
-- ~~Smart playlists~~ dropped 2026-11-01
+### Stage 9. Advanced — `sleep-timer`, `visualizer`, `rate`
+- [ ] Sleep timer with fade-out (`sleep-timer`)
+- [ ] Visualizer (vDSP) (`visualizer`)
+- [ ] 0.5–2× rate and position memory for long files (`rate`)
+- ~~Gapless, smart playlists~~ dropped 2026-11-01
 
 ### Stage 10. Polish
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
