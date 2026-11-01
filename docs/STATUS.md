@@ -6,7 +6,7 @@
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
-artwork added (#14). Wave 3 step 1 in progress: `settings-tab`, `sleep-timer`.
+artwork added (#14). Wave 3 step 1 done: Settings tab (#15), sleep timer (#16). Next: step 2, `visualizer` + `rate`.
 
 ## Workstreams and waves
 
@@ -28,8 +28,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ✅ #9 |
 | 2 | `settings` | 7 | SettingsFeature | Sonnet | ✅ #10 |
 | — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
-| 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | in progress |
-| 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | in progress |
+| 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | ✅ #15 |
+| 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | ✅ #16 |
 | 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | waiting |
 | 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | waiting |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
@@ -73,6 +73,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   Extension. Smart playlists and gapless playback are dropped from `extras` (gapless rewrites the engine's
   scheduling, which works on device; revisit only if gaps bother the user). `extras` is split into sessions,
   at most two at a time: step 1 `settings-tab` + `sleep-timer`; step 2 `visualizer` + `rate`.
+- 2026-11-02. Sleep timer (#16). Domain changes: `SleepTimerControlling` + `SleepTimerState`
+  (`off`, `countdown(deadline:)`, `paused(remaining:)`, `endOfTrack`) + `SleepTimerOption`; `PlaybackEngine.setVolume`.
+  The countdown runs only while music plays (user decision); the last 10 s fade on the main mixer; "End of Track"
+  advances to the next item and leaves it paused, like Apple Music. The active button shows the remaining time on the
+  highlight, like Podcasts.
 
 ## Open questions
 
@@ -172,13 +177,13 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] About
 - [x] Theme/accent UI test, snapshots
 
-### Stage 8. Settings tab and sharing — `settings-tab`
-- [ ] Settings tab replaces Browser; BrowserFeature package and flag removed
+### Stage 8. Settings tab and sharing — `settings-tab` — ✅
+- [x] Settings tab replaces Browser; BrowserFeature package and flag removed (#15)
 - [x] "Share to SeryaPlayer" works through the audio document types (checked on device); no Share Extension
 - ~~Download by link; BrowserFeature (WKWebView, bookmarks, history, downloads)~~ dropped 2026-11-01
 
 ### Stage 9. Advanced — `sleep-timer`, `visualizer`, `rate`
-- [ ] Sleep timer with fade-out (`sleep-timer`)
+- [x] Sleep timer with fade-out (`sleep-timer`, #16)
 - [ ] Visualizer (vDSP) (`visualizer`)
 - [ ] 0.5–2× rate and position memory for long files (`rate`)
 - ~~Gapless, smart playlists~~ dropped 2026-11-01
@@ -189,6 +194,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-11-02 — wave 3 step 1: Settings tab replaces Browser, BrowserFeature removed (#15); sleep timer (#16).
+  Both checked on an iPhone together before merging. Next: step 2, `visualizer` + `rate`.
 - 2026-11-01 — stage 3 on-device checklist passed on an iPhone. The only finding: tracks without artwork showed
   an empty cover on the Lock Screen and in Control Center; fixed with an injected placeholder (#14). Next: wave 3.
 - 2026-11-01 — device feedback (#13): equalizer redesign; list scroll performance; Folders search, Select All,

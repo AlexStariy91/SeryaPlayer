@@ -12,8 +12,8 @@ holds what you need to keep in mind while writing code. Update it whenever a dec
 | Architecture | Clean Architecture, layers as local SPM packages | The compiler enforces boundaries |
 | DI | Constructor injection + Composition Root, no libraries | Explicit dependencies, easy mocks |
 | Database | Core Data (not SwiftData) | Reliable on iOS 18; `@Query` isn't needed since views work with Domain types |
-| Audio | AVAudioEngine + AVAudioUnitEQ | EQ, rate, gapless and visualizer in one graph |
-| Files | Copied into the App Group container | Survive deletion of the original; reachable from the Share Extension |
+| Audio | AVAudioEngine + AVAudioUnitEQ | EQ, rate, sleep-timer fade and visualizer in one graph |
+| Files | Copied into the App Group container | Survive deletion of the original; "Share to SeryaPlayer" works through the audio document types |
 | Project | XcodeGen (`project.yml`), `.xcodeproj` not in git | No pbxproj conflicts during parallel work |
 | Tabs | Library · Folders · Settings | Search lives in lists; EQ opens from the player |
 | Devices | iPhone only, portrait + landscape | Requirement |
@@ -46,7 +46,6 @@ All dependencies point inward, toward Domain. Everything is assembled only in th
 | `DesignSystem` | Colors, typography, `adaptiveGlass`, `adaptiveButtonStyle`, `miniPlayerHost`, `ArtworkView`, `TrackRow`, sliders | — |
 | `LibraryFeature`, `FoldersFeature`, `PlayerFeature`, `EqualizerFeature`, `SettingsFeature` | SwiftUI views + `@Observable` view models + a feature factory | Domain, DesignSystem |
 | `App` | `AppContainer`, `PreviewContainer`, `RootView`, `AppRouter` | everything |
-| `ShareExtension` (stage 8) | Drops received files into the Inbox | Shared |
 
 > The data package is named `DataLayer`, not `Data`, to avoid clashing with `Foundation.Data`.
 
@@ -146,7 +145,7 @@ Core Data + files in the App Group container (Application Support on an unsigned
   SeryaPlayer.sqlite
   Media/<uuid>.<ext>        ← copied audio files
   Artwork/<hash>.jpg        ← artwork + downscaled copies
-  Inbox/                    ← written by the Share Extension
+  Inbox/                    ← reserved for app extensions (none today)
   PlaybackState.json
 App Documents/Inbox/        ← visible in Finder and the Files app
 ```
@@ -155,7 +154,7 @@ App Documents/Inbox/        ← visible in Finder and the Files app
 - Duplicates are detected by `contentHash` (size + SHA-256 of the first 1 MB).
 - Artwork is stored on disk by hash, so all tracks of an album share one file.
 - `InboxProcessor` picks up files from both inboxes on every activation and runs them through the regular import.
-  The extension never writes to the database.
+  Extensions, if added, never write to the database.
 
 ## Audio
 
