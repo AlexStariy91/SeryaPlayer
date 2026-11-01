@@ -23,6 +23,29 @@ struct UserDefaultsSettingsRepositoryTests {
         #expect(UserDefaultsSettingsRepository(defaults: defaults).load() == settings)
     }
 
+    @Test func playbackRateSurvivesRelaunch() throws {
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        var settings = AppSettings()
+        #expect(settings.playbackRate == 1)
+        settings.playbackRate = 1.5
+        UserDefaultsSettingsRepository(defaults: defaults).save(settings)
+
+        #expect(UserDefaultsSettingsRepository(defaults: defaults).load().playbackRate == 1.5)
+    }
+
+    @Test func settingsSavedBeforeTheRateExistedKeepEverythingElse() throws {
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        var settings = AppSettings(theme: .dark, accentColorID: "mint")
+        settings.equalizer.isEnabled = true
+        var object = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(settings)) as? [String: Any])
+        object["playbackRate"] = nil
+        try defaults.set(JSONSerialization.data(withJSONObject: object), forKey: UserDefaultsSettingsRepository.defaultKey)
+
+        #expect(UserDefaultsSettingsRepository(defaults: defaults).load() == settings)
+    }
+
     @Test func corruptValueFallsBackToDefaults() throws {
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -91,5 +114,28 @@ struct InboxProcessorTests {
 
         #expect(await processor.process() == ImportResult())
         #expect(await log.batches.isEmpty)
+    }
+}
+
+struct UserDefaultsTrackPositionRepositoryTests {
+    let suiteName = "DataLayerTests-\(UUID().uuidString)"
+
+    @Test func savesReadsAndRemovesPositions() throws {
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let repository = UserDefaultsTrackPositionRepository(defaults: defaults)
+        let first = UUID(), second = UUID()
+        #expect(repository.position(for: first) == nil)
+
+        repository.save(position: 123.5, for: first)
+        repository.save(position: 900, for: second)
+        #expect(UserDefaultsTrackPositionRepository(defaults: defaults).position(for: first) == 123.5)
+
+        repository.save(position: 200, for: first)
+        #expect(repository.position(for: first) == 200)
+
+        repository.remove(trackIDs: [first, UUID()])
+        #expect(repository.position(for: first) == nil)
+        #expect(repository.position(for: second) == 900)
     }
 }

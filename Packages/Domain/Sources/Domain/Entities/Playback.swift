@@ -60,3 +60,14 @@ public struct PlaybackSnapshot: Sendable, Equatable {
         self.rate = rate
     }
 }
+
+/// Playback speed choices. Pitch is preserved by the engine.
+public enum PlaybackRate {
+    public static let normal: Float = 1
+    public static let options: [Float] = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+
+    /// Nearest allowed speed, for values coming from outside (a remote command, an old setting).
+    public static func nearestOption(to rate: Float) -> Float {
+        options.min { abs($0 - rate) < abs($1 - rate) } ?? normal
+    }
+}

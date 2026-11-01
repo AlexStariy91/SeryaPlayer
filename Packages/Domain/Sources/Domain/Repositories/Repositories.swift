@@ -54,3 +54,12 @@ public protocol PlaybackStateRepository: Sendable {
     func load() async -> PlaybackState?
     func save(_ state: PlaybackState) async throws
 }
+
+/// Where the user left off in long tracks (audiobooks, podcasts, lectures), keyed by track ID.
+/// Synchronous so the player can pick the start position while loading a file; implementations are
+/// small local stores.
+public protocol TrackPositionRepository: Sendable {
+    func position(for trackID: Track.ID) -> TimeInterval?
+    func save(position: TimeInterval, for trackID: Track.ID)
+    func remove(trackIDs: Set<Track.ID>)
+}

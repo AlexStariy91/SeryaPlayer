@@ -171,6 +171,16 @@
         }
       }
     },
+    "Playback Speed" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скорость воспроизведения"
+          }
+        }
+      }
+    },
     "Previous Track" : {
       "localizations" : {
         "ru" : {

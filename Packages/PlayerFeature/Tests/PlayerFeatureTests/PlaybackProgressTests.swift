@@ -15,6 +15,30 @@ struct PlaybackProgressTests {
         #expect(progress.currentTime == 12.5)
     }
 
+    @Test func pickingASpeedReachesThePlayerAndIsReported() {
+        let player = RecordingPlayer()
+        var reported: [Float] = []
+        let progress = PlaybackProgress(player: player) { reported.append($0) }
+        #expect(progress.rate == 1)
+
+        progress.setRate(1.5)
+
+        #expect(progress.rate == 1.5)
+        #expect(player.rates == [1.5])
+        #expect(reported == [1.5])
+    }
+
+    @Test func tickFollowsTheSpeedOfThePlayer() {
+        let player = RecordingPlayer(snapshot: PlaybackSnapshot(rate: 2))
+        let progress = PlaybackProgress(player: player)
+        #expect(progress.rate == 2)
+
+        player.snapshot.rate = 0.75
+        progress.tick()
+
+        #expect(progress.rate == 0.75)
+    }
+
     @Test func tinyChangesAreIgnored() {
         let player = RecordingPlayer()
         let progress = PlaybackProgress(player: player)

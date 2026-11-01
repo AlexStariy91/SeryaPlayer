@@ -16,6 +16,7 @@ final class RecordingPlayer: PlaybackControlling {
     var snapshotsToSend: [PlaybackSnapshot] = []
     var currentTime: TimeInterval = 0
     private(set) var calls: [Call] = []
+    private(set) var rates: [Float] = []
 
     init(snapshot: PlaybackSnapshot = PlaybackSnapshot()) {
         self.snapshot = snapshot
@@ -70,7 +71,10 @@ final class RecordingPlayer: PlaybackControlling {
         calls.append(.jump(index))
     }
 
-    func setRate(_: Float) {}
+    func setRate(_ rate: Float) {
+        rates.append(rate)
+    }
+
     func apply(_: EQSettings) {}
     func restore() async {}
     func persist() async {}
