@@ -16,6 +16,8 @@ final class MockPlaybackEngine: PlaybackEngine {
     private(set) var seeks: [TimeInterval] = []
     private(set) var rate: Float = 1
     private(set) var equalizer: EQSettings?
+    private(set) var volume: Float = 1
+    private(set) var volumes: [Float] = []
     var failingURLs: Set<URL> = []
 
     init() {
@@ -68,6 +70,11 @@ final class MockPlaybackEngine: PlaybackEngine {
 
     func apply(_ equalizer: EQSettings) {
         self.equalizer = equalizer
+    }
+
+    func setVolume(_ volume: Float) {
+        self.volume = volume
+        volumes.append(volume)
     }
 }
 

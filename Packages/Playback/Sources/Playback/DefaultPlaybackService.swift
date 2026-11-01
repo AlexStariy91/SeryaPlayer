@@ -19,6 +19,9 @@ public final class DefaultPlaybackService: PlaybackControlling {
         }
     }
 
+    /// Pauses playback after a while or at the end of the track; conforms to `SleepTimerControlling`.
+    public let sleepTimer: SleepTimer
+
     private let engine: any PlaybackEngine
     private let trackRepository: any TrackRepository
     private let stateRepository: any PlaybackStateRepository
@@ -47,6 +50,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
     ///   - urlForTrack: absolute file URL for a track (resolves `relativePath` against the library root).
     ///   - artworkURLForTrack: large artwork for Now Playing; may return nil.
     ///   - randomGenerator: used for shuffling; inject a seeded generator in tests.
+    ///   - sleepTimer: defaults to a real-time timer on `engine`; inject one with a fake clock in tests.
     public init(
         engine: any PlaybackEngine,
         trackRepository: any TrackRepository,
@@ -55,9 +59,11 @@ public final class DefaultPlaybackService: PlaybackControlling {
         urlForTrack: @escaping @Sendable (Track) -> URL,
         artworkURLForTrack: @escaping @Sendable (Track) async -> URL? = { _ in nil },
         randomGenerator: any RandomNumberGenerator = SystemRandomNumberGenerator(),
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        sleepTimer: SleepTimer? = nil
     ) {
         self.engine = engine
+        self.sleepTimer = sleepTimer ?? SleepTimer(engine: engine)
         self.trackRepository = trackRepository
         self.stateRepository = stateRepository
         self.nowPlaying = nowPlaying
@@ -65,6 +71,10 @@ public final class DefaultPlaybackService: PlaybackControlling {
         self.artworkURLForTrack = artworkURLForTrack
         self.randomGenerator = randomGenerator
         self.now = now
+        self.sleepTimer.pausePlayback = { [weak self] in
+            guard let self, isPlaying else { return }
+            pauseEngine()
+        }
 
         let events = engine.events
         eventsTask = Task { [weak self] in
@@ -96,6 +106,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func play(_ tracks: [Track], startingAt index: Int, shuffled: Bool) {
         guard tracks.indices.contains(index) else { return }
+        sleepTimer.userDidStartPlayback()
         remember(tracks)
         queue.start(with: tracks.map(\.id), at: index, shuffled: shuffled, using: &randomGenerator)
         loadCurrent(at: 0, autoplay: true)
@@ -103,12 +114,10 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func togglePlayPause() {
         if isPlaying {
-            engine.pause()
-            isPlaying = false
-            resumeAfterInterruption = false
-            refresh()
+            pauseEngine()
             return
         }
+        sleepTimer.userDidStartPlayback()
         if queue.current == nil {
             guard !queue.items.isEmpty else { return }
             queue.jump(to: 0)
@@ -218,6 +227,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func jump(toQueueIndex index: Int) {
         guard queue.items.indices.contains(index) else { return }
+        sleepTimer.userDidStartPlayback()
         queue.jump(to: index)
         loadCurrent(at: 0, autoplay: true)
     }
@@ -265,8 +275,10 @@ public final class DefaultPlaybackService: PlaybackControlling {
         switch event {
         case let .didFinish(generation):
             guard generation == loadedGeneration else { return }
+            // "End of Track": move on to the next item, but leave it paused.
+            let autoplay = !sleepTimer.trackDidEnd()
             if queue.advance(userInitiated: false) != nil {
-                loadCurrent(at: 0, autoplay: true)
+                loadCurrent(at: 0, autoplay: autoplay)
             } else {
                 finishQueue()
             }
@@ -281,10 +293,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
                 startEngine()
             }
         case .routeRequiresPause:
-            engine.pause()
-            isPlaying = false
-            resumeAfterInterruption = false
-            refresh()
+            pauseEngine()
         case let .failed(message):
             logger.error("Playback failed: \(message)")
             isPlaying = false
@@ -300,11 +309,19 @@ public final class DefaultPlaybackService: PlaybackControlling {
         }
     }
 
+    private func pauseEngine() {
+        engine.pause()
+        isPlaying = false
+        resumeAfterInterruption = false
+        refresh()
+    }
+
     private func startIfIdle(_ wasIdle: Bool) {
         guard wasIdle else {
             refresh()
             return
         }
+        sleepTimer.userDidStartPlayback()
         if queue.current == nil {
             queue.jump(to: 0)
         }
@@ -369,6 +386,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     /// End of the queue with repeat off: rewind to the first item, paused, like Apple Music.
     private func finishQueue() {
+        sleepTimer.playbackDidStop()
         engine.stop()
         isPlaying = false
         guard !queue.items.isEmpty else {
@@ -380,6 +398,7 @@ public final class DefaultPlaybackService: PlaybackControlling {
     }
 
     private func stopPlayback() {
+        sleepTimer.playbackDidStop()
         engine.stop()
         isPlaying = false
         loadedGeneration = nil
@@ -436,7 +455,9 @@ public final class DefaultPlaybackService: PlaybackControlling {
             self.publishNowPlaying(for: track)
         }
     }
+}
 
+extension DefaultPlaybackService {
     /// Removes tracks deleted since the state was saved and keeps the current item when possible.
     /// Returns the cleaned state and whether the saved position still applies to the current item.
     static func dropMissingTracks(from state: PlaybackState, available: Set<Track.ID>) -> (PlaybackState, keptPosition: Bool) {
