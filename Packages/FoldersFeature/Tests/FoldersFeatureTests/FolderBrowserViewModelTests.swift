@@ -195,6 +195,20 @@ struct FolderBrowserViewModelTests {
         #expect(try await deps.tracks.tracks(inFolder: nil, includeSubfolders: false).isEmpty)
     }
 
+    @Test func selectAllTogglesEveryItemOnTheScreen() async {
+        let fixture = await makeFixture()
+        let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)
+        viewModel.isEditing = true
+        #expect(!viewModel.isAllSelected)
+
+        viewModel.toggleSelectAll()
+        #expect(viewModel.selection == [.folder(rock.id), .folder(jazz.id), .track(viewModel.tracks[0].id)])
+        #expect(viewModel.isAllSelected)
+
+        viewModel.toggleSelectAll()
+        #expect(viewModel.selection.isEmpty)
+    }
+
     @Test func batchDeleteOfEverythingEndsSelectMode() async throws {
         let fixture = await makeFixture()
         let viewModel = FolderBrowserViewModel(folderID: nil, context: fixture.context)

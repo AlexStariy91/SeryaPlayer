@@ -38,6 +38,20 @@ final class FolderBrowserViewModel {
     }
 
     var selection: Set<FolderItem> = []
+
+    /// Every folder and song on this screen, for Select All.
+    private var allItems: Set<FolderItem> {
+        Set(subfolders.map { .folder($0.id) } + tracks.map { .track($0.id) })
+    }
+
+    var isAllSelected: Bool {
+        !allItems.isEmpty && selection.isSuperset(of: allItems)
+    }
+
+    func toggleSelectAll() {
+        selection = isAllSelected ? [] : allItems
+    }
+
     var namePrompt: NamePrompt?
     var nameText = ""
     var pendingDeletion: DeletionRequest?

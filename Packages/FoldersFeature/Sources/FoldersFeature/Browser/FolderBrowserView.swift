@@ -187,6 +187,15 @@ struct FolderBrowserView: View {
     private var toolbar: some ToolbarContent {
         if isEditing {
             ToolbarItem(placement: .topBarLeading) {
+                Button(
+                    viewModel.isAllSelected
+                        ? String(localized: "Deselect All", bundle: .module)
+                        : String(localized: "Select All", bundle: .module),
+                    action: viewModel.toggleSelectAll
+                )
+                .accessibilityIdentifier("folders.selectAll")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button(String(localized: "Move…", bundle: .module), systemImage: "folder") {
                         viewModel.beginMove(viewModel.selection)
