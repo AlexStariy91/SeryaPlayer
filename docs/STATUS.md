@@ -1,11 +1,12 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-10-30
+> Updated: 2026-11-01
 
 ## Now
 
-**Waves 1 and 2 — done.** All screens are merged and wired into `RootView`. Next: on-device checks, then wave 3.
+**Waves 1 and 2 — done, device feedback fixed (#13).** The app was tested on an iPhone and the fixes are merged,
+with the app icon and launch screen. Next: the on-device audio checklist (stage 3), then wave 3.
 
 ## Workstreams and waves
 
@@ -46,6 +47,24 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-10-30. Workstreams run on Sonnet by default, one or two at a time; sessions skip simulator
   screenshots (the orchestrator checks visuals after wiring) and don't wait for CI.
 - 2026-10-30. `PlaybackControlling.jump(toQueueIndex:)` added (player).
+- 2026-11-01. Device feedback round (#13). Domain changes: `PlaybackControlling` is `Sendable` and gains
+  `removeFromQueue(trackIDs:)` (delete use cases call it); `ImportProgressCenter` and batched import writes;
+  `StartPlaybackUseCase.playOrToggle`.
+- 2026-11-01. Equalizer is one sheet at `.fraction(0.9)` laid out like Settings (replaces the `.medium`/`.large` plan).
+- 2026-11-01. Library home is a `ScrollView`, not a `List`: a List cell owns one context menu for the whole row,
+  so shelf cards couldn't have their own.
+- 2026-11-01. Never give `swipeActions` buttons `role: .destructive` when deletion is confirmed: SwiftUI removes
+  the row before the confirmation and the real delete then crashes the list. Use `.tint(.red)`.
+- 2026-11-01. List rows read the playing track themselves (`playback:` store passed to the row), never the list
+  body: otherwise every playback change re-renders and re-diffs every row (visible stutter in Debug builds).
+- 2026-11-01. Audio stutter and UI hangs seen on device happen only under the Xcode debugger; judge
+  performance from a build launched from the Home Screen.
+- 2026-11-01. Signing lives in the git-ignored `Configs/Local.xcconfig` (included by `Configs/Base.xcconfig`).
+  `scripts/test.sh` runs `xcodegen --use-cache`, so it no longer rewrites the project under an open Xcode.
+- 2026-11-01. String Catalogs are kept in Xcode's exact format with `scripts/format-xcstrings.swift`;
+  preview-only strings are marked Don't Translate.
+- 2026-11-01. "Allow auto-merge" is on, but `main` has no required status checks (the ruleset only blocks
+  force-push and deletion), so PRs are merged by hand after CI is green.
 
 ## Open questions
 
@@ -55,6 +74,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   CI is the reference — run `brew upgrade swiftformat` locally.
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
+- The Browser tab placeholder ("Browser", "Coming soon") has no Russian translation; it is replaced in wave 3.
+- The animated now-playing symbol costs CPU while its row is on screen (measured in the simulator only).
 - Xcode 26: once installed, verify the build and add iOS 26 to CI.
 
 ---
@@ -109,38 +130,39 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 ### Stage 4. First sound — wiring-1 + `player`, `library`
 - [x] AppContainer wires DataLayer and Playback; InboxProcessor on launch/activation; onOpenURL; persist on background (orchestrator)
 - [x] RootView with real features, miniPlayerHost (orchestrator, wiring-2)
-- [ ] Import via "+": files and folders, progress, summary (library)
-- [ ] "All Tracks" list (library)
-- [ ] Mini player via miniPlayerHost (player)
-- [ ] Full player: portrait and landscape, MeshGradient, timeline, symbol effects, volume, AirPlay, shuffle/repeat (player)
-- [ ] Zoom transition, swipe down to dismiss, sensoryFeedback (player)
-- [ ] Queue (player)
-- [ ] View model tests; UI test "import → play → next"; player snapshots
-- Done when: music can be imported and played on iOS 18 and iOS 26.
+- [x] Import via "+": files and folders, progress, summary (library)
+- [x] "All Tracks" list (library)
+- [x] Mini player via miniPlayerHost (player)
+- [x] Full player: portrait and landscape, MeshGradient, timeline, symbol effects, volume, AirPlay, shuffle/repeat (player)
+- [x] Zoom transition, swipe down to dismiss, sensoryFeedback (player)
+- [x] Queue (player)
+- [x] View model tests; UI test "import → play → next"; player snapshots
+- Done when: music can be imported and played on iOS 18 and iOS 26. (iOS 18: ✅ on device; iOS 26: pending)
 
 ### Stage 5. Library — `library`, `folders`
-- [ ] Library: all tracks, artists, albums, playlists; recently added / recently played
-- [ ] Persisted sorting; `.searchable` with scopes, debounce
-- [ ] Actions: Play Next, Play Last, Add to Playlist, Move to Folder, Edit Tags, Delete
-- [ ] Tag editing (PhotosPicker for artwork)
-- [ ] Playlists: CRUD, track picker, drag to reorder, collage cover
-- [ ] Folders: tree, CRUD, move, delete with a choice, manual order, multi-select, play/shuffle a folder
-- [ ] Empty states; 10,000 tracks scroll smoothly
-- [ ] View model tests, playlist UI test, snapshots
+- [x] Library: all tracks, artists, albums, playlists; recently added / recently played
+- [x] Persisted sorting; `.searchable` with scopes, debounce
+- [x] Actions: Play Next, Play Last, Add to Playlist, Move to Folder, Edit Tags, Delete
+- [x] Tag editing (PhotosPicker for artwork)
+- [x] Playlists: CRUD, track picker, drag to reorder, collage cover
+- [x] Folders: tree, CRUD, move, delete with a choice, manual order, multi-select with Select All, play/shuffle a folder (context menu), search
+- [x] Empty states
+- [ ] 10,000 tracks scroll smoothly (fixed for 150+ in #13; not measured at 10,000)
+- [x] View model tests, playlist UI test, snapshots
 
 ### Stage 6. Equalizer — `equalizer`
-- [ ] Sheet from the player: .medium (preset chips, curve, on/off), .large (10 sliders, preamp)
-- [ ] Canvas curve editor
-- [ ] Save As…, "Custom", rename/delete
-- [ ] JSON export/import (UTType, ShareLink)
-- [ ] Indicator on the EQ button; landscape
-- [ ] Tests, UI test, snapshots
+- [x] Sheet from the player: one `.fraction(0.9)` detent with on/off, curve, preset chips, 10 sliders, preamp
+- [x] Canvas curve editor
+- [x] Save As…, "Custom", rename/delete
+- [x] JSON export/import (UTType, ShareLink)
+- [x] Indicator on the EQ button; landscape
+- [x] Tests, UI test, snapshots
 
 ### Stage 7. Settings — `settings`
-- [ ] Theme (overrideUserInterfaceStyle), accent (6–8 options)
-- [ ] Storage: size, clear artwork cache; preset management
-- [ ] About
-- [ ] Theme/accent UI test, snapshots
+- [x] Theme (overrideUserInterfaceStyle), accent (6–8 options)
+- [x] Storage: size, clear artwork cache; preset management
+- [x] About
+- [x] Theme/accent UI test, snapshots
 
 ### Stage 8. More import options and browser — `browser-share`
 - [ ] Download by link; Share Extension; BrowserFeature (WKWebView, bookmarks, history, downloads)
@@ -150,10 +172,15 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [ ] Gapless, sleep timer, 0.5–2× rate and position memory for long files, visualizer (vDSP), smart playlists
 
 ### Stage 10. Polish
-- [ ] Accessibility, Instruments, icon (Icon Composer), full run on iOS 18 and 26
+- [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
+- [ ] Accessibility, Instruments, full run on iOS 18 and 26
 
 ## Log
 
+- 2026-11-01 — device feedback (#13): equalizer redesign; list scroll performance; Folders search, Select All,
+  Select mode and highlight fixes; shelf context menus; import progress with batched writes; deleted tracks leave
+  the queue; app icon and launch screen; local signing config, cached project generation, catalog formatting.
+  Every item checked on an iPhone by the user. Next: stage 3 on-device audio checklist, then wave 3.
 - 2026-10-31 — wave 2 done: SettingsFeature (#10); wiring-2 (#11, #12) connects every feature, applies theme
   and accent at the window level, and adds app UI tests (play/skip, playlist, theme) with seeded fixtures.
   Open: on-device checklist; Xcode re-extracts preview-only strings into String Catalogs (use `Text(verbatim:)`
