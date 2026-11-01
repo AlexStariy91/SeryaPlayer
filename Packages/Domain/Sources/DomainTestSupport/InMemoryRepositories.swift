@@ -1,5 +1,6 @@
 import Domain
 import Foundation
+import Synchronization
 
 public final class InMemoryFolderRepository: FolderRepository {
     private let box: ObservableBox<[Folder]>
@@ -335,5 +336,23 @@ public final class InMemoryPlaybackStateRepository: PlaybackStateRepository {
 
     public func save(_ state: PlaybackState) async throws {
         box.mutate { $0 = state }
+    }
+}
+
+public final class InMemoryTrackPositionRepository: TrackPositionRepository {
+    private let positions = Mutex<[Track.ID: TimeInterval]>([:])
+
+    public init() {}
+
+    public func position(for trackID: Track.ID) -> TimeInterval? {
+        positions.withLock { $0[trackID] }
+    }
+
+    public func save(position: TimeInterval, for trackID: Track.ID) {
+        positions.withLock { $0[trackID] = position }
+    }
+
+    public func remove(trackIDs: Set<Track.ID>) {
+        positions.withLock { $0 = $0.filter { !trackIDs.contains($0.key) } }
     }
 }

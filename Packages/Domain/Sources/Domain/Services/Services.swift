@@ -166,8 +166,19 @@ public struct NowPlayingInfo: Sendable, Equatable {
     public var duration: TimeInterval
     public var position: TimeInterval
     public var rate: Float
+    /// The user's chosen speed; the system shows it as the rate to resume at while paused.
+    public var defaultRate: Float
 
-    public init(title: String, artist: String, album: String, artworkURL: URL?, duration: TimeInterval, position: TimeInterval, rate: Float) {
+    public init(
+        title: String,
+        artist: String,
+        album: String,
+        artworkURL: URL?,
+        duration: TimeInterval,
+        position: TimeInterval,
+        rate: Float,
+        defaultRate: Float = 1
+    ) {
         self.title = title
         self.artist = artist
         self.album = album
@@ -175,6 +186,7 @@ public struct NowPlayingInfo: Sendable, Equatable {
         self.duration = duration
         self.position = position
         self.rate = rate
+        self.defaultRate = defaultRate
     }
 }
 
