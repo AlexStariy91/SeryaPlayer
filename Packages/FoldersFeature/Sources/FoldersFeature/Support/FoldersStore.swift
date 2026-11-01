@@ -9,12 +9,21 @@ import Observation
 @Observable
 final class FoldersStore {
     private(set) var folders: [Folder] = [] {
-        didSet { rebuildFolderIndex() }
+        didSet {
+            rebuildFolderIndex()
+            revision += 1
+        }
     }
 
     private(set) var tracks: [Track] = [] {
-        didSet { rebuildTrackIndex() }
+        didSet {
+            rebuildTrackIndex()
+            revision += 1
+        }
     }
+
+    /// Bumped on every change of folders or tracks, so derived work (search) knows when to re-run.
+    private(set) var revision = 0
 
     private(set) var nowPlayingID: Track.ID?
     private(set) var isPlaying = false

@@ -234,6 +234,16 @@
         }
       }
     },
+    "Folders and Songs": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Папки и песни"
+          }
+        }
+      }
+    },
     "Keep Songs in Library": {
       "localizations": {
         "ru": {
@@ -350,6 +360,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Переименовать папку"
+          }
+        }
+      }
+    },
+    "Search in This Folder": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поиск в этой папке"
           }
         }
       }
