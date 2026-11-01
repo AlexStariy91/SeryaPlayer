@@ -5,8 +5,8 @@
 
 ## Now
 
-**Waves 1 and 2 — done, device feedback fixed (#13).** The app was tested on an iPhone and the fixes are merged,
-with the app icon and launch screen. Next: the on-device audio checklist (stage 3), then wave 3.
+**Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
+artwork added (#14). Next: wave 3 (`browser-share`, `extras`).
 
 ## Workstreams and waves
 
@@ -116,7 +116,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] Tests on an in-memory store; importing MP3, M4A, FLAC, WAV
 - Done when: importing 1000 files runs in the background without UI hitches; data survives a relaunch.
 
-### Stage 3. Audio engine — ✅ (except on-device checks)
+### Stage 3. Audio engine — ✅
 - [x] AudioSessionManager
 - [x] AVAudioPlaybackEngine: Player → TimePitch → EQ → Mixer; seeking via scheduleSegment; generations
 - [x] Sample-rate changes, AVAudioEngineConfigurationChange
@@ -124,7 +124,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] DefaultPlaybackService: queue + engine + state, auto-advance, playCount, persist/restore
 - [x] NowPlayingCenter, RemoteCommands
 - [x] Service unit tests with a mock engine
-- [ ] Manual on-device checklist (see PR #2): phone call, Siri, alarm, AirPods, Bluetooth, Lock Screen, an hour in background
+- [x] Manual on-device checklist (see PR #2): phone call, Siri, alarm, AirPods, Bluetooth, Lock Screen, an hour in background
 - Done when: a track plays in background, is controllable from the Lock Screen and AirPods, survives a call.
 
 ### Stage 4. First sound — wiring-1 + `player`, `library`
@@ -177,6 +177,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-11-01 — stage 3 on-device checklist passed on an iPhone. The only finding: tracks without artwork showed
+  an empty cover on the Lock Screen and in Control Center; fixed with an injected placeholder (#14). Next: wave 3.
 - 2026-11-01 — device feedback (#13): equalizer redesign; list scroll performance; Folders search, Select All,
   Select mode and highlight fixes; shelf context menus; import progress with batched writes; deleted tracks leave
   the queue; app icon and launch screen; local signing config, cached project generation, catalog formatting.
