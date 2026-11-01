@@ -1,4 +1,3 @@
-import DesignSystem
 import Domain
 import Foundation
 import Observation
@@ -77,12 +76,10 @@ final class FolderBrowserViewModel {
         subfolders.isEmpty && tracks.isEmpty
     }
 
-    var nowPlayingID: Track.ID? {
-        store.nowPlayingID
-    }
-
-    func nowPlaying(_ id: Track.ID) -> TrackRow.NowPlaying? {
-        store.nowPlaying(id)
+    /// Rows read the now-playing state from here themselves, so a track change re-renders the rows on
+    /// screen instead of re-running this screen's body (and re-diffing the whole list).
+    var playback: FoldersStore {
+        store
     }
 
     /// Songs in the folder and all its subfolders.

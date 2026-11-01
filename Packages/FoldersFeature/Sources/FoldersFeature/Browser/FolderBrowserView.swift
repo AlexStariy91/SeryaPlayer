@@ -96,7 +96,7 @@ struct FolderBrowserView: View {
                 ForEach(viewModel.tracks) { track in
                     FolderTrackRow(
                         track: track,
-                        nowPlaying: viewModel.nowPlaying(track.id),
+                        playback: viewModel.playback,
                         resolver: viewModel.artwork,
                         isEditing: isEditing
                     ) { viewModel.play(track) }
@@ -137,7 +137,7 @@ struct FolderBrowserView: View {
                 ForEach(results.tracks) { track in
                     FolderTrackRow(
                         track: track,
-                        nowPlaying: viewModel.nowPlaying(track.id),
+                        playback: viewModel.playback,
                         resolver: viewModel.artwork
                     ) { viewModel.playSearchResult(track) }
                         .contextMenu { trackMenu(track) }

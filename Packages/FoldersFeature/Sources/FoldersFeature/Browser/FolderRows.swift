@@ -33,7 +33,8 @@ struct FolderRow: View {
 /// A tappable `TrackRow`. The artwork URL usually comes from the resolver's cache (the store prefetches it).
 struct FolderTrackRow: View {
     let track: Track
-    let nowPlaying: TrackRow.NowPlaying?
+    /// Read in this body, not the list's: only visible rows depend on the playing track.
+    let playback: FoldersStore
     let resolver: ArtworkResolver
     /// While editing, taps go to the list's selection instead of playing.
     var isEditing = false
@@ -47,7 +48,7 @@ struct FolderTrackRow: View {
                     subtitle: [track.artist, track.album].filter { !$0.isEmpty }.joined(separator: " · "),
                     artworkURL: url,
                     duration: track.duration,
-                    nowPlaying: nowPlaying
+                    nowPlaying: playback.nowPlaying(track.id)
                 )
             }
         }
