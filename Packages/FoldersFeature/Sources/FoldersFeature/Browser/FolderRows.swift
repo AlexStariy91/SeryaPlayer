@@ -30,29 +30,49 @@ struct FolderRow: View {
     }
 }
 
-/// A tappable `TrackRow` with asynchronously resolved artwork.
+/// A tappable `TrackRow`. The artwork URL usually comes from the resolver's cache (the store prefetches it).
 struct FolderTrackRow: View {
     let track: Track
     let nowPlaying: TrackRow.NowPlaying?
     let resolver: ArtworkResolver
     let onPlay: () -> Void
 
-    @State private var artworkURL: URL?
-
     var body: some View {
         Button(action: onPlay) {
-            TrackRow(
-                title: track.title,
-                subtitle: [track.artist, track.album].filter { !$0.isEmpty }.joined(separator: " · "),
-                artworkURL: artworkURL ?? resolver.cachedURL(for: track.artworkKey, size: .thumbnail),
-                duration: track.duration,
-                nowPlaying: nowPlaying
-            )
+            ResolvingArtworkURL(key: track.artworkKey, resolver: resolver) { url in
+                TrackRow(
+                    title: track.title,
+                    subtitle: [track.artist, track.album].filter { !$0.isEmpty }.joined(separator: " · "),
+                    artworkURL: url,
+                    duration: track.duration,
+                    nowPlaying: nowPlaying
+                )
+            }
         }
         .buttonStyle(.plain)
-        .task(id: track.artworkKey) {
-            artworkURL = await resolver.url(for: track.artworkKey, size: .thumbnail)
-        }
+    }
+}
+
+/// Hands `content` the thumbnail URL for `key`: synchronously from the resolver's cache, or after resolving a
+/// miss in a task. Rows that scroll back into view then render once instead of placeholder → artwork.
+struct ResolvingArtworkURL<Content: View>: View {
+    let key: String?
+    let resolver: ArtworkResolver
+    @ViewBuilder let content: (URL?) -> Content
+
+    /// The URL resolved for a key, kept with the key so a reused row never shows another track's artwork.
+    @State private var resolved: (key: String, url: URL?)?
+
+    var body: some View {
+        let cached = resolver.cachedURL(for: key, size: .thumbnail)
+        content(cached ?? resolved.flatMap { $0.key == key ? $0.url : nil })
+            .background {
+                if cached == nil, let key {
+                    Color.clear.task(id: key) {
+                        resolved = await (key, resolver.url(for: key, size: .thumbnail))
+                    }
+                }
+            }
     }
 }
 

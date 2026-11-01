@@ -28,13 +28,16 @@ final class FoldersStore {
     @ObservationIgnored private let folderRepository: any FolderRepository
     @ObservationIgnored private let trackRepository: any TrackRepository
     @ObservationIgnored private let player: any PlaybackControlling
+    @ObservationIgnored private let artwork: ArtworkResolver?
     @ObservationIgnored private var hasFolders = false
     @ObservationIgnored private var hasTracks = false
 
-    init(folders: any FolderRepository, tracks: any TrackRepository, player: any PlaybackControlling) {
+    /// - Parameter artwork: when given, artwork URLs of new tracks are resolved ahead of the rows that show them.
+    init(folders: any FolderRepository, tracks: any TrackRepository, player: any PlaybackControlling, artwork: ArtworkResolver? = nil) {
         folderRepository = folders
         trackRepository = tracks
         self.player = player
+        self.artwork = artwork
     }
 
     /// Runs until cancelled.
@@ -59,6 +62,7 @@ final class FoldersStore {
             tracks = list
             hasTracks = true
             updateLoaded()
+            await artwork?.prefetch(list.lazy.compactMap(\.artworkKey), size: .thumbnail)
         }
     }
 
