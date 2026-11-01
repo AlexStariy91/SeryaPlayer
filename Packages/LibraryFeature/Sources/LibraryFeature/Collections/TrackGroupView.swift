@@ -19,7 +19,7 @@ struct TrackGroupView: View {
                     ForEach(group.tracks) { track in
                         LibraryTrackRow(
                             track: track,
-                            nowPlaying: context.store.nowPlaying(track.id),
+                            playback: context.store,
                             resolver: context.artwork,
                             actions: context.actions
                         ) {

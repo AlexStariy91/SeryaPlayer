@@ -16,7 +16,7 @@ struct AllTracksView: View {
             ForEach(viewModel.visibleTracks) { track in
                 LibraryTrackRow(
                     track: track,
-                    nowPlaying: context.store.nowPlaying(track.id),
+                    playback: context.store,
                     resolver: context.artwork,
                     actions: context.actions
                 ) {

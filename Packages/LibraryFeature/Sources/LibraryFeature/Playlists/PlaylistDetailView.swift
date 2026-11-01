@@ -26,7 +26,7 @@ struct PlaylistDetailView: View {
                 ForEach(rows) { row in
                     LibraryTrackRow(
                         track: row.track,
-                        nowPlaying: context.store.nowPlaying(row.track.id),
+                        playback: context.store,
                         resolver: context.artwork,
                         actions: context.actions,
                         onRemove: { Task { await viewModel.remove(entryIDs: [row.id]) } },
