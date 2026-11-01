@@ -60,7 +60,7 @@ final class AppContainer {
             engine: AVAudioPlaybackEngine(session: AudioSessionManager()),
             trackRepository: trackRepository,
             stateRepository: FilePlaybackStateRepository(fileURL: environment.playbackStateURL),
-            nowPlaying: NowPlayingCenter(),
+            nowPlaying: NowPlayingCenter(placeholderArtwork: NowPlayingPlaceholder.image),
             urlForTrack: { track in fileStore.url(forRelativePath: track.relativePath) },
             artworkURLForTrack: { track in
                 guard let key = track.artworkKey else { return nil }

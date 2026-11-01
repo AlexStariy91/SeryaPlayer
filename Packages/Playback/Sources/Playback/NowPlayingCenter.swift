@@ -9,12 +9,21 @@ import UIKit
 public final class NowPlayingCenter: NowPlayingPublishing {
     private let infoCenter: MPNowPlayingInfoCenter
     private var artwork: (url: URL, artwork: MPMediaItemArtwork?)?
+    /// Built once and reused for every track without a usable cover.
+    private let placeholder: MPMediaItemArtwork?
 
-    public init(infoCenter: MPNowPlayingInfoCenter = .default()) {
+    /// `placeholderArtwork` is shown when a track has no artwork or the file can't be decoded.
+    /// It is injected because Playback must not depend on DesignSystem.
+    public init(infoCenter: MPNowPlayingInfoCenter = .default(), placeholderArtwork: UIImage? = nil) {
         self.infoCenter = infoCenter
+        placeholder = placeholderArtwork.map(Self.makeArtwork)
     }
 
     public func update(_ info: NowPlayingInfo) {
+        infoCenter.nowPlayingInfo = nowPlayingValues(for: info)
+    }
+
+    func nowPlayingValues(for info: NowPlayingInfo) -> [String: Any] {
         var values: [String: Any] = [
             MPMediaItemPropertyTitle: info.title,
             MPMediaItemPropertyArtist: info.artist,
@@ -25,10 +34,10 @@ public final class NowPlayingCenter: NowPlayingPublishing {
             MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
             MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
         ]
-        if let artwork = artwork(for: info.artworkURL) {
+        if let artwork = artwork(for: info.artworkURL) ?? placeholder {
             values[MPMediaItemPropertyArtwork] = artwork
         }
-        infoCenter.nowPlayingInfo = values
+        return values
     }
 
     public func clear() {
