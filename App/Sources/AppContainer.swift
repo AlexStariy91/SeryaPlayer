@@ -34,7 +34,9 @@ final class AppContainer {
     @ObservationIgnored private let remoteCommands: RemoteCommands
     @ObservationIgnored private let inboxProcessor: InboxProcessor
     /// Shared by every import path so the Library shows progress for all of them.
-    let importProgress: ImportProgressCenter
+    /// Optional to match `LibraryDependencies.importProgress`; a non-optional property would not satisfy
+    /// the requirement and the protocol extension's `nil` would be used instead.
+    let importProgress: ImportProgressCenter?
     @ObservationIgnored private let seedDirectory: URL?
 
     init(environment: AppEnvironment) throws {
