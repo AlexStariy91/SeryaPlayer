@@ -40,7 +40,7 @@ struct FullPlayerView<EqualizerSheet: View>: View {
         let side = max(0, min(size.width - Spacing.xl * 2, size.height * 0.48))
         return VStack(spacing: 0) {
             Spacer(minLength: Spacing.xxl)
-            PlayerArtwork(url: viewModel.artworkURL, isPlaying: viewModel.snapshot.isPlaying, side: side)
+            artwork(side: side)
             Spacer(minLength: Spacing.l)
             controls(compact: false)
         }
@@ -51,13 +51,25 @@ struct FullPlayerView<EqualizerSheet: View>: View {
     private func landscape(size: CGSize) -> some View {
         let side = max(0, min(size.height - Spacing.xl * 2, size.width * 0.42))
         return HStack(spacing: Spacing.xxl) {
-            PlayerArtwork(url: viewModel.artworkURL, isPlaying: viewModel.snapshot.isPlaying, side: side)
+            artwork(side: side)
                 .frame(maxWidth: .infinity)
             controls(compact: true)
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, Spacing.xl)
         .padding(.vertical, Spacing.l)
+    }
+
+    private func artwork(side: CGFloat) -> some View {
+        PlayerArtwork(
+            url: viewModel.artworkURL,
+            isPlaying: viewModel.snapshot.isPlaying,
+            side: side,
+            showsVisualizer: viewModel.showsVisualizer,
+            spectrum: viewModel.spectrum,
+            colors: viewModel.backgroundColors,
+            onToggle: viewModel.toggleVisualizer
+        )
     }
 
     private func controls(compact: Bool) -> some View {

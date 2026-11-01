@@ -8,4 +8,6 @@ public protocol PlayerDependencies {
     var artworkStore: any ArtworkStoring { get }
     /// Read for the "equalizer on" indicator on the EQ button.
     var settingsRepository: any SettingsRepository { get }
+    /// Feeds the visualizer that can replace the full player's artwork.
+    var audioSpectrum: any AudioSpectrumProviding { get }
 }

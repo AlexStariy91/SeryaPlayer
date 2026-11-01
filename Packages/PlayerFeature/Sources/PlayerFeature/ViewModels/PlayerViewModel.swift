@@ -18,8 +18,11 @@ final class PlayerViewModel {
     /// The equalizer is on and not flat: the EQ button shows an indicator.
     private(set) var isEqualizerActive = false
     private(set) var sleepTimerState = SleepTimerState.off
+    /// The full player shows the spectrum visualizer instead of the artwork. Persisted in `AppSettings`.
+    private(set) var showsVisualizer = false
 
     let progress: PlaybackProgress
+    @ObservationIgnored let spectrum: any AudioSpectrumProviding
 
     @ObservationIgnored private let player: any PlaybackControlling
     @ObservationIgnored private let sleepTimer: any SleepTimerControlling
@@ -37,6 +40,7 @@ final class PlayerViewModel {
         sleepTimer: any SleepTimerControlling,
         artworkStore: any ArtworkStoring,
         settingsRepository: any SettingsRepository,
+        spectrum: any AudioSpectrumProviding = SilentAudioSpectrum(),
         progressInterval: Duration = .milliseconds(200),
         colorExtractor: @escaping ColorExtractor = { await ArtworkPalette.colors(from: $0) }
     ) {
@@ -45,10 +49,13 @@ final class PlayerViewModel {
         self.artworkStore = artworkStore
         self.settingsRepository = settingsRepository
         self.colorExtractor = colorExtractor
+        self.spectrum = spectrum
         snapshot = player.snapshot
         sleepTimerState = sleepTimer.state
         progress = PlaybackProgress(player: player, interval: progressInterval)
-        isEqualizerActive = Self.isActive(settingsRepository.load().equalizer)
+        let settings = settingsRepository.load()
+        isEqualizerActive = Self.isActive(settings.equalizer)
+        showsVisualizer = settings.showsVisualizer
     }
 
     // MARK: - Derived state
@@ -189,6 +196,13 @@ final class PlayerViewModel {
 
     func cancelSleepTimer() {
         sleepTimer.cancel()
+    }
+
+    func toggleVisualizer() {
+        showsVisualizer.toggle()
+        var settings = settingsRepository.load()
+        settings.showsVisualizer = showsVisualizer
+        settingsRepository.save(settings)
     }
 
     func cycleRepeatMode() {

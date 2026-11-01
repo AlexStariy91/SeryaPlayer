@@ -31,6 +31,16 @@
         }
       }
     },
+    "Artwork" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обложка"
+          }
+        }
+      }
+    },
     "Close Player" : {
       "localizations" : {
         "ru" : {
@@ -201,6 +211,26 @@
         }
       }
     },
+    "Shows the artwork." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает обложку."
+          }
+        }
+      }
+    },
+    "Shows the visualizer." : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает визуализатор."
+          }
+        }
+      }
+    },
     "Shuffle" : {
       "localizations" : {
         "ru" : {
@@ -227,6 +257,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Далее"
+          }
+        }
+      }
+    },
+    "Visualizer" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Визуализатор"
           }
         }
       }
