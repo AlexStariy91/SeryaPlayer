@@ -3,8 +3,11 @@ import Foundation
 /// What the sleep timer is doing right now.
 public enum SleepTimerState: Sendable, Equatable {
     case off
-    /// Playback fades out and pauses at `deadline`.
+    /// Music is playing: playback fades out and pauses at `deadline`.
     case countdown(deadline: Date)
+    /// Playback is paused: the countdown is frozen with `remaining` seconds left and resumes on play.
+    /// The countdown only runs while music plays.
+    case paused(remaining: TimeInterval)
     /// Playback pauses when the current track ends, instead of advancing.
     case endOfTrack
 

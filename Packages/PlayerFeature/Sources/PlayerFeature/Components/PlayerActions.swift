@@ -81,12 +81,15 @@ private struct IconButtonLabel: View {
     let isOn: Bool
     /// Shown instead of the icon, on a wider highlight (the sleep timer countdown).
     var text: String?
+    /// The countdown is frozen (playback is paused): the digits are slightly dimmed.
+    var isDimmed = false
 
     var body: some View {
         Group {
             if let text {
                 Text(text)
                     .font(.footnote.weight(.semibold).monospacedDigit())
+                    .opacity(isDimmed ? 0.65 : 1)
             } else {
                 Image(systemName: systemImage)
                     .font(.body.weight(.semibold))
@@ -130,7 +133,8 @@ struct SleepTimerButton: View {
                 IconButtonLabel(
                     systemImage: state.isActive ? "moon.zzz.fill" : "moon.zzz",
                     isOn: state.isActive,
-                    text: countdownText(at: context.date)
+                    text: countdownText(at: context.date),
+                    isDimmed: isFrozen
                 )
             }
             .menuIndicator(.hidden)
@@ -162,15 +166,26 @@ struct SleepTimerButton: View {
         }
     }
 
+    private var isFrozen: Bool {
+        if case .paused = state {
+            true
+        } else {
+            false
+        }
+    }
+
     private func countdownText(at date: Date) -> String? {
-        guard case let .countdown(deadline) = state else { return nil }
-        return Self.format(deadline.timeIntervalSince(date))
+        switch state {
+        case let .countdown(deadline): Self.format(deadline.timeIntervalSince(date))
+        case let .paused(remaining): Self.format(remaining)
+        case .off, .endOfTrack: nil
+        }
     }
 
     private func accessibilityValue(at date: Date) -> Text {
         switch state {
         case .off: Text("Off", bundle: .module)
-        case let .countdown(deadline): Text(Self.format(deadline.timeIntervalSince(date)))
+        case .countdown, .paused: Text(countdownText(at: date) ?? "")
         case .endOfTrack: Text("End of Track", bundle: .module)
         }
     }

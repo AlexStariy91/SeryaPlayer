@@ -75,6 +75,9 @@ public final class DefaultPlaybackService: PlaybackControlling {
             guard let self, isPlaying else { return }
             pauseEngine()
         }
+        self.sleepTimer.isPlaying = { [weak self] in
+            self?.isPlaying ?? false
+        }
 
         let events = engine.events
         eventsTask = Task { [weak self] in
@@ -106,7 +109,6 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func play(_ tracks: [Track], startingAt index: Int, shuffled: Bool) {
         guard tracks.indices.contains(index) else { return }
-        sleepTimer.userDidStartPlayback()
         remember(tracks)
         queue.start(with: tracks.map(\.id), at: index, shuffled: shuffled, using: &randomGenerator)
         loadCurrent(at: 0, autoplay: true)
@@ -117,7 +119,6 @@ public final class DefaultPlaybackService: PlaybackControlling {
             pauseEngine()
             return
         }
-        sleepTimer.userDidStartPlayback()
         if queue.current == nil {
             guard !queue.items.isEmpty else { return }
             queue.jump(to: 0)
@@ -227,7 +228,6 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     public func jump(toQueueIndex index: Int) {
         guard queue.items.indices.contains(index) else { return }
-        sleepTimer.userDidStartPlayback()
         queue.jump(to: index)
         loadCurrent(at: 0, autoplay: true)
     }
@@ -321,7 +321,6 @@ public final class DefaultPlaybackService: PlaybackControlling {
             refresh()
             return
         }
-        sleepTimer.userDidStartPlayback()
         if queue.current == nil {
             queue.jump(to: 0)
         }
@@ -407,6 +406,11 @@ public final class DefaultPlaybackService: PlaybackControlling {
 
     /// Recomputes the snapshot and republishes Now Playing.
     private func refresh() {
+        if isPlaying {
+            sleepTimer.playbackDidStart()
+        } else {
+            sleepTimer.playbackDidPause()
+        }
         if queueTracks.ids != queue.items {
             queueTracks = (queue.items, queue.items.compactMap { tracksByID[$0] })
         }

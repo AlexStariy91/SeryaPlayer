@@ -20,6 +20,7 @@ public final class SleepTimer: SleepTimerControlling {
 
     /// Set by the service that owns the timer.
     var pausePlayback: @MainActor () -> Void = {}
+    var isPlaying: @MainActor () -> Bool = { false }
 
     private let engine: any PlaybackEngine
     private let fadeDuration: TimeInterval
@@ -61,13 +62,15 @@ public final class SleepTimer: SleepTimerControlling {
     }
 
     public func start(_ option: SleepTimerOption) {
-        cancel()
+        // Switching goes straight to the new state: `.off` is never published in between.
+        stopCountdown()
         switch option {
         case let .minutes(minutes):
-            let deadline = now().addingTimeInterval(TimeInterval(minutes) * 60)
-            state = .countdown(deadline: deadline)
-            task = Task { [weak self] in
-                await self?.run(until: deadline)
+            let total = TimeInterval(minutes) * 60
+            if isPlaying() {
+                run(remaining: total)
+            } else {
+                state = .paused(remaining: total)
             }
         case .endOfTrack:
             state = .endOfTrack
@@ -75,12 +78,7 @@ public final class SleepTimer: SleepTimerControlling {
     }
 
     public func cancel() {
-        task?.cancel()
-        task = nil
-        if isFading {
-            isFading = false
-            engine.setVolume(1)
-        }
+        stopCountdown()
         state = .off
     }
 
@@ -98,19 +96,49 @@ public final class SleepTimer: SleepTimerControlling {
         cancel()
     }
 
-    /// The user started playback by hand. During the fade, or after the deadline passed while the countdown
-    /// task was not running yet (paused in the background), that means "I'm still awake".
-    func userDidStartPlayback() {
-        if case let .countdown(deadline) = state, now() >= deadline {
-            cancel()
-        } else if isFading {
-            cancel()
+    /// Playback is running again: an unfinished countdown carries on from where it was frozen.
+    func playbackDidStart() {
+        if case let .paused(remaining) = state {
+            run(remaining: remaining)
         }
+    }
+
+    /// Playback paused (by hand, Lock Screen, interruption or route change): freeze the remaining time.
+    func playbackDidPause() {
+        guard case let .countdown(deadline) = state else { return }
+        let remaining = max(deadline.timeIntervalSince(now()), 0)
+        stopCountdown()
+        state = .paused(remaining: remaining)
     }
 
     // MARK: - Countdown
 
-    private func run(until deadline: Date) async {
+    private func stopCountdown() {
+        task?.cancel()
+        task = nil
+        if isFading {
+            isFading = false
+            engine.setVolume(1)
+        }
+    }
+
+    private func run(remaining: TimeInterval) {
+        let deadline = now().addingTimeInterval(remaining)
+        state = .countdown(deadline: deadline)
+        // Resuming inside the fade: start at the right level, not at full volume.
+        applyFade(remaining: remaining)
+        task = Task { [weak self] in
+            await self?.tickUntil(deadline)
+        }
+    }
+
+    private func applyFade(remaining: TimeInterval) {
+        guard remaining <= fadeDuration else { return }
+        isFading = true
+        engine.setVolume(Float(max(remaining, 0) / fadeDuration))
+    }
+
+    private func tickUntil(_ deadline: Date) async {
         while !Task.isCancelled {
             let remaining = deadline.timeIntervalSince(now())
             if remaining <= 0 {
@@ -121,8 +149,7 @@ public final class SleepTimer: SleepTimerControlling {
             if remaining > fadeDuration {
                 wait = .seconds(remaining - fadeDuration)
             } else {
-                isFading = true
-                engine.setVolume(Float(remaining / fadeDuration))
+                applyFade(remaining: remaining)
                 wait = min(tick, .seconds(remaining))
             }
             do {
@@ -135,11 +162,11 @@ public final class SleepTimer: SleepTimerControlling {
 
     private func expire() {
         task = nil
+        state = .off
         pausePlayback()
         if isFading {
             isFading = false
             engine.setVolume(1)
         }
-        state = .off
     }
 }

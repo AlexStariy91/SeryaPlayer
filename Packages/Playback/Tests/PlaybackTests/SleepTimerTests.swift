@@ -137,44 +137,85 @@ struct SleepTimerTests {
         #expect(engine.isPlaying)
     }
 
-    @Test func aUserPauseKeepsTheTimerRunning() {
-        timer.start(.minutes(5))
-
-        service.togglePlayPause()
-
-        #expect(timer.state.isActive)
-    }
-
-    @Test func playingByHandDuringTheFadeCancelsTheTimer() async {
+    @Test func pausingFreezesTheRemainingTime() async {
         timer.start(.minutes(5))
         await settle()
-        clock.advance(by: 296)
-        #expect(await waitUntil { engine.volume < 0.5 })
+        clock.advance(by: 100)
+
         service.togglePlayPause()
+
+        #expect(timer.state == .paused(remaining: 200))
+        clock.advance(by: 5000)
+        await settle()
+        #expect(timer.state == .paused(remaining: 200))
         #expect(!engine.isPlaying)
-
-        service.togglePlayPause()
-
-        #expect(timer.state == .off)
-        #expect(engine.volume == 1)
-        #expect(engine.isPlaying)
     }
 
-    @Test func playingAfterTheDeadlinePassedWhilePausedKeepsPlaying() async {
-        timer.start(.minutes(1))
+    @Test func playingResumesTheCountdownFromTheFrozenTime() async {
+        timer.start(.minutes(5))
         await settle()
+        clock.advance(by: 100)
         service.togglePlayPause()
+        clock.advance(by: 5000)
+
+        service.togglePlayPause()
+
+        #expect(timer.state == .countdown(deadline: clock.now.addingTimeInterval(200)))
+        await settle()
+        clock.advance(by: 200)
+        #expect(await waitUntil { timer.state == .off })
         #expect(!engine.isPlaying)
-        // The deadline passes while the app is suspended: the countdown task has not run yet.
-        clock.advance(by: 1200)
+    }
+
+    @Test func startingWhilePausedWaitsForPlay() {
+        service.togglePlayPause()
+
+        timer.start(.minutes(5))
+
+        #expect(timer.state == .paused(remaining: 300))
+        service.togglePlayPause()
+        #expect(timer.state == .countdown(deadline: clock.now.addingTimeInterval(300)))
+    }
+
+    @Test func pausingDuringTheFadeRestoresTheVolumeAndPlayingContinuesTheFade() async {
+        timer.start(.minutes(5))
+        await settle()
+        clock.advance(by: 295)
+        #expect(await waitUntil { engine.volume < 0.6 && engine.volume > 0.4 })
 
         service.togglePlayPause()
+
+        #expect(timer.state == .paused(remaining: 5))
+        #expect(engine.volume == 1)
+        service.togglePlayPause()
+        #expect(abs(engine.volume - 0.5) < 0.01)
+        await settle()
+        clock.advance(by: 5)
+        #expect(await waitUntil { timer.state == .off })
+        #expect(!engine.isPlaying)
+        #expect(engine.volume == 1)
+    }
+
+    @Test func switchingOptionsNeverPublishesOff() async {
+        var received: [SleepTimerState] = []
+        let stream = timer.states()
+        let collector = Task { @MainActor in
+            for await state in stream {
+                received.append(state)
+            }
+        }
         await settle()
 
-        #expect(timer.state == .off)
-        #expect(engine.isPlaying)
-        #expect(service.snapshot.isPlaying)
-        #expect(engine.volume == 1)
+        timer.start(.minutes(5))
+        await settle()
+        timer.start(.minutes(15))
+        await settle()
+        timer.start(.endOfTrack)
+        await settle()
+        collector.cancel()
+
+        #expect(received.count == 4)
+        #expect(!received.dropFirst().contains(.off))
     }
 
     @Test func startingAnotherTimerReplacesTheRunningOne() async {
