@@ -21,7 +21,10 @@ struct FolderBrowserView: View {
 
     var body: some View {
         @Bindable var viewModel = viewModel
-        List(selection: $viewModel.selection) {
+        // Selection exists only while editing. Bound outside edit mode, the list mirrors it into the
+        // collection view's own selection: a tapped folder can stay highlighted after navigating back,
+        // and every cell pays for selection bookkeeping while scrolling.
+        List(selection: isEditing ? $viewModel.selection : nil) {
             if viewModel.folderID != nil, viewModel.canPlay, !isEditing {
                 PlayShuffleButtons(
                     isEnabled: true,
@@ -63,7 +66,8 @@ struct FolderBrowserView: View {
                         FolderTrackRow(
                             track: track,
                             nowPlaying: viewModel.nowPlaying(track.id),
-                            resolver: viewModel.artwork
+                            resolver: viewModel.artwork,
+                            isEditing: isEditing
                         ) { viewModel.play(track) }
                             .tag(FolderItem.track(track.id))
                             .contextMenu { trackMenu(track) }

@@ -35,6 +35,8 @@ struct FolderTrackRow: View {
     let track: Track
     let nowPlaying: TrackRow.NowPlaying?
     let resolver: ArtworkResolver
+    /// While editing, taps go to the list's selection instead of playing.
+    var isEditing = false
     let onPlay: () -> Void
 
     var body: some View {
@@ -50,6 +52,7 @@ struct FolderTrackRow: View {
             }
         }
         .buttonStyle(.plain)
+        .allowsHitTesting(!isEditing)
     }
 }
 
