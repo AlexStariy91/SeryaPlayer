@@ -5,7 +5,6 @@ import SwiftUI
 struct SettingsView<PresetManager: View>: View {
     @State private var viewModel: SettingsViewModel
     @State private var isConfirmingClear = false
-    @Environment(\.dismiss) private var dismiss
     private let presetManager: () -> PresetManager
 
     init(viewModel: SettingsViewModel, presetManager: @escaping () -> PresetManager) {
@@ -22,12 +21,6 @@ struct SettingsView<PresetManager: View>: View {
                 aboutSection
             }
             .navigationTitle(Text("Settings", bundle: .module))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "Done", bundle: .module)) { dismiss() }
-                }
-            }
             .task { await viewModel.observeSettings() }
             .task { await viewModel.refreshSizes() }
             .alert(

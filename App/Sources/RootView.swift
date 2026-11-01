@@ -1,4 +1,3 @@
-import BrowserFeature
 import DesignSystem
 import Domain
 import EqualizerFeature
@@ -16,30 +15,23 @@ struct RootView: View {
 
         TabView(selection: $router.selectedTab) {
             Tab("Library", systemImage: "music.note.list", value: AppRouter.Tab.library) {
-                LibraryFeature.makeRootView(dependencies: container) {
-                    router.isSettingsPresented = true
-                }
-                .miniPlayerContentInset()
+                LibraryFeature.makeRootView(dependencies: container)
+                    .miniPlayerContentInset()
             }
             Tab("Folders", systemImage: "folder", value: AppRouter.Tab.folders) {
                 FoldersFeature.makeRootView(dependencies: container)
                     .miniPlayerContentInset()
             }
-            if container.flags.isBrowserEnabled {
-                Tab("Browser", systemImage: "globe", value: AppRouter.Tab.browser) {
-                    NavigationStack { BrowserPlaceholderView().navigationTitle("Browser") }
-                        .miniPlayerContentInset()
+            Tab("Settings", systemImage: "gearshape", value: AppRouter.Tab.settings) {
+                SettingsFeature.makeRootView(dependencies: container) {
+                    EqualizerFeature.makePresetManager(dependencies: container)
                 }
+                .miniPlayerContentInset()
             }
         }
         .modifier(PlayerFeature.host(dependencies: container) {
             EqualizerFeature.makeSheet(dependencies: container)
         })
-        .sheet(isPresented: $router.isSettingsPresented) {
-            SettingsFeature.makeRootView(dependencies: container) {
-                EqualizerFeature.makePresetManager(dependencies: container)
-            }
-        }
         .tint(AccentPalette.option(id: container.accentColorID).color)
         .background(WindowInterfaceStyle(style: container.theme.interfaceStyle))
         .task { await container.observeSettings() }

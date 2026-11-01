@@ -19,11 +19,6 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
     SWIFT_EMIT_LOC_STRINGS: YES
-  configs:
-    Debug:
-      SP_BROWSER_ENABLED: "YES"
-    Release:
-      SP_BROWSER_ENABLED: "YES"
 
 packages:
   Shared: { path: Packages/Shared }
@@ -35,7 +30,6 @@ packages:
   FoldersFeature: { path: Packages/FoldersFeature }
   PlayerFeature: { path: Packages/PlayerFeature }
   EqualizerFeature: { path: Packages/EqualizerFeature }
-  BrowserFeature: { path: Packages/BrowserFeature }
   SettingsFeature: { path: Packages/SettingsFeature }
 
 targets:
@@ -68,7 +62,6 @@ targets:
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false
-        SPBrowserEnabled: $(SP_BROWSER_ENABLED)
         CFBundleDocumentTypes:
           - CFBundleTypeName: Audio
             CFBundleTypeRole: Viewer
@@ -108,7 +101,6 @@ targets:
       - package: FoldersFeature
       - package: PlayerFeature
       - package: EqualizerFeature
-      - package: BrowserFeature
       - package: SettingsFeature
 
   SeryaPlayerUITests:
@@ -147,7 +139,6 @@ schemes:
         - package: FoldersFeature/FoldersFeatureTests
         - package: PlayerFeature/PlayerFeatureTests
         - package: EqualizerFeature/EqualizerFeatureTests
-        - package: BrowserFeature/BrowserFeatureTests
         - package: SettingsFeature/SettingsFeatureTests
     archive:
       config: Release

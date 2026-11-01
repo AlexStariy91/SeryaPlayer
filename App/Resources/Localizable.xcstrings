@@ -21,12 +21,12 @@
         }
       }
     },
-    "Browser": {
+    "Settings": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Браузер"
+            "value": "Настройки"
           }
         }
       }

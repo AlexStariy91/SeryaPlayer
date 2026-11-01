@@ -13,7 +13,7 @@ public protocol SettingsDependencies {
 }
 
 public enum SettingsFeature {
-    /// The settings screen, meant to be presented as a sheet; "Done" dismisses it through the environment.
+    /// The settings screen, the root of the Settings tab, with its own `NavigationStack`.
     /// `presetManager` is pushed from the "Equalizer" row (`EqualizerFeature.makePresetManager`).
     @MainActor
     public static func makeRootView(

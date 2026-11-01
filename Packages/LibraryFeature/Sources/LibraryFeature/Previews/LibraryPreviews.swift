@@ -2,11 +2,11 @@
     import SwiftUI
 
     #Preview("Library") {
-        LibraryFeature.makeRootView(dependencies: PreviewDependencies()) {}
+        LibraryFeature.makeRootView(dependencies: PreviewDependencies())
     }
 
     #Preview("Library – empty") {
-        LibraryFeature.makeRootView(dependencies: PreviewDependencies(tracks: [])) {}
+        LibraryFeature.makeRootView(dependencies: PreviewDependencies(tracks: []))
     }
 
     #Preview("All Tracks") {

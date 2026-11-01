@@ -6,13 +6,11 @@ import SwiftUI
 struct LibraryRootView: View {
     /// Held in `@State` so a parent re-render (e.g. switching tabs) doesn't rebuild the store.
     @State private var context: LibraryContext
-    let onOpenSettings: () -> Void
 
     @State private var path: [LibraryRoute] = []
 
-    init(context: LibraryContext, onOpenSettings: @escaping () -> Void) {
+    init(context: LibraryContext) {
         _context = State(wrappedValue: context)
-        self.onOpenSettings = onOpenSettings
     }
 
     var body: some View {
@@ -56,10 +54,6 @@ struct LibraryRootView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button(String(localized: "Settings", bundle: .module), systemImage: "gearshape", action: onOpenSettings)
-                .accessibilityIdentifier("library.settings")
-        }
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button(String(localized: "Files…", bundle: .module), systemImage: "doc") {
