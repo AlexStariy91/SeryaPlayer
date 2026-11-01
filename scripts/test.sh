@@ -6,7 +6,13 @@ cd "$(dirname "$0")/.."
 KIND="${1:-unit}"
 
 command -v xcodegen >/dev/null || { echo "XcodeGen is required: brew install xcodegen"; exit 1; }
-xcodegen generate --quiet
+# Regenerate only when project.yml (or the file layout) changed: rewriting the project under an open
+# Xcode can corrupt its workspace cache. A missing project is always generated.
+if [ -d SeryaPlayer.xcodeproj ]; then
+  xcodegen generate --quiet --use-cache
+else
+  xcodegen generate --quiet
+fi
 
 DEVICE_ID="${SIM_ID:-$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
