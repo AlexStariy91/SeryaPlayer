@@ -86,20 +86,20 @@ struct FolderBrowserViewModelTests {
         #expect(viewModel.searchKey.query == "Loose")
     }
 
-    @Test func playAllIncludesSubfoldersDepthFirst() async {
+    @Test func playingAFolderIncludesSubfoldersDepthFirst() async {
         let fixture = await makeFixture()
         let deps = fixture.deps
         let context = fixture.context
-        FolderBrowserViewModel(folderID: rock.id, context: context).playAll(shuffled: false)
+        FolderBrowserViewModel(folderID: nil, context: context).play(folder: rock.id, shuffled: false)
         #expect(deps.playback.playCalls.first?.tracks.map(\.title) == ["Anthem", "Encore"])
         #expect(deps.playback.playCalls.first?.shuffled == false)
     }
 
-    @Test func shuffleStartsShuffledPlayback() async {
+    @Test func shufflingAFolderStartsShuffledPlayback() async {
         let fixture = await makeFixture()
         let deps = fixture.deps
         let context = fixture.context
-        FolderBrowserViewModel(folderID: rock.id, context: context).playAll(shuffled: true)
+        FolderBrowserViewModel(folderID: nil, context: context).play(folder: rock.id, shuffled: true)
         #expect(deps.playback.playCalls.first?.shuffled == true)
         #expect(deps.playback.playCalls.first?.tracks.count == 2)
     }

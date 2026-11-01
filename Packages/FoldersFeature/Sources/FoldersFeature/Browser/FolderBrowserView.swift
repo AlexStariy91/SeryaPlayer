@@ -63,15 +63,6 @@ struct FolderBrowserView: View {
 
     @ViewBuilder
     private var browseContent: some View {
-        if viewModel.folderID != nil, viewModel.canPlay, !isEditing {
-            PlayShuffleButtons(
-                isEnabled: true,
-                onPlay: { viewModel.playAll(shuffled: false) },
-                onShuffle: { viewModel.playAll(shuffled: true) }
-            )
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-        }
         if !viewModel.subfolders.isEmpty {
             Section {
                 ForEach(viewModel.subfolders) { folder in

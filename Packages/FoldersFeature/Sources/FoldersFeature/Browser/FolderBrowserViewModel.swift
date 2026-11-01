@@ -96,10 +96,6 @@ final class FolderBrowserViewModel {
         store.songCount(in: folder.id)
     }
 
-    var canPlay: Bool {
-        store.songCount(in: folderID) > 0
-    }
-
     var artwork: ArtworkResolver {
         context.artwork
     }
@@ -146,11 +142,7 @@ final class FolderBrowserViewModel {
         context.startPlayback.playOrToggle(list, at: index)
     }
 
-    /// Play / Shuffle include subfolders: a folder is played as the tree below it, depth first.
-    func playAll(shuffled: Bool) {
-        play(folder: folderID, shuffled: shuffled)
-    }
-
+    /// A folder row's Play / Shuffle: the folder is played as the tree below it, depth first.
     func play(folder id: Folder.ID?, shuffled: Bool) {
         let list = store.playableTracks(in: id)
         if shuffled {
