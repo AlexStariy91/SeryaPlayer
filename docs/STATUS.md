@@ -6,7 +6,7 @@
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
-artwork added (#14). Next: wave 3 (`browser-share`, `extras`).
+artwork added (#14). Wave 3 in progress: `settings-tab`, `extras`.
 
 ## Workstreams and waves
 
@@ -28,8 +28,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 2 | `equalizer` | 6 | EqualizerFeature | Sonnet | ✅ #9 |
 | 2 | `settings` | 7 | SettingsFeature | Sonnet | ✅ #10 |
 | — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
-| 3 | `browser-share` | 8 | BrowserFeature, ShareExtension | Sonnet | waiting |
-| 3 | `extras` | 9 | Playback, PlayerFeature | Opus | waiting |
+| 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | in progress |
+| 3 | `extras` | 9 | Playback, PlayerFeature | Opus | in progress |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -65,6 +65,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   preview-only strings are marked Don't Translate.
 - 2026-11-01. "Allow auto-merge" is on, but `main` has no required status checks (the ruleset only blocks
   force-push and deletion), so PRs are merged by hand after CI is green.
+- 2026-11-01. Scope cut for wave 3 (user decision): no in-app browser and no download by link; the Browser tab
+  becomes a Settings tab (Settings leave the Library toolbar); `BrowserFeature` and the browser flag are removed.
+  "Share to SeryaPlayer" stays. Smart playlists are dropped from `extras`.
 
 ## Open questions
 
@@ -164,12 +167,14 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] About
 - [x] Theme/accent UI test, snapshots
 
-### Stage 8. More import options and browser — `browser-share`
-- [ ] Download by link; Share Extension; BrowserFeature (WKWebView, bookmarks, history, downloads)
-- [ ] URLProtocol-based tests; the flag removes the tab
+### Stage 8. Settings tab and sharing — `settings-tab`
+- [ ] Settings tab replaces Browser; BrowserFeature package and flag removed
+- [ ] "Share to SeryaPlayer": check the existing document types on device first; a Share Extension only if needed
+- ~~Download by link; BrowserFeature (WKWebView, bookmarks, history, downloads)~~ dropped 2026-11-01
 
 ### Stage 9. Advanced — `extras`
-- [ ] Gapless, sleep timer, 0.5–2× rate and position memory for long files, visualizer (vDSP), smart playlists
+- [ ] Gapless, sleep timer, 0.5–2× rate and position memory for long files, visualizer (vDSP)
+- ~~Smart playlists~~ dropped 2026-11-01
 
 ### Stage 10. Polish
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
