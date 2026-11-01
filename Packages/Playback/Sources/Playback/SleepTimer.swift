@@ -98,9 +98,12 @@ public final class SleepTimer: SleepTimerControlling {
         cancel()
     }
 
-    /// The user started playback by hand. During the fade that means "I'm still awake".
+    /// The user started playback by hand. During the fade, or after the deadline passed while the countdown
+    /// task was not running yet (paused in the background), that means "I'm still awake".
     func userDidStartPlayback() {
-        if isFading {
+        if case let .countdown(deadline) = state, now() >= deadline {
+            cancel()
+        } else if isFading {
             cancel()
         }
     }

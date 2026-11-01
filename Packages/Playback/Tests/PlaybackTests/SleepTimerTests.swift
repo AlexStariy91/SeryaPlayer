@@ -160,6 +160,23 @@ struct SleepTimerTests {
         #expect(engine.isPlaying)
     }
 
+    @Test func playingAfterTheDeadlinePassedWhilePausedKeepsPlaying() async {
+        timer.start(.minutes(1))
+        await settle()
+        service.togglePlayPause()
+        #expect(!engine.isPlaying)
+        // The deadline passes while the app is suspended: the countdown task has not run yet.
+        clock.advance(by: 1200)
+
+        service.togglePlayPause()
+        await settle()
+
+        #expect(timer.state == .off)
+        #expect(engine.isPlaying)
+        #expect(service.snapshot.isPlaying)
+        #expect(engine.volume == 1)
+    }
+
     @Test func startingAnotherTimerReplacesTheRunningOne() async {
         timer.start(.minutes(5))
         timer.start(.minutes(60))
