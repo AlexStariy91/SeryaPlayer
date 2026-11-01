@@ -33,6 +33,8 @@ final class AppContainer {
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private let remoteCommands: RemoteCommands
     @ObservationIgnored private let inboxProcessor: InboxProcessor
+    /// Shared by every import path so the Library shows progress for all of them.
+    let importProgress: ImportProgressCenter
     @ObservationIgnored private let seedDirectory: URL?
 
     init(environment: AppEnvironment) throws {
@@ -68,12 +70,15 @@ final class AppContainer {
         remoteCommands.attach(to: player)
         self.remoteCommands = remoteCommands
 
+        let progressCenter = ImportProgressCenter()
+        importProgress = progressCenter
         let importTracks = ImportTracksUseCase(
             files: fileStore,
             metadata: metadataReader,
             artwork: artworkStore,
             tracks: trackRepository,
-            folders: folderRepository
+            folders: folderRepository,
+            progressCenter: progressCenter
         )
         inboxProcessor = InboxProcessor(fileStore: fileStore) { urls in
             await importTracks(urls: urls)
@@ -93,7 +98,8 @@ final class AppContainer {
             metadata: metadataReader,
             artwork: artworkStore,
             tracks: trackRepository,
-            folders: folderRepository
+            folders: folderRepository,
+            progressCenter: importProgress
         )
     }
 
