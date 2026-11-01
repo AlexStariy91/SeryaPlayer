@@ -6,19 +6,27 @@ public struct ImportTracksUseCase: Sendable {
     private let artwork: any ArtworkStoring
     private let tracks: any TrackRepository
     private let folders: any FolderRepository
+    private let progressCenter: ImportProgressCenter?
+    private let batchSize: Int
 
+    /// `progressCenter` publishes progress of every import (picker, inbox, Open in…) to the UI.
+    /// New tracks are written in chunks of `batchSize`, so observers refresh once per chunk, not per file.
     public init(
         files: any FileStoring,
         metadata: any MetadataReading,
         artwork: any ArtworkStoring,
         tracks: any TrackRepository,
-        folders: any FolderRepository
+        folders: any FolderRepository,
+        progressCenter: ImportProgressCenter? = nil,
+        batchSize: Int = 20
     ) {
         self.files = files
         self.metadata = metadata
         self.artwork = artwork
         self.tracks = tracks
         self.folders = folders
+        self.progressCenter = progressCenter
+        self.batchSize = max(1, batchSize)
     }
 
     private struct Candidate {
@@ -48,20 +56,58 @@ public struct ImportTracksUseCase: Sendable {
         }
 
         let total = candidates.count
-        progress?(ImportProgress(completed: 0, total: total))
-        for (offset, candidate) in candidates.enumerated() {
-            await importOne(candidate, into: &result)
-            progress?(ImportProgress(completed: offset + 1, total: total))
+        let report: @Sendable (ImportProgress) -> Void = { update in
+            progress?(update)
+            progressCenter?.report(update)
         }
+        report(ImportProgress(completed: 0, total: total))
+        var batch = Batch()
+        for (offset, candidate) in candidates.enumerated() {
+            await importOne(candidate, batch: &batch, into: &result)
+            if batch.tracks.count >= batchSize {
+                await flush(&batch, into: &result)
+            }
+            report(ImportProgress(completed: offset + 1, total: total))
+        }
+        await flush(&batch, into: &result)
+        progressCenter?.finish()
         return result
     }
 
-    private func importOne(_ candidate: Candidate, into result: inout ImportResult) async {
+    /// Tracks stored on disk but not yet written to the repository.
+    private struct Batch {
+        var tracks: [Track] = []
+        var hashes: Set<String> = []
+    }
+
+    /// Writes the batch in one call; if that fails, retries track by track so one bad row fails only itself.
+    private func flush(_ batch: inout Batch, into result: inout ImportResult) async {
+        guard !batch.tracks.isEmpty else { return }
+        let pending = batch.tracks
+        batch.tracks = []
+        do {
+            try await tracks.add(pending)
+            result.added.append(contentsOf: pending)
+        } catch {
+            for track in pending {
+                do {
+                    try await tracks.add([track])
+                    result.added.append(track)
+                } catch {
+                    try? await files.deleteFile(relativePath: track.relativePath)
+                    result.failed.append(track.originalFileName)
+                }
+            }
+        }
+    }
+
+    private func importOne(_ candidate: Candidate, batch: inout Batch, into result: inout ImportResult) async {
         let url = candidate.url
         let name = url.lastPathComponent
         do {
             let hash = try await files.contentHash(of: url)
-            if try await tracks.track(withContentHash: hash) != nil {
+            let isStored = try await tracks.track(withContentHash: hash) != nil
+            if isStored || batch.hashes.contains(hash) {
                 result.duplicates.append(name)
                 return
             }
@@ -91,13 +137,8 @@ public struct ImportTracksUseCase: Sendable {
                 artworkKey: artworkKey,
                 folderID: candidate.folderID
             )
-            do {
-                try await tracks.add([track])
-            } catch {
-                try? await files.deleteFile(relativePath: stored.relativePath)
-                throw error
-            }
-            result.added.append(track)
+            batch.tracks.append(track)
+            batch.hashes.insert(stored.contentHash)
         } catch {
             result.failed.append(name)
         }
