@@ -52,7 +52,13 @@ final class PlayerViewModel {
         self.spectrum = spectrum
         snapshot = player.snapshot
         sleepTimerState = sleepTimer.state
-        progress = PlaybackProgress(player: player, interval: progressInterval)
+        progress = PlaybackProgress(player: player, interval: progressInterval) { rate in
+            // The speed is one global setting: remember it for the next launch.
+            var settings = settingsRepository.load()
+            guard settings.playbackRate != rate else { return }
+            settings.playbackRate = rate
+            settingsRepository.save(settings)
+        }
         let settings = settingsRepository.load()
         isEqualizerActive = Self.isActive(settings.equalizer)
         showsVisualizer = settings.showsVisualizer

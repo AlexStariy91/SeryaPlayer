@@ -64,6 +64,7 @@ final class AppContainer {
             engine: engine,
             trackRepository: trackRepository,
             stateRepository: FilePlaybackStateRepository(fileURL: environment.playbackStateURL),
+            positionRepository: UserDefaultsTrackPositionRepository(defaults: environment.defaults),
             nowPlaying: NowPlayingCenter(placeholderArtwork: NowPlayingPlaceholder.image),
             urlForTrack: { track in fileStore.url(forRelativePath: track.relativePath) },
             artworkURLForTrack: { track in
@@ -95,6 +96,7 @@ final class AppContainer {
         theme = settings.theme
         accentColorID = settings.accentColorID
         player.apply(settings.equalizer)
+        player.setRate(settings.playbackRate)
     }
 
     // MARK: - Use cases
