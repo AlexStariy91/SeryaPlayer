@@ -17,10 +17,12 @@ final class PlayerViewModel {
     private(set) var backgroundColors: [Color] = []
     /// The equalizer is on and not flat: the EQ button shows an indicator.
     private(set) var isEqualizerActive = false
+    private(set) var sleepTimerState = SleepTimerState.off
 
     let progress: PlaybackProgress
 
     @ObservationIgnored private let player: any PlaybackControlling
+    @ObservationIgnored private let sleepTimer: any SleepTimerControlling
     @ObservationIgnored private let artworkStore: any ArtworkStoring
     @ObservationIgnored private let settingsRepository: any SettingsRepository
     @ObservationIgnored private let colorExtractor: ColorExtractor
@@ -32,16 +34,19 @@ final class PlayerViewModel {
 
     init(
         player: any PlaybackControlling,
+        sleepTimer: any SleepTimerControlling,
         artworkStore: any ArtworkStoring,
         settingsRepository: any SettingsRepository,
         progressInterval: Duration = .milliseconds(200),
         colorExtractor: @escaping ColorExtractor = { await ArtworkPalette.colors(from: $0) }
     ) {
         self.player = player
+        self.sleepTimer = sleepTimer
         self.artworkStore = artworkStore
         self.settingsRepository = settingsRepository
         self.colorExtractor = colorExtractor
         snapshot = player.snapshot
+        sleepTimerState = sleepTimer.state
         progress = PlaybackProgress(player: player, interval: progressInterval)
         isEqualizerActive = Self.isActive(settingsRepository.load().equalizer)
     }
@@ -88,6 +93,7 @@ final class PlayerViewModel {
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.observePlayback() }
             group.addTask { await self.observeEqualizer() }
+            group.addTask { await self.observeSleepTimer() }
         }
     }
 
@@ -104,6 +110,12 @@ final class PlayerViewModel {
             if active != isEqualizerActive {
                 isEqualizerActive = active
             }
+        }
+    }
+
+    func observeSleepTimer() async {
+        for await state in sleepTimer.states() where state != sleepTimerState {
+            sleepTimerState = state
         }
     }
 
@@ -169,6 +181,14 @@ final class PlayerViewModel {
 
     func toggleShuffle() {
         player.toggleShuffle()
+    }
+
+    func startSleepTimer(_ option: SleepTimerOption) {
+        sleepTimer.start(option)
+    }
+
+    func cancelSleepTimer() {
+        sleepTimer.cancel()
     }
 
     func cycleRepeatMode() {

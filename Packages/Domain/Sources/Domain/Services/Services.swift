@@ -119,6 +119,8 @@ public protocol PlaybackEngine: AnyObject {
     func seek(to time: TimeInterval)
     func setRate(_ rate: Float)
     func apply(_ equalizer: EQSettings)
+    /// Output volume, 0...1, applied after the equalizer. Independent of the system volume.
+    func setVolume(_ volume: Float)
 }
 
 /// What features use. Implemented by `DefaultPlaybackService` in the Playback package.

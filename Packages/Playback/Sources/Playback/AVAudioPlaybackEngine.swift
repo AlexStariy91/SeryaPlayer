@@ -48,6 +48,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
 
     private var rate: Float = 1
     private var equalizerSettings = EQSettings()
+    private var volume: Float = 1
 
     public init(session: AudioSessionManager, center: NotificationCenter = .default) {
         self.session = session
@@ -175,6 +176,11 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         applyEqualizer()
     }
 
+    public func setVolume(_ newVolume: Float) {
+        volume = min(max(newVolume, 0), 1)
+        applyVolume()
+    }
+
     // MARK: - Graph
 
     private func buildGraph() {
@@ -202,6 +208,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         connectChain(format: file?.processingFormat)
         applyRate()
         applyEqualizer()
+        applyVolume()
 
         let engineID = ObjectIdentifier(engine)
         let token = center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
@@ -218,6 +225,11 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         engine.connect(timePitch, to: equalizer, format: format)
         engine.connect(equalizer, to: engine.mainMixerNode, format: format)
         connectedFormat = format
+    }
+
+    /// The main mixer sits after the equalizer and the time-pitch unit, so a fade can't fight either.
+    private func applyVolume() {
+        engine.mainMixerNode.outputVolume = volume
     }
 
     private func applyRate() {

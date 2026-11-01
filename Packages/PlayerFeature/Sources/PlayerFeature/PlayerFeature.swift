@@ -18,6 +18,7 @@ public enum PlayerFeature {
         PlayerHostModifier(
             viewModel: PlayerViewModel(
                 player: dependencies.player,
+                sleepTimer: dependencies.sleepTimer,
                 artworkStore: dependencies.artworkStore,
                 settingsRepository: dependencies.settingsRepository
             ),

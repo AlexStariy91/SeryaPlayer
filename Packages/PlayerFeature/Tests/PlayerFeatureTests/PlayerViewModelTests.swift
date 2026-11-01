@@ -11,15 +11,46 @@ struct PlayerViewModelTests {
 
     func makeViewModel(
         player: RecordingPlayer,
+        sleepTimer: StubSleepTimer = StubSleepTimer(),
         artwork: StubArtworkStore = StubArtworkStore(),
         settings: InMemorySettingsRepository = InMemorySettingsRepository(),
         colors: [Color] = [.red, .blue]
     ) -> PlayerViewModel {
-        PlayerViewModel(player: player, artworkStore: artwork, settingsRepository: settings, colorExtractor: { _ in colors })
+        PlayerViewModel(player: player, sleepTimer: sleepTimer, artworkStore: artwork, settingsRepository: settings, colorExtractor: { _ in colors })
     }
 
     func playing(at index: Int, isPlaying: Bool = true) -> PlaybackSnapshot {
         PlaybackSnapshot(nowPlaying: tracks[index], isPlaying: isPlaying, queue: tracks, currentIndex: index)
+    }
+
+    // MARK: - Sleep timer
+
+    @Test func followsTheSleepTimerState() async {
+        let deadline = Date(timeIntervalSince1970: 5000)
+        let viewModel = makeViewModel(player: RecordingPlayer(), sleepTimer: StubSleepTimer(state: .countdown(deadline: deadline)))
+        #expect(viewModel.sleepTimerState == .countdown(deadline: deadline))
+
+        await viewModel.observeSleepTimer()
+
+        #expect(viewModel.sleepTimerState == .countdown(deadline: deadline))
+    }
+
+    @Test func forwardsSleepTimerChoices() {
+        let sleepTimer = StubSleepTimer()
+        let viewModel = makeViewModel(player: RecordingPlayer(), sleepTimer: sleepTimer)
+
+        viewModel.startSleepTimer(.minutes(30))
+        viewModel.startSleepTimer(.endOfTrack)
+        viewModel.cancelSleepTimer()
+
+        #expect(sleepTimer.started == [.minutes(30), .endOfTrack])
+        #expect(sleepTimer.cancelCount == 1)
+    }
+
+    @Test func sleepTimerCaptionRoundsUp() {
+        #expect(SleepTimerButton.format(299.2) == "5:00")
+        #expect(SleepTimerButton.format(0.1) == "0:01")
+        #expect(SleepTimerButton.format(-3) == "0:00")
     }
 
     // MARK: - Snapshots and artwork
