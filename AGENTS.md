@@ -81,7 +81,9 @@ Not done / risks / manual on-device checks: …
 
 ## Git
 
-- `main` is protected by convention: only the orchestrator commits directly (docs, Composition Root).
+- `main` is protected by convention: only the orchestrator commits directly, and only docs (`*.md`, `docs/`).
+  Code, the Composition Root, `project.yml`, `Configs/` and `.github/` go through a PR, even the orchestrator's,
+  so CI checks them before they land.
 - Keep history clean: one logical change per commit, imperative mood, scope prefix —
   `Domain: implement QueueEngine`, `CI: cache SPM packages`. Squash fixups before pushing a PR.
 - No secrets, keys or `DEVELOPMENT_TEAM` in the repository. Signing is configured locally in the git-ignored
