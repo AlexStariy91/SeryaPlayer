@@ -11,8 +11,15 @@ public enum PlaybackEngineError: Error, Sendable {
 ///
 /// Position model: the file is played as a segment scheduled from `segmentStartFrame`. While playing,
 /// the position is the segment start plus the player node's own sample time. Whenever the node is
-/// stopped (pause, seek, interruption, configuration change) the position is captured into
-/// `resumePosition` and the next `play()` schedules a fresh segment from there.
+/// stopped (seek, interruption, configuration change) the position is captured into `resumePosition`
+/// and the next `play()` schedules a fresh segment from there.
+///
+/// Pause is the exception: it pauses the node and the engine instead of stopping them, so the
+/// scheduled segment, the audio the node has already read ahead and its sample time all survive,
+/// and `play()` resumes on the next sample. Rescheduling on resume (what pause used to do) made the
+/// node re-open the file from a cold start right as the output came back: the first render cycles
+/// ran dry and were heard as a short dropout, and the position captured from the render time skipped
+/// the audio still in the output buffers.
 ///
 /// Two counters guard completion callbacks:
 /// - `generation` changes on every `load` and is what `.didFinish` reports, so the service can
@@ -44,6 +51,10 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private var scheduleID = 0
     private var segmentStartFrame: AVAudioFramePosition = 0
     private var needsSchedule = true
+    /// `pause()` paused the node and the engine; `play()` only has to start them again.
+    private var isNodePaused = false
+    /// Segments scheduled so far; lets tests check that resuming from a pause doesn't reschedule.
+    private(set) var scheduledSegmentCount = 0
     private var resumePosition: TimeInterval = 0
     /// Wall-clock fallback for `currentTime` when the node can't report its time (right after
     /// `play()` or after the engine was stopped behind our back).
@@ -82,7 +93,9 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
             // Right after scheduling, the node reports a slightly negative time until rendering starts.
             let played = Double(max(playerTime.sampleTime, 0)) / playerTime.sampleRate
             let position = Double(segmentStartFrame) / sampleRate + played
-            return clamp(position)
+            // Right after resuming from a pause, `lastRenderTime` is still the pre-pause one and maps
+            // to a time before the resume point until the first new render cycle.
+            return clamp(max(position, playbackAnchor?.position ?? 0))
         }
         if let anchor = playbackAnchor {
             let elapsed = anchor.instant.duration(to: .now)
@@ -117,8 +130,13 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if !engine.isRunning {
             engine.prepare()
             try engine.start()
-            needsSchedule = true
+            // An engine stopped behind our back may have dropped the node's schedule; one we paused
+            // ourselves still has it.
+            if !isNodePaused {
+                needsSchedule = true
+            }
         }
+        isNodePaused = false
         if needsSchedule {
             guard scheduleSegment(from: resumePosition) else {
                 // Nothing left to play (the position is at the very end): report the end right away.
@@ -132,12 +150,16 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         playbackAnchor = (resumePosition, .now)
     }
 
+    /// Keeps the schedule (see the type comment). `engine.pause()` stops the output I/O, so a
+    /// paused player costs no rendering, while keeping the resources `play()` needs to resume at once.
     public func pause() {
         guard isPlaying else { return }
         resumePosition = currentTime
-        stopNode()
+        player.pause()
         engine.pause()
         isPlaying = false
+        isNodePaused = true
+        playbackAnchor = nil
     }
 
     public func stop() {
@@ -281,6 +303,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
             completionHandler: Self.completionHandler(engine: self, scheduleID: scheduleID)
         )
         needsSchedule = false
+        scheduledSegmentCount += 1
         return true
     }
 
@@ -290,6 +313,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         scheduleID += 1
         player.stop()
         needsSchedule = true
+        isNodePaused = false
         playbackAnchor = nil
     }
 

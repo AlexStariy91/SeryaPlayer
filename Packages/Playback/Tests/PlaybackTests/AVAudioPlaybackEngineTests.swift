@@ -78,6 +78,38 @@ struct AVAudioPlaybackEngineTests {
         }
     }
 
+    @Test func resumingAfterAPauseKeepsTheScheduledSegment() async throws {
+        try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0.5)
+        try engine.play()
+        #expect(engine.scheduledSegmentCount == 1)
+        try await Task.sleep(for: .milliseconds(200))
+
+        engine.pause()
+        let pausedAt = engine.currentTime
+        #expect(!engine.isPlaying)
+        #expect(pausedAt >= 0.5)
+
+        try engine.play()
+        // Same segment: the node resumes where it paused instead of reading the file again.
+        #expect(engine.isPlaying)
+        #expect(engine.scheduledSegmentCount == 1)
+        #expect(engine.currentTime >= pausedAt)
+        engine.stop()
+    }
+
+    @Test func seekingWhilePausedSchedulesFromTheNewPosition() throws {
+        try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0)
+        try engine.play()
+        engine.pause()
+
+        engine.seek(to: 1.5)
+        try engine.play()
+
+        #expect(engine.scheduledSegmentCount == 2)
+        #expect(engine.currentTime >= 1.5)
+        engine.stop()
+    }
+
     private func makeSineFile(seconds: Double, sampleRate: Double, channels: AVAudioChannelCount) throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).caf")
         let format = try #require(AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: channels))

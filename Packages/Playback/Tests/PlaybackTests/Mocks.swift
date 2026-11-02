@@ -18,6 +18,8 @@ final class MockPlaybackEngine: PlaybackEngine {
     private(set) var equalizer: EQSettings?
     private(set) var volume: Float = 1
     private(set) var volumes: [Float] = []
+    private(set) var playCalls = 0
+    private(set) var pauseCalls = 0
     var failingURLs: Set<URL> = []
 
     init() {
@@ -47,10 +49,12 @@ final class MockPlaybackEngine: PlaybackEngine {
     }
 
     func play() throws {
+        playCalls += 1
         isPlaying = true
     }
 
     func pause() {
+        pauseCalls += 1
         isPlaying = false
     }
 
