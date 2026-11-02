@@ -26,10 +26,7 @@ struct LibraryRootView: View {
                 .animation(.default, value: importer.isImporting)
                 .navigationTitle(Text("Library", bundle: .module))
                 .toolbar { toolbar }
-                .minimalBackButton()
-                .navigationDestination(for: LibraryRoute.self) { route in
-                    destination(route).minimalBackButton()
-                }
+                .navigationDestination(for: LibraryRoute.self, destination: destination)
         }
         .fileImporter(
             isPresented: $importer.isPickerPresented,

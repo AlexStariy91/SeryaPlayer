@@ -1,4 +1,3 @@
-import DesignSystem
 import Domain
 import SwiftUI
 
@@ -16,12 +15,10 @@ struct FoldersRootView: View {
     var body: some View {
         NavigationStack(path: $path) {
             FolderBrowserView(folderID: nil, context: context)
-                .minimalBackButton()
                 .navigationDestination(for: FoldersRoute.self) { route in
                     switch route {
                     case let .folder(id):
                         FolderBrowserView(folderID: id, context: context)
-                            .minimalBackButton()
                     }
                 }
         }
