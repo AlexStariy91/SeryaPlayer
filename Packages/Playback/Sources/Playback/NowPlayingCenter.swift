@@ -1,6 +1,7 @@
 import Domain
 import Foundation
 import MediaPlayer
+import os
 import UIKit
 
 /// Publishes the current track to the Lock Screen, Control Center and connected accessories.
@@ -11,6 +12,8 @@ public final class NowPlayingCenter: NowPlayingPublishing {
     private var artwork: (url: URL, artwork: MPMediaItemArtwork?)?
     /// Built once and reused for every track without a usable cover.
     private let placeholder: MPMediaItemArtwork?
+    /// Notice level: with the remote commands it shows what the system was told around a pause.
+    private let logger = Logger(subsystem: "com.starodub.SeryaPlayer", category: "NowPlaying")
 
     /// `placeholderArtwork` is shown when a track has no artwork or the file can't be decoded.
     /// It is injected because Playback must not depend on DesignSystem.
@@ -20,6 +23,7 @@ public final class NowPlayingCenter: NowPlayingPublishing {
     }
 
     public func update(_ info: NowPlayingInfo) {
+        logger.notice("Publish rate \(info.rate, privacy: .public) elapsed \(info.position, format: .fixed(precision: 2), privacy: .public)")
         infoCenter.nowPlayingInfo = nowPlayingValues(for: info)
     }
 

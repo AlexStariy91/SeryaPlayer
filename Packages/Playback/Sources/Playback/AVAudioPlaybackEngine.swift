@@ -246,6 +246,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         player.pause()
         engine.pause()
         isEnginePaused = true
+        logger.notice("Paused after the fade-out; engine running: \(self.engine.isRunning, privacy: .public)")
     }
 
     public func stop() {
