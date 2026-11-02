@@ -35,6 +35,9 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private(set) var equalizer = AVAudioUnitEQ(numberOfBands: EQBands.count)
     private var connectedFormat: AVAudioFormat?
     private var configurationObserver: NotificationObservers?
+    /// The visualizer's tap on the main mixer output; re-installed whenever the graph is rebuilt.
+    private var outputTap: AudioOutputTap?
+    private(set) var isOutputTapInstalled = false
 
     private var file: AVAudioFile?
     private var generation = 0
@@ -209,6 +212,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         applyRate()
         applyEqualizer()
         applyVolume()
+        installOutputTap()
 
         let engineID = ObjectIdentifier(engine)
         let token = center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
@@ -344,6 +348,9 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if let format = file?.processingFormat {
             connectChain(format: format)
         }
+        // The output format may have changed with the route: tap with the new one.
+        removeOutputTapFromGraph()
+        installOutputTap()
         guard wasPlaying else { return }
         restartPlayback()
     }
@@ -354,6 +361,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         isPlaying = false
         stopNode()
         configurationObserver = nil
+        // The old engine is discarded; `buildGraph` taps the new one.
+        isOutputTapInstalled = false
         buildGraph()
         guard wasPlaying else { return }
         restartPlayback()
@@ -370,5 +379,34 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
 
     private func clamp(_ position: TimeInterval) -> TimeInterval {
         min(max(position, 0), duration)
+    }
+}
+
+// MARK: - Output tap
+
+extension AVAudioPlaybackEngine: AudioOutputTapHosting {
+    public func setOutputTap(_ tap: AudioOutputTap?) {
+        removeOutputTapFromGraph()
+        outputTap = tap
+        installOutputTap()
+    }
+
+    /// Taps the main mixer: after the time-pitch unit and the equalizer, so EQ changes show.
+    private func installOutputTap() {
+        guard let outputTap, !isOutputTapInstalled else { return }
+        engine.mainMixerNode.installTap(onBus: 0, bufferSize: 1024, format: nil, block: Self.tapBlock(outputTap))
+        isOutputTapInstalled = true
+    }
+
+    private func removeOutputTapFromGraph() {
+        guard isOutputTapInstalled else { return }
+        engine.mainMixerNode.removeTap(onBus: 0)
+        isOutputTapInstalled = false
+    }
+
+    /// Built in a nonisolated context for the same reason as `completionHandler`: the tap block runs
+    /// on an audio thread.
+    private nonisolated static func tapBlock(_ tap: @escaping AudioOutputTap) -> AVAudioNodeTapBlock {
+        { buffer, _ in tap(buffer) }
     }
 }

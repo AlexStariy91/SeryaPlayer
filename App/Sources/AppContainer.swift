@@ -30,6 +30,8 @@ final class AppContainer {
     @ObservationIgnored let player: any PlaybackControlling
     /// Owned by the playback service (it fades the engine and pauses it); exposed under its Domain contract.
     @ObservationIgnored let sleepTimer: any SleepTimerControlling
+    /// Taps the playback engine's output for the full player's visualizer, only while it is subscribed.
+    @ObservationIgnored let audioSpectrum: any AudioSpectrumProviding
 
     @ObservationIgnored private let persistence: PersistenceController
     @ObservationIgnored private let remoteCommands: RemoteCommands
@@ -56,8 +58,10 @@ final class AppContainer {
         self.artworkStore = artworkStore
         metadataReader = MetadataReader()
 
+        let engine = AVAudioPlaybackEngine(session: AudioSessionManager())
+        audioSpectrum = AudioSpectrumService(host: engine)
         let player = DefaultPlaybackService(
-            engine: AVAudioPlaybackEngine(session: AudioSessionManager()),
+            engine: engine,
             trackRepository: trackRepository,
             stateRepository: FilePlaybackStateRepository(fileURL: environment.playbackStateURL),
             positionRepository: UserDefaultsTrackPositionRepository(defaults: environment.defaults),

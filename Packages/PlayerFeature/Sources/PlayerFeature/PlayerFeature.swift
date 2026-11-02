@@ -20,7 +20,8 @@ public enum PlayerFeature {
                 player: dependencies.player,
                 sleepTimer: dependencies.sleepTimer,
                 artworkStore: dependencies.artworkStore,
-                settingsRepository: dependencies.settingsRepository
+                settingsRepository: dependencies.settingsRepository,
+                spectrum: dependencies.audioSpectrum
             ),
             equalizerSheet: equalizerSheet
         )
