@@ -186,30 +186,27 @@ struct FolderBrowserView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         if isEditing {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(
+                    viewModel.isAllSelected
+                        ? String(localized: "Deselect All", bundle: .module)
+                        : String(localized: "Select All", bundle: .module),
+                    action: viewModel.toggleSelectAll
+                )
+                .accessibilityIdentifier("folders.selectAll")
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                // Select All lives here, not as a leading item: a leading item squeezes the back label out
-                // ("Folders", then "Back", then nothing).
                 Menu {
-                    Button(
-                        viewModel.isAllSelected
-                            ? String(localized: "Deselect All", bundle: .module)
-                            : String(localized: "Select All", bundle: .module),
-                        systemImage: viewModel.isAllSelected ? "checkmark.circle" : "checkmark.circle.fill",
-                        action: viewModel.toggleSelectAll
-                    )
-                    .accessibilityIdentifier("folders.selectAll")
-                    Divider()
                     Button(String(localized: "Move…", bundle: .module), systemImage: "folder") {
                         viewModel.beginMove(viewModel.selection)
                     }
-                    .disabled(viewModel.selection.isEmpty)
                     Button(String(localized: "Delete", bundle: .module), systemImage: "trash", role: .destructive) {
                         Task { await viewModel.requestDelete(items: viewModel.selection) }
                     }
-                    .disabled(viewModel.selection.isEmpty)
                 } label: {
                     Label(String(localized: "Actions", bundle: .module), systemImage: "ellipsis.circle")
                 }
+                .disabled(viewModel.selection.isEmpty)
                 .accessibilityIdentifier("folders.actions")
             }
             ToolbarItem(placement: .topBarTrailing) {
