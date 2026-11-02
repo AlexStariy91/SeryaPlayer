@@ -14,12 +14,14 @@ public enum PlaybackEngineError: Error, Sendable {
 /// stopped (seek, interruption, configuration change) the position is captured into `resumePosition`
 /// and the next `play()` schedules a fresh segment from there.
 ///
-/// Pause is the exception: it pauses the node and the engine instead of stopping them, so the
-/// scheduled segment, the audio the node has already read ahead and its sample time all survive,
-/// and `play()` resumes on the next sample. Rescheduling on resume (what pause used to do) made the
-/// node re-open the file from a cold start right as the output came back: the first render cycles
-/// ran dry and were heard as a short dropout, and the position captured from the render time skipped
-/// the audio still in the output buffers.
+/// Pause is the exception: it pauses only the player node and leaves the engine running (rendering
+/// silence), so the scheduled segment and the node's sample time survive and `play()` resumes on the
+/// next render cycle. Measured on the output unit, the engine must not be paused for this:
+/// `engine.pause()` freezes the I/O together with audio that was already rendered but not yet heard.
+/// On restart that tail plays first, the node only joins on the following cycle, and the result is
+/// audio → silent gap → audio right after Play (one I/O cycle with `player.pause()`, ~50 ms when the
+/// file was rescheduled). After `pausedEngineTimeout` a paused engine is stopped to save power;
+/// `engine.stop()` drops the buffered tail, so that resume starts from silence and has no gap either.
 ///
 /// Two counters guard completion callbacks:
 /// - `generation` changes on every `load` and is what `.didFinish` reports, so the service can
@@ -36,8 +38,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private let center: NotificationCenter
     private let logger = Logger(subsystem: "com.starodub.SeryaPlayer", category: "PlaybackEngine")
 
-    private var engine = AVAudioEngine()
-    private var player = AVAudioPlayerNode()
+    private(set) var engine = AVAudioEngine()
+    private(set) var player = AVAudioPlayerNode()
     private(set) var timePitch = AVAudioUnitTimePitch()
     private(set) var equalizer = AVAudioUnitEQ(numberOfBands: EQBands.count)
     private var connectedFormat: AVAudioFormat?
@@ -51,8 +53,9 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private var scheduleID = 0
     private var segmentStartFrame: AVAudioFramePosition = 0
     private var needsSchedule = true
-    /// `pause()` paused the node and the engine; `play()` only has to start them again.
-    private var isNodePaused = false
+    /// How long a paused engine keeps rendering silence before it is stopped.
+    private let pausedEngineTimeout: Duration
+    private var idleStopTask: Task<Void, Never>?
     /// Segments scheduled so far; lets tests check that resuming from a pause doesn't reschedule.
     private(set) var scheduledSegmentCount = 0
     private var resumePosition: TimeInterval = 0
@@ -64,9 +67,13 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private var equalizerSettings = EQSettings()
     private var volume: Float = 1
 
-    public init(session: AudioSessionManager, center: NotificationCenter = .default) {
+    /// - Parameter pausedEngineTimeout: a paused engine keeps running this long, so a resume within it
+    ///   is seamless; then it is stopped so a paused player doesn't keep the audio hardware (and the
+    ///   app, in the background) awake.
+    public init(session: AudioSessionManager, center: NotificationCenter = .default, pausedEngineTimeout: Duration = .seconds(30)) {
         self.session = session
         self.center = center
+        self.pausedEngineTimeout = pausedEngineTimeout
         (events, eventsContinuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         do {
             try session.configure()
@@ -115,6 +122,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         playbackAnchor = nil
         needsSchedule = true
         resumePosition = clamp(position)
+        scheduleIdleStop()
         if connectedFormat != newFile.processingFormat {
             // Different sample rate or channel count: reconnect the chain with the new format.
             // The engine is stopped first; `play()` starts it again.
@@ -127,16 +135,12 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     public func play() throws {
         guard file != nil else { throw PlaybackEngineError.noFileLoaded }
         try session.activate()
+        cancelIdleStop()
         if !engine.isRunning {
             engine.prepare()
             try engine.start()
-            // An engine stopped behind our back may have dropped the node's schedule; one we paused
-            // ourselves still has it.
-            if !isNodePaused {
-                needsSchedule = true
-            }
+            needsSchedule = true
         }
-        isNodePaused = false
         if needsSchedule {
             guard scheduleSegment(from: resumePosition) else {
                 // Nothing left to play (the position is at the very end): report the end right away.
@@ -150,19 +154,18 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         playbackAnchor = (resumePosition, .now)
     }
 
-    /// Keeps the schedule (see the type comment). `engine.pause()` stops the output I/O, so a
-    /// paused player costs no rendering, while keeping the resources `play()` needs to resume at once.
+    /// Keeps the schedule and the engine running (see the type comment).
     public func pause() {
         guard isPlaying else { return }
         resumePosition = currentTime
         player.pause()
-        engine.pause()
         isPlaying = false
-        isNodePaused = true
         playbackAnchor = nil
+        scheduleIdleStop()
     }
 
     public func stop() {
+        cancelIdleStop()
         stopNode()
         engine.stop()
         isPlaying = false
@@ -313,8 +316,33 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         scheduleID += 1
         player.stop()
         needsSchedule = true
-        isNodePaused = false
         playbackAnchor = nil
+    }
+
+    // MARK: - Idle engine
+
+    /// Called whenever playback stops while the engine may still be running.
+    private func scheduleIdleStop() {
+        idleStopTask?.cancel()
+        let timeout = pausedEngineTimeout
+        idleStopTask = Task { [weak self] in
+            try? await Task.sleep(for: timeout)
+            guard !Task.isCancelled else { return }
+            self?.stopIdleEngine()
+        }
+    }
+
+    private func cancelIdleStop() {
+        idleStopTask?.cancel()
+        idleStopTask = nil
+    }
+
+    /// Stops a paused engine; the next `play()` schedules from `resumePosition` on a fresh start.
+    func stopIdleEngine() {
+        idleStopTask = nil
+        guard !isPlaying, engine.isRunning else { return }
+        stopNode()
+        engine.stop()
     }
 
     /// Built in a nonisolated context on purpose: a closure formed inside a `@MainActor` method would
@@ -336,6 +364,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         resumePosition = duration
         needsSchedule = true
         playbackAnchor = nil
+        scheduleIdleStop()
         eventsContinuation.yield(.didFinish(generation: generation))
     }
 

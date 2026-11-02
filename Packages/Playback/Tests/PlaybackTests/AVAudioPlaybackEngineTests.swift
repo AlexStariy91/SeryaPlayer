@@ -88,12 +88,47 @@ struct AVAudioPlaybackEngineTests {
         let pausedAt = engine.currentTime
         #expect(!engine.isPlaying)
         #expect(pausedAt >= 0.5)
+        // Pausing the engine too would leave already-rendered audio in the output, heard as a gap on resume.
+        #expect(engine.engine.isRunning)
 
         try engine.play()
         // Same segment: the node resumes where it paused instead of reading the file again.
         #expect(engine.isPlaying)
         #expect(engine.scheduledSegmentCount == 1)
         #expect(engine.currentTime >= pausedAt)
+        engine.stop()
+    }
+
+    @Test func pausedEngineStopsAfterTheTimeoutAndResumesFromThePausedPosition() async throws {
+        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pausedEngineTimeout: .milliseconds(50))
+        try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0.5)
+        try engine.play()
+        try await Task.sleep(for: .milliseconds(100))
+        engine.pause()
+        let pausedAt = engine.currentTime
+
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(!engine.engine.isRunning)
+        #expect(engine.currentTime == pausedAt)
+
+        try engine.play()
+        #expect(engine.isPlaying)
+        #expect(engine.scheduledSegmentCount == 2)
+        #expect(engine.currentTime >= pausedAt)
+        engine.stop()
+    }
+
+    @Test func resumingBeforeTheTimeoutKeepsTheEngineRunning() async throws {
+        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pausedEngineTimeout: .milliseconds(100))
+        try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0)
+        try engine.play()
+        engine.pause()
+        try engine.play()
+
+        try await Task.sleep(for: .milliseconds(250))
+        #expect(engine.engine.isRunning)
+        #expect(engine.isPlaying)
+        #expect(engine.scheduledSegmentCount == 1)
         engine.stop()
     }
 
