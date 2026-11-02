@@ -14,6 +14,7 @@ struct TestDependencies: LibraryDependencies {
     let metadata = FakeMetadataReader()
     let artwork = FakeArtworkStore()
     let spy = SpyPlayer()
+    let spectrum = FakeAudioSpectrum()
 
     init(tracks: [Track] = [], folders: [Folder] = [], settings: AppSettings = AppSettings()) {
         let folderRepository = InMemoryFolderRepository(folders: folders)
@@ -48,6 +49,10 @@ struct TestDependencies: LibraryDependencies {
 
     var player: any PlaybackControlling {
         spy
+    }
+
+    var audioSpectrum: any AudioSpectrumProviding {
+        spectrum
     }
 
     var importTracks: ImportTracksUseCase {

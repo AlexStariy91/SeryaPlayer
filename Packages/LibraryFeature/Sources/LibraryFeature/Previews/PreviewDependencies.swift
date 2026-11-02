@@ -12,6 +12,7 @@
         var fileStore: any FileStoring = PreviewFileStore()
         var artworkStore: any ArtworkStoring = PreviewArtworkStore()
         var player: any PlaybackControlling = PreviewPlayer()
+        var audioSpectrum: any AudioSpectrumProviding = PreviewSpectrum()
         var importTracks: ImportTracksUseCase
 
         init(tracks: [Track] = PreviewData.tracks) {
@@ -202,5 +203,14 @@
         func apply(_: EQSettings) {}
         func restore() async {}
         func persist() async {}
+    }
+
+    /// Never yields: the bars rest.
+    @MainActor
+    final class PreviewSpectrum: AudioSpectrumProviding {
+        let bandCount = 28
+        func spectrum() -> AsyncStream<[Float]> {
+            AsyncStream { _ in }
+        }
     }
 #endif

@@ -38,15 +38,24 @@ final class FoldersStore {
     @ObservationIgnored private let trackRepository: any TrackRepository
     @ObservationIgnored private let player: any PlaybackControlling
     @ObservationIgnored private let artwork: ArtworkResolver?
+    /// Levels for the playing row's bars. Built once, so rows passing it stay equal between renders.
+    @ObservationIgnored let rowLevels: SpectrumLevelsSource
     @ObservationIgnored private var hasFolders = false
     @ObservationIgnored private var hasTracks = false
 
     /// - Parameter artwork: when given, artwork URLs of new tracks are resolved ahead of the rows that show them.
-    init(folders: any FolderRepository, tracks: any TrackRepository, player: any PlaybackControlling, artwork: ArtworkResolver? = nil) {
+    init(
+        folders: any FolderRepository,
+        tracks: any TrackRepository,
+        player: any PlaybackControlling,
+        spectrum: any AudioSpectrumProviding,
+        artwork: ArtworkResolver? = nil
+    ) {
         folderRepository = folders
         trackRepository = tracks
         self.player = player
         self.artwork = artwork
+        rowLevels = { spectrum.spectrum() }
     }
 
     /// Runs until cancelled.
