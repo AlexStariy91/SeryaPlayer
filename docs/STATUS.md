@@ -7,7 +7,8 @@
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
 artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer (#16), rate and position memory (#17),
-visualizer (#18). Next: `list-bars` (real spectrum bars in list rows), then stage 10 polish.
+visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
+(#21); the app is iPhone only. Next: stage 10 polish.
 
 ## Workstreams and waves
 
@@ -33,7 +34,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | ✅ #16 |
 | 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | ✅ #18 |
 | 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | ✅ #17 |
-| 3 | `list-bars` | 9 | DesignSystem, LibraryFeature, FoldersFeature | Sonnet | in progress |
+| 3 | `list-bars` | 9 | DesignSystem, LibraryFeature, FoldersFeature | Sonnet | ✅ #19 |
+| 3 | `folders-fixes` | — | FoldersFeature, LibraryFeature | Sonnet | ✅ #20 |
+| 3 | `resume-glitch` | — | Playback | Opus | ✅ #21 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -87,6 +90,18 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-11-02. Visualizer (#18). Domain changes: `AudioSpectrumProviding`, `AppSettings.showsVisualizer`. A tap on the
   main mixer feeds vDSP; bars are drawn with Core Animation (a SwiftUI Canvas cost ~26% CPU on device) and
   normalised by `AutoGain`. Tapping the artwork toggles it; the choice is remembered.
+- 2026-11-02. List rows show 4 live white spectrum bars on the dimmed artwork instead of the `waveform` symbol (#19);
+  bars fall to the full player's rest state on pause. `SpectrumBars` moved to DesignSystem; Library/Folders
+  dependencies gained `audioSpectrum`. Simulator CPU with the playing row visible: ~7.7% → ~2.6%.
+- 2026-11-02. Back button is fully native (system label), hidden while selecting (Files/Photos pattern) (#20).
+  Hiding the label (`.toolbarRole(.editor)`, `backButtonDisplayMode = .minimal`, empty title) makes the chevron dip
+  on pushes from large-title screens on iOS 18; a transparent title works but shifts leading items — rejected by
+  the user. Selected rows keep the system highlight.
+- 2026-11-02. The app is iPhone only, set on the app target (`TARGETED_DEVICE_FAMILY`, no Mac/Catalyst/Vision):
+  XcodeGen's iOS app defaults override project-level settings.
+- 2026-11-02. Pause/resume (#21): pause fades out over 80 ms on a fader mixer after the player, then pauses the node
+  and the engine; resume fades in. No reschedule on resume. TimePitch is out of the chain at 1× (it added ~85 ms of
+  latency). The engine must not keep running while paused: iOS infers Control Center's play state from audio output.
 
 ## Open questions
 
@@ -96,7 +111,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   CI is the reference — run `brew upgrade swiftformat` locally.
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
-- The animated now-playing symbol costs CPU while its row is on screen; `list-bars` replaces it.
 - A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
 - Xcode 26: once installed, verify the build and add iOS 26 to CI.
 
@@ -195,7 +209,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] Sleep timer with fade-out (`sleep-timer`, #16)
 - [x] Visualizer (vDSP) (`visualizer`, #18)
 - [x] 0.5–2× rate and position memory for long files (`rate`, #17)
-- [ ] Real spectrum bars instead of the animated symbol in list rows (`list-bars`)
+- [x] Real spectrum bars instead of the animated symbol in list rows (`list-bars`, #19)
 - ~~Gapless, smart playlists~~ dropped 2026-11-01
 
 ### Stage 10. Polish
@@ -204,6 +218,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-11-02 — live bars in list rows (#19); device feedback: Folders counts and back button (#20), click and gap on
+  pause/resume and Control Center state (#21); iPhone only. All checked on an iPhone. GitHub's macOS runners were
+  short all evening: several jobs were cancelled unstarted after 15 min and had to be rerun. Next: stage 10 polish.
 - 2026-11-02 — wave 3 step 2: rate and position memory (#17), visualizer (#18). Checked together on an iPhone
   before merging; visualizer CPU on device cut from ~26% to ~10% (Debug). Next: `list-bars`.
 - 2026-11-02 — wave 3 step 1: Settings tab replaces Browser, BrowserFeature removed (#15); sleep timer (#16).
