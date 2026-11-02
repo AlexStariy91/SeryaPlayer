@@ -1,12 +1,13 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-01
+> Updated: 2026-11-02
 
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
-artwork added (#14). Wave 3 step 1 done: Settings tab (#15), sleep timer (#16). Step 2 in progress: `visualizer`, `rate`.
+artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer (#16), rate and position memory (#17),
+visualizer (#18). Next: `list-bars` (real spectrum bars in list rows), then stage 10 polish.
 
 ## Workstreams and waves
 
@@ -30,8 +31,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | wiring-2 | 4–7 | App | orchestrator | ✅ #11, #12 |
 | 3 | `settings-tab` | 8 | App, LibraryFeature, SettingsFeature; removes BrowserFeature | Sonnet | ✅ #15 |
 | 3 | `sleep-timer` | 9 | Playback, PlayerFeature | Sonnet | ✅ #16 |
-| 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | in progress |
-| 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | in progress |
+| 3 | `visualizer` | 9 | Playback, PlayerFeature | Opus | ✅ #18 |
+| 3 | `rate` | 9 | Playback, PlayerFeature, DataLayer | Sonnet | ✅ #17 |
+| 3 | `list-bars` | 9 | DesignSystem, LibraryFeature, FoldersFeature | Sonnet | in progress |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -78,6 +80,13 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   The countdown runs only while music plays (user decision); the last 10 s fade on the main mixer; "End of Track"
   advances to the next item and leaves it paused, like Apple Music. The active button shows the remaining time on the
   highlight, like Podcasts.
+- 2026-11-02. Rate and position memory (#17). Domain changes: `PlaybackRate.options` (0.5–2×), global
+  `AppSettings.playbackRate`, `TrackPositionRepository` (UserDefaults implementation), `NowPlayingInfo.defaultRate`.
+  Positions are kept only for tracks of 20 min or longer, dropped under 10 s or within the last 30 s.
+  `AppSettings` decodes every key with `decodeIfPresent`, so new settings never reset old ones.
+- 2026-11-02. Visualizer (#18). Domain changes: `AudioSpectrumProviding`, `AppSettings.showsVisualizer`. A tap on the
+  main mixer feeds vDSP; bars are drawn with Core Animation (a SwiftUI Canvas cost ~26% CPU on device) and
+  normalised by `AutoGain`. Tapping the artwork toggles it; the choice is remembered.
 
 ## Open questions
 
@@ -87,8 +96,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   CI is the reference — run `brew upgrade swiftformat` locally.
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
-- The Browser tab placeholder ("Browser", "Coming soon") has no Russian translation; it is replaced in wave 3.
-- The animated now-playing symbol costs CPU while its row is on screen (measured in the simulator only).
+- The animated now-playing symbol costs CPU while its row is on screen; `list-bars` replaces it.
+- A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
 - Xcode 26: once installed, verify the build and add iOS 26 to CI.
 
 ---
@@ -184,8 +193,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ### Stage 9. Advanced — `sleep-timer`, `visualizer`, `rate`
 - [x] Sleep timer with fade-out (`sleep-timer`, #16)
-- [ ] Visualizer (vDSP) (`visualizer`)
-- [ ] 0.5–2× rate and position memory for long files (`rate`)
+- [x] Visualizer (vDSP) (`visualizer`, #18)
+- [x] 0.5–2× rate and position memory for long files (`rate`, #17)
+- [ ] Real spectrum bars instead of the animated symbol in list rows (`list-bars`)
 - ~~Gapless, smart playlists~~ dropped 2026-11-01
 
 ### Stage 10. Polish
@@ -194,6 +204,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-11-02 — wave 3 step 2: rate and position memory (#17), visualizer (#18). Checked together on an iPhone
+  before merging; visualizer CPU on device cut from ~26% to ~10% (Debug). Next: `list-bars`.
 - 2026-11-02 — wave 3 step 1: Settings tab replaces Browser, BrowserFeature removed (#15); sleep timer (#16).
   Both checked on an iPhone together before merging. Next: step 2, `visualizer` + `rate`.
 - 2026-11-01 — stage 3 on-device checklist passed on an iPhone. The only finding: tracks without artwork showed
