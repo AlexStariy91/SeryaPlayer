@@ -26,9 +26,9 @@ struct LibraryRootView: View {
                 .animation(.default, value: importer.isImporting)
                 .navigationTitle(Text("Library", bundle: .module))
                 .toolbar { toolbar }
+                .minimalBackButton()
                 .navigationDestination(for: LibraryRoute.self) { route in
-                    // Back arrow only, in every mode: the label otherwise jumps between "Library", "Back" and nothing in Select.
-                    destination(route).toolbarRole(.editor)
+                    destination(route).minimalBackButton()
                 }
         }
         .fileImporter(
