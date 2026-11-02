@@ -4,16 +4,16 @@ import UIKit
 /// Holds the latest levels and hands them to the bars' layers. Not observable on purpose: showing a
 /// frame must not invalidate any SwiftUI view.
 @MainActor
-final class SpectrumBarsController {
+public final class SpectrumBarsController {
     /// Reused for every frame; replaced only if the band count changes.
-    private(set) var levels: [Float]
+    public private(set) var levels: [Float]
     fileprivate weak var view: SpectrumBarsUIView?
 
-    init(levels: [Float]) {
+    public init(levels: [Float]) {
         self.levels = levels
     }
 
-    func show(_ values: [Float]) {
+    public func show(_ values: [Float]) {
         if values.count == levels.count {
             for index in values.indices {
                 levels[index] = values[index]
@@ -26,32 +26,48 @@ final class SpectrumBarsController {
 }
 
 /// The bars as Core Animation layers: one gradient, masked by a rounded layer per band.
-struct SpectrumBarsView: UIViewRepresentable {
+public struct SpectrumBarsView: UIViewRepresentable {
     let controller: SpectrumBarsController
     let colors: [Color]
+    /// Bar width as a share of each band's slot.
+    let barWidthRatio: CGFloat
 
-    func makeUIView(context _: Context) -> SpectrumBarsUIView {
+    public init(controller: SpectrumBarsController, colors: [Color], barWidthRatio: CGFloat = 0.62) {
+        self.controller = controller
+        self.colors = colors
+        self.barWidthRatio = barWidthRatio
+    }
+
+    public func makeUIView(context _: Context) -> SpectrumBarsUIView {
         let view = SpectrumBarsUIView(controller: controller)
         controller.view = view
         return view
     }
 
-    func updateUIView(_ view: SpectrumBarsUIView, context: Context) {
+    public func updateUIView(_ view: SpectrumBarsUIView, context: Context) {
         controller.view = view
+        view.barWidthRatio = barWidthRatio
         // Resolve in SwiftUI's environment: the full player forces a dark scheme that UIKit's
         // current traits don't know about, and the palette and accent colors are dynamic.
         view.setColors(colors.map { $0.resolve(in: context.environment).cgColor })
     }
 }
 
-final class SpectrumBarsUIView: UIView {
+public final class SpectrumBarsUIView: UIView {
     private let controller: SpectrumBarsController
     private let gradient = CAGradientLayer()
     private let barMask = CALayer()
     private var bars: [CALayer] = []
     private var colors: [CGColor] = []
+    fileprivate var barWidthRatio: CGFloat = 0.62 {
+        didSet {
+            if oldValue != barWidthRatio {
+                layoutBars()
+            }
+        }
+    }
 
-    init(controller: SpectrumBarsController) {
+    fileprivate init(controller: SpectrumBarsController) {
         self.controller = controller
         super.init(frame: .zero)
         isUserInteractionEnabled = false
@@ -61,17 +77,17 @@ final class SpectrumBarsUIView: UIView {
     }
 
     @available(*, unavailable)
-    required init?(coder _: NSCoder) {
+    public required init?(coder _: NSCoder) {
         fatalError("init(coder:) is not supported")
     }
 
-    func setColors(_ newColors: [CGColor]) {
+    fileprivate func setColors(_ newColors: [CGColor]) {
         guard newColors != colors else { return }
         colors = newColors
         gradient.colors = newColors
     }
 
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -82,7 +98,7 @@ final class SpectrumBarsUIView: UIView {
     }
 
     /// Sizes each band's layer from the controller's levels without implicit animations.
-    func layoutBars() {
+    fileprivate func layoutBars() {
         let levels = controller.levels
         if bars.count != levels.count {
             bars.forEach { $0.removeFromSuperlayer() }
@@ -97,7 +113,7 @@ final class SpectrumBarsUIView: UIView {
         let size = bounds.size
         guard !levels.isEmpty, size.width > 0, size.height > 0 else { return }
         let pitch = size.width / CGFloat(levels.count)
-        let width = pitch * 0.62
+        let width = pitch * barWidthRatio
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         for (index, bar) in bars.enumerated() {

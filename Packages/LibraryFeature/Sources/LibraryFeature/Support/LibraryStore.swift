@@ -24,11 +24,19 @@ final class LibraryStore {
     @ObservationIgnored private let trackRepository: any TrackRepository
     @ObservationIgnored private let playlistRepository: any PlaylistRepository
     @ObservationIgnored private let player: any PlaybackControlling
+    /// Levels for the playing row's bars. Built once, so rows passing it stay equal between renders.
+    @ObservationIgnored let rowLevels: SpectrumLevelsSource
 
-    init(tracks: any TrackRepository, playlists: any PlaylistRepository, player: any PlaybackControlling) {
+    init(
+        tracks: any TrackRepository,
+        playlists: any PlaylistRepository,
+        player: any PlaybackControlling,
+        spectrum: any AudioSpectrumProviding
+    ) {
         trackRepository = tracks
         playlistRepository = playlists
         self.player = player
+        rowLevels = { spectrum.spectrum() }
     }
 
     func group(id: String) -> TrackGroup? {

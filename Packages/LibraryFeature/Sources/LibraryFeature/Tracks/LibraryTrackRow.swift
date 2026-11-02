@@ -22,7 +22,8 @@ struct LibraryTrackRow: View {
                     subtitle: Strings.subtitle(for: track),
                     artworkURL: url,
                     duration: track.duration,
-                    nowPlaying: playback.nowPlaying(track.id)
+                    nowPlaying: playback.nowPlaying(track.id),
+                    levels: playback.rowLevels
                 )
             }
         }

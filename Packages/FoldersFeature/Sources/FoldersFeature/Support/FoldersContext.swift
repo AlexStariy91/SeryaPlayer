@@ -23,7 +23,7 @@ final class FoldersContext {
         let files = dependencies.fileStore
         player = dependencies.player
         artwork = ArtworkResolver(store: dependencies.artworkStore)
-        store = FoldersStore(folders: folders, tracks: tracks, player: dependencies.player, artwork: artwork)
+        store = FoldersStore(folders: folders, tracks: tracks, player: dependencies.player, spectrum: dependencies.audioSpectrum, artwork: artwork)
         createFolder = CreateFolderUseCase(folders: folders)
         renameFolder = RenameFolderUseCase(folders: folders)
         moveFolder = MoveFolderUseCase(folders: folders)

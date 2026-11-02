@@ -73,7 +73,8 @@ private struct QueueRow: View {
             subtitle: track.artist,
             artworkURL: cached ?? resolved.flatMap { $0.key == track.artworkKey ? $0.url : nil },
             duration: track.duration,
-            nowPlaying: nowPlaying
+            nowPlaying: nowPlaying,
+            levels: { viewModel.spectrum.spectrum() }
         )
         .background {
             if cached == nil, let key = track.artworkKey {

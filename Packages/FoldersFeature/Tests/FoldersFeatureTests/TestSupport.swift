@@ -10,6 +10,7 @@ struct TestDependencies: FoldersDependencies {
     let files = FakeFileStore()
     let artwork = FakeArtworkStore()
     let playback = FakePlaybackController()
+    let spectrum = FakeAudioSpectrum()
 
     init(folders: [Folder] = [], tracks: [Track] = []) {
         let folderRepository = InMemoryFolderRepository(folders: folders)
@@ -35,6 +36,10 @@ struct TestDependencies: FoldersDependencies {
 
     var player: any PlaybackControlling {
         playback
+    }
+
+    var audioSpectrum: any AudioSpectrumProviding {
+        spectrum
     }
 
     /// A context whose store has delivered its first values.

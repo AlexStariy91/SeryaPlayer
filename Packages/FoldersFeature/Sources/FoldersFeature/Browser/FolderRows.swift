@@ -48,7 +48,8 @@ struct FolderTrackRow: View {
                     subtitle: [track.artist, track.album].filter { !$0.isEmpty }.joined(separator: " · "),
                     artworkURL: url,
                     duration: track.duration,
-                    nowPlaying: playback.nowPlaying(track.id)
+                    nowPlaying: playback.nowPlaying(track.id),
+                    levels: playback.rowLevels
                 )
             }
         }

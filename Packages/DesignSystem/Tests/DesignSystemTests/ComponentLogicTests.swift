@@ -90,3 +90,39 @@ struct ComponentLogicTests {
         return context.makeImage()
     }
 }
+
+struct BandGroupingTests {
+    @Test func averagesEqualGroups() {
+        #expect(BandGrouping.group([0, 1, 0.5, 0.5, 1, 1, 0, 0], into: 4) == [0.5, 0.5, 1, 0])
+    }
+
+    @Test func spreadsRemainderAcrossGroups() {
+        let grouped = BandGrouping.group([Float](repeating: 1, count: 28), into: 4)
+        #expect(grouped == [1, 1, 1, 1])
+        #expect(BandGrouping.group([0.2, 0.4, 0.6, 0.8, 1], into: 2) == [0.3, 0.8])
+    }
+
+    @Test func fewerValuesThanGroupsRepeatTheLast() {
+        #expect(BandGrouping.group([0.5], into: 3) == [0.5, 0.5, 0.5])
+    }
+
+    @Test func noValuesGiveZeros() {
+        #expect(BandGrouping.group([], into: 4) == [0, 0, 0, 0])
+        #expect(BandGrouping.group([1], into: 0).isEmpty)
+    }
+}
+
+@MainActor
+struct NowPlayingBarsTests {
+    @Test func pausedRowsRestAtZero() {
+        #expect(NowPlayingBars.restLevels(for: .paused, animated: true) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .paused, animated: false) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .playing, animated: true) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .playing, animated: false) == NowPlayingBars.stillPlayingLevels)
+    }
+
+    @Test func settledOnlyWhenEveryBarIsNearZero() {
+        #expect(NowPlayingBars.isResting([0, 0.005, 0, 0]))
+        #expect(!NowPlayingBars.isResting([0, 0.2, 0, 0]))
+    }
+}
