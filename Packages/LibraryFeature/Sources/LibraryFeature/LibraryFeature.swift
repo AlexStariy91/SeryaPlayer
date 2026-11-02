@@ -14,6 +14,8 @@ public protocol LibraryDependencies {
     var fileStore: any FileStoring { get }
     var artworkStore: any ArtworkStoring { get }
     var player: any PlaybackControlling { get }
+    /// Live levels for the now-playing bars in track rows.
+    var audioSpectrum: any AudioSpectrumProviding { get }
     var importTracks: ImportTracksUseCase { get }
     /// Progress of imports started outside the Library (inbox, "Open in…"). `nil` shows only picker imports.
     var importProgress: ImportProgressCenter? { get }

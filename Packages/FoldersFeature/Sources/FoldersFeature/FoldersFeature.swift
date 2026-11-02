@@ -10,6 +10,8 @@ public protocol FoldersDependencies {
     var fileStore: any FileStoring { get }
     var artworkStore: any ArtworkStoring { get }
     var player: any PlaybackControlling { get }
+    /// Live levels for the now-playing bars in track rows.
+    var audioSpectrum: any AudioSpectrumProviding { get }
 }
 
 public enum FoldersFeature {

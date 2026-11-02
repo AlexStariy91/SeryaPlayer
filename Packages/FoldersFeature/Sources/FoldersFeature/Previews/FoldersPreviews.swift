@@ -31,6 +31,19 @@
         var player: any PlaybackControlling {
             PreviewPlayer()
         }
+
+        var audioSpectrum: any AudioSpectrumProviding {
+            PreviewSpectrum()
+        }
+    }
+
+    /// Never yields: the bars rest.
+    @MainActor
+    private final class PreviewSpectrum: AudioSpectrumProviding {
+        let bandCount = 28
+        func spectrum() -> AsyncStream<[Float]> {
+            AsyncStream { _ in }
+        }
     }
 
     #Preview("Folders") {

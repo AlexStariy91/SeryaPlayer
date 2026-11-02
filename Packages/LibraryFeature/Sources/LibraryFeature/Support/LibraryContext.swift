@@ -22,7 +22,12 @@ final class LibraryContext {
         folders = dependencies.folderRepository
         settings = dependencies.settingsRepository
         player = dependencies.player
-        store = LibraryStore(tracks: dependencies.trackRepository, playlists: dependencies.playlistRepository, player: dependencies.player)
+        store = LibraryStore(
+            tracks: dependencies.trackRepository,
+            playlists: dependencies.playlistRepository,
+            player: dependencies.player,
+            spectrum: dependencies.audioSpectrum
+        )
         actions = TrackActionsModel(
             player: dependencies.player,
             tracks: dependencies.trackRepository,
