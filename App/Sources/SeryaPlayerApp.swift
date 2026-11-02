@@ -1,9 +1,14 @@
+import DesignSystem
 import SwiftUI
 
 @main
 struct SeryaPlayerApp: App {
     @State private var startup = Result { try AppContainer(environment: .current()) }
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        NavigationBarStyle.hideBackButtonTitles()
+    }
 
     var body: some Scene {
         WindowGroup {
