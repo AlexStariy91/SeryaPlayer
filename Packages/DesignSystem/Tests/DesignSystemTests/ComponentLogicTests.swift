@@ -111,3 +111,18 @@ struct BandGroupingTests {
         #expect(BandGrouping.group([1], into: 0).isEmpty)
     }
 }
+
+@MainActor
+struct NowPlayingBarsTests {
+    @Test func pausedRowsRestAtZero() {
+        #expect(NowPlayingBars.restLevels(for: .paused, animated: true) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .paused, animated: false) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .playing, animated: true) == [0, 0, 0, 0])
+        #expect(NowPlayingBars.restLevels(for: .playing, animated: false) == NowPlayingBars.stillPlayingLevels)
+    }
+
+    @Test func settledOnlyWhenEveryBarIsNearZero() {
+        #expect(NowPlayingBars.isResting([0, 0.005, 0, 0]))
+        #expect(!NowPlayingBars.isResting([0, 0.2, 0, 0]))
+    }
+}
