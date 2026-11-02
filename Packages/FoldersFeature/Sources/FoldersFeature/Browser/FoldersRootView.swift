@@ -19,6 +19,8 @@ struct FoldersRootView: View {
                     switch route {
                     case let .folder(id):
                         FolderBrowserView(folderID: id, context: context)
+                            // Back arrow only, in every mode: the label otherwise jumps between "Folders", "Back" and nothing in Select.
+                            .toolbarRole(.editor)
                     }
                 }
         }
