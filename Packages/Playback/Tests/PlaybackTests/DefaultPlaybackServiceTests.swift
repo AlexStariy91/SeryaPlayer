@@ -209,30 +209,6 @@ struct DefaultPlaybackServiceTests {
         #expect(engine.loadedURLs.count == 1)
     }
 
-    // MARK: - Pause and resume
-
-    @Test func resumingAfterAPauseOnlyRestartsTheEngine() {
-        let service = makeService()
-        service.play(tracks, startingAt: 1, shuffled: false)
-        engine.currentTime = 42
-        service.togglePlayPause()
-        #expect(engine.pauseCalls == 1)
-        #expect(!service.snapshot.isPlaying)
-
-        service.togglePlayPause()
-
-        // No reload (which would re-apply a remembered position), no seek, no volume change: the
-        // engine resumes from where it paused.
-        #expect(engine.loadedURLs == [fileURL(for: tracks[1])])
-        #expect(engine.seeks.isEmpty)
-        #expect(engine.volumes.isEmpty)
-        #expect(engine.playCalls == 2)
-        #expect(engine.currentTime == 42)
-        #expect(service.snapshot.isPlaying)
-        #expect(nowPlaying.last?.position == 42)
-        #expect(nowPlaying.last?.rate == 1)
-    }
-
     // MARK: - Play count
 
     @Test func trackIsMarkedPlayedOnceWhenPlaybackStarts() async {
@@ -517,5 +493,50 @@ struct DefaultPlaybackServiceTests {
         service.apply(settings)
 
         #expect(engine.equalizer == settings)
+    }
+}
+
+extension DefaultPlaybackServiceTests {
+    // MARK: - Pause and resume
+
+    @Test func resumingAfterAPauseOnlyRestartsTheEngine() {
+        let service = makeService()
+        service.play(tracks, startingAt: 1, shuffled: false)
+        engine.currentTime = 42
+        service.togglePlayPause()
+        #expect(engine.pauseCalls == 1)
+        #expect(!service.snapshot.isPlaying)
+
+        service.togglePlayPause()
+
+        // No reload (which would re-apply a remembered position), no seek, no volume change: the
+        // engine resumes from where it paused.
+        #expect(engine.loadedURLs == [fileURL(for: tracks[1])])
+        #expect(engine.seeks.isEmpty)
+        #expect(engine.volumes.isEmpty)
+        #expect(engine.playCalls == 2)
+        #expect(engine.currentTime == 42)
+        #expect(service.snapshot.isPlaying)
+        #expect(nowPlaying.last?.position == 42)
+        #expect(nowPlaying.last?.rate == 1)
+    }
+
+    @Test func nowPlayingGetsOneUpdatePerPauseAndResume() {
+        let service = makeService()
+        service.play(tracks, startingAt: 0, shuffled: false)
+        service.setRate(1.5)
+        engine.currentTime = 42
+
+        let beforePause = nowPlaying.updates.count
+        service.togglePlayPause()
+        #expect(nowPlaying.updates.count == beforePause + 1)
+        #expect(nowPlaying.last?.rate == 0)
+        #expect(nowPlaying.last?.position == 42)
+        #expect(nowPlaying.last?.defaultRate == 1.5)
+
+        service.togglePlayPause()
+        #expect(nowPlaying.updates.count == beforePause + 2)
+        #expect(nowPlaying.last?.rate == 1.5)
+        #expect(nowPlaying.last?.position == 42)
     }
 }

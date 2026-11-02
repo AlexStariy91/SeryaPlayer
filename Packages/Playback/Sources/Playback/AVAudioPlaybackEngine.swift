@@ -16,20 +16,20 @@ public enum PlaybackEngineError: Error, Sendable {
 /// stopped (seek, interruption, configuration change) the position is captured into `resumePosition`
 /// and the next `play()` schedules a fresh segment from there.
 ///
-/// Pause is the exception: it pauses only the player node and leaves the engine running (rendering
-/// silence), so the scheduled segment and the node's sample time survive and `play()` resumes on the
-/// next render cycle. Measured on the output unit, the engine must not be paused for this:
-/// `engine.pause()` freezes the I/O together with audio that was already rendered but not yet heard.
-/// On restart that tail plays first, the node only joins on the following cycle, and the result is
-/// audio → silent gap → audio right after Play (one I/O cycle with `player.pause()`, ~50 ms when the
-/// file was rescheduled). After `pausedEngineTimeout` a paused engine is stopped to save power;
-/// `engine.stop()` drops the buffered tail, so that resume starts from silence and has no gap either.
+/// Pause is the exception: it fades out, then pauses the player node and the engine, so the scheduled
+/// segment and the node's sample time survive and `play()` resumes without reading the file again.
+/// The order matters (measured on the output unit): `engine.pause()` freezes the I/O together with
+/// audio that was rendered but not yet heard, and plays it on restart before the node joins one cycle
+/// later. Paused mid-signal that was heard as audio → silent gap → audio right after Play; paused
+/// after the fade the frozen tail is silence, so nothing is heard. The engine must be paused, not left
+/// running: iOS shows the app as playing (Control Center, Lock Screen) while its output renders, even
+/// silence.
 ///
 /// Pause and resume ramp the fader (a mixer right after the player) over `pauseFade` instead of cutting
 /// the waveform mid-cycle, which is heard as a click. It sits before the time-pitch unit so the ramp
 /// lines up with the node's own output whatever the unit's delay; the sleep timer's fade (`volume`)
-/// stays on the main mixer, so the two compose. `pause()` reports paused at once; the node is paused
-/// when the ramp reaches silence.
+/// stays on the main mixer, so the two compose. `pause()` reports paused at once, at the position the
+/// fade will end on; the node is paused when the ramp reaches silence.
 ///
 /// Two counters guard completion callbacks:
 /// - `generation` changes on every `load` and is what `.didFinish` reports, so the service can
@@ -63,8 +63,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private var segmentStartFrame: AVAudioFramePosition = 0
     private var needsSchedule = true
     /// How long a paused engine keeps rendering silence before it is stopped.
-    private let pausedEngineTimeout: Duration
-    private var idleStopTask: Task<Void, Never>?
+    /// `pause()` paused the engine; the node still holds its schedule.
+    private var isEnginePaused = false
     /// Segments scheduled so far; lets tests check that resuming from a pause doesn't reschedule.
     private(set) var scheduledSegmentCount = 0
     private var resumePosition: TimeInterval = 0
@@ -87,20 +87,14 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     /// `pause()` was called and the fade-out is running; the node still plays until it ends.
     private var isPausePending = false
 
-    /// - Parameters:
-    ///   - pausedEngineTimeout: a paused engine keeps running this long, so a resume within it is
-    ///     seamless; then it is stopped so a paused player doesn't keep the audio hardware (and the
-    ///     app, in the background) awake.
-    ///   - pauseFade: length of the volume ramp on pause and on resume.
+    /// - Parameter pauseFade: length of the volume ramp on pause and on resume.
     public init(
         session: AudioSessionManager,
         center: NotificationCenter = .default,
-        pausedEngineTimeout: Duration = .seconds(30),
         pauseFade: Duration = .milliseconds(80)
     ) {
         self.session = session
         self.center = center
-        self.pausedEngineTimeout = pausedEngineTimeout
         self.pauseFade = pauseFade
         (events, eventsContinuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         do {
@@ -155,6 +149,11 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
 
     @discardableResult
     public func load(url: URL, startingAt position: TimeInterval) throws -> Int {
+        if !isPlaying, engine.isRunning {
+            // Loaded paused (the end of a track with the "End of Track" sleep timer, a skip while
+            // paused): an engine left rendering silence keeps the app "playing" for iOS.
+            engine.pause()
+        }
         stopNode()
         let newFile = try AVAudioFile(forReading: url)
         file = newFile
@@ -163,7 +162,6 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         playbackAnchor = nil
         needsSchedule = true
         resumePosition = clamp(position)
-        scheduleIdleStop()
         if connectedFormat != newFile.processingFormat {
             // Different sample rate or channel count: reconnect the chain with the new format.
             // The engine is stopped first; `play()` starts it again.
@@ -176,7 +174,6 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     public func play() throws {
         guard file != nil else { throw PlaybackEngineError.noFileLoaded }
         try session.activate()
-        cancelIdleStop()
         if isPausePending {
             // Play during the fade-out: the node never stopped, so just ramp back up.
             isPausePending = false
@@ -188,8 +185,13 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if !engine.isRunning {
             engine.prepare()
             try engine.start()
-            needsSchedule = true
+            // An engine stopped behind our back may have dropped the node's schedule; one paused by
+            // `pause()` still has it.
+            if !isEnginePaused {
+                needsSchedule = true
+            }
         }
+        isEnginePaused = false
         if needsSchedule {
             guard scheduleSegment(from: resumePosition) else {
                 // Nothing left to play (the position is at the very end): report the end right away.
@@ -223,10 +225,11 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
             completePendingPause()
         }
         guard isPlaying else { return }
-        resumePosition = currentTime
+        // Where the node will stop: Now Playing gets the final position once, not one 80 ms short.
+        let fadeSeconds = fading ? Double(pauseFade.components.attoseconds) / 1e18 + Double(pauseFade.components.seconds) : 0
+        resumePosition = clamp(currentTime + fadeSeconds * Double(rate))
         isPlaying = false
         playbackAnchor = nil
-        scheduleIdleStop()
         isPausePending = true
         if fading {
             fade.ramp(to: 0) { [weak self] in self?.completePendingPause() }
@@ -240,13 +243,12 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         guard isPausePending else { return }
         isPausePending = false
         fade.set(0)
-        // The node kept playing through the fade: that audio was heard, so resume after it.
-        resumePosition = max(nodePosition() ?? resumePosition, resumePosition)
         player.pause()
+        engine.pause()
+        isEnginePaused = true
     }
 
     public func stop() {
-        cancelIdleStop()
         stopNode()
         engine.stop()
         isPlaying = false
@@ -430,33 +432,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         scheduleID += 1
         player.stop()
         needsSchedule = true
+        isEnginePaused = false
         playbackAnchor = nil
-    }
-
-    // MARK: - Idle engine
-
-    /// Called whenever playback stops while the engine may still be running.
-    private func scheduleIdleStop() {
-        idleStopTask?.cancel()
-        let timeout = pausedEngineTimeout
-        idleStopTask = Task { [weak self] in
-            try? await Task.sleep(for: timeout)
-            guard !Task.isCancelled else { return }
-            self?.stopIdleEngine()
-        }
-    }
-
-    private func cancelIdleStop() {
-        idleStopTask?.cancel()
-        idleStopTask = nil
-    }
-
-    /// Stops a paused engine; the next `play()` schedules from `resumePosition` on a fresh start.
-    func stopIdleEngine() {
-        idleStopTask = nil
-        guard !isPlaying, engine.isRunning else { return }
-        stopNode()
-        engine.stop()
     }
 
     /// Built in a nonisolated context on purpose: a closure formed inside a `@MainActor` method would
@@ -477,7 +454,9 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if isPausePending {
             // The file ended during the fade-out: stay paused at the end; `play()` reports the finish.
             isPausePending = false
-            fade.cancel()
+            fade.set(0)
+            engine.pause()
+            isEnginePaused = true
             resumePosition = duration
             needsSchedule = true
             return
@@ -487,7 +466,6 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         resumePosition = duration
         needsSchedule = true
         playbackAnchor = nil
-        scheduleIdleStop()
         eventsContinuation.yield(.didFinish(generation: generation))
     }
 }

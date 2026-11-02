@@ -176,6 +176,7 @@ struct AVAudioPlaybackEngineTests {
     }
 
     @Test func resumingAfterAPauseKeepsTheScheduledSegment() async throws {
+        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pauseFade: .milliseconds(40))
         try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0.5)
         try engine.play()
         #expect(engine.scheduledSegmentCount == 1)
@@ -185,8 +186,7 @@ struct AVAudioPlaybackEngineTests {
         let pausedAt = engine.currentTime
         #expect(!engine.isPlaying)
         #expect(pausedAt >= 0.5)
-        // Pausing the engine too would leave already-rendered audio in the output, heard as a gap on resume.
-        #expect(engine.engine.isRunning)
+        #expect(await eventually { !engine.engine.isRunning })
 
         try engine.play()
         // Same segment: the node resumes where it paused instead of reading the file again.
@@ -196,36 +196,35 @@ struct AVAudioPlaybackEngineTests {
         engine.stop()
     }
 
-    @Test func pausedEngineStopsAfterTheTimeoutAndResumesFromThePausedPosition() async throws {
-        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pausedEngineTimeout: .milliseconds(50))
+    @Test func engineIsPausedOnceTheFadeOutEnds() async throws {
+        // A running engine, even rendering silence, keeps the app "playing" in Control Center.
+        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pauseFade: .milliseconds(40))
         try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0.5)
         try engine.play()
         try await Task.sleep(for: .milliseconds(100))
+
         engine.pause()
         let pausedAt = engine.currentTime
+        #expect(engine.engine.isRunning) // still fading
 
-        try await Task.sleep(for: .milliseconds(200))
-        #expect(!engine.engine.isRunning)
+        #expect(await eventually { !engine.engine.isRunning })
+        // The position reported at pause already was the final one.
         #expect(engine.currentTime == pausedAt)
-
-        try engine.play()
-        #expect(engine.isPlaying)
-        #expect(engine.scheduledSegmentCount == 2)
-        #expect(engine.currentTime >= pausedAt)
         engine.stop()
     }
 
-    @Test func resumingBeforeTheTimeoutKeepsTheEngineRunning() async throws {
-        let engine = AVAudioPlaybackEngine(session: AudioSessionManager(), pausedEngineTimeout: .milliseconds(100))
-        try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0)
+    @Test func loadingWhilePausedLeavesTheEngineIdle() throws {
+        try engine.load(url: makeSineFile(seconds: 1, sampleRate: 44100, channels: 2), startingAt: 0)
         try engine.play()
-        engine.pause()
+        engine.pause(fading: false)
         try engine.play()
+        engine.pause(fading: false)
 
-        try await Task.sleep(for: .milliseconds(250))
-        #expect(engine.engine.isRunning)
+        try engine.load(url: makeSineFile(seconds: 1, sampleRate: 44100, channels: 2), startingAt: 0)
+
+        #expect(!engine.engine.isRunning)
+        try engine.play()
         #expect(engine.isPlaying)
-        #expect(engine.scheduledSegmentCount == 1)
         engine.stop()
     }
 
