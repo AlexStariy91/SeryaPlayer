@@ -50,6 +50,9 @@ struct FolderBrowserView: View {
         .overlay { emptyState }
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(viewModel.folderID == nil ? .large : .inline)
+        // While selecting, "Select All" is the only item at the leading edge (as in Files and Photos), so it does not
+        // fight the back label for space; this also turns off swipe-back. Done leaves the mode.
+        .navigationBarBackButtonHidden(isEditing)
         .environment(\.editMode, editMode)
         .toolbar { toolbar }
         .onChange(of: viewModel.isEmpty) { _, isEmpty in

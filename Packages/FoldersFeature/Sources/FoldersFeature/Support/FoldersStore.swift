@@ -29,10 +29,12 @@ final class FoldersStore {
     private(set) var isPlaying = false
     private(set) var isLoaded = false
 
-    /// Indexes rebuilt once per observed change; accessors are dictionary lookups.
-    @ObservationIgnored private var childrenByParent: [Folder.ID?: [Folder]] = [:]
-    @ObservationIgnored private var tracksByFolder: [Folder.ID?: [Track]] = [:]
-    @ObservationIgnored private var songCountByFolder: [Folder.ID?: Int] = [:]
+    /// Indexes rebuilt once per observed change; accessors are dictionary lookups. They are observed (not
+    /// `@ObservationIgnored`): views read subfolders, tracks and counts only through them, so a rebuild
+    /// must invalidate those views.
+    private var childrenByParent: [Folder.ID?: [Folder]] = [:]
+    private var tracksByFolder: [Folder.ID?: [Track]] = [:]
+    private var songCountByFolder: [Folder.ID?: Int] = [:]
 
     @ObservationIgnored private let folderRepository: any FolderRepository
     @ObservationIgnored private let trackRepository: any TrackRepository

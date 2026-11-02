@@ -2,6 +2,7 @@ import Domain
 import DomainTestSupport
 @testable import FoldersFeature
 import Foundation
+import Observation
 import Testing
 
 @MainActor
@@ -47,5 +48,57 @@ struct FoldersStoreTests {
         defer { observer.cancel() }
         #expect(await eventually { context.artwork.cachedURL(for: "cover", size: .thumbnail) != nil })
         #expect(context.artwork.cachedURL(for: "cover", size: .large) == nil)
+    }
+
+    /// A view that reads a folder's count must be invalidated when tracks change, or the row keeps a stale subtitle.
+    @Test func deletingTracksInvalidatesViewsReadingTheFolderCount() async throws {
+        let parent = Folder(name: "Music")
+        let child = Folder(name: "Rock", parentID: parent.id)
+        let tracks = (0 ..< 5).map { Track.fixture("Song \($0)", folderID: $0 < 3 ? parent.id : child.id) }
+        let deps = TestDependencies(folders: [parent, child], tracks: tracks)
+        let context = FoldersContext(dependencies: deps)
+        let observer = Task { await context.store.observe() }
+        defer { observer.cancel() }
+        let store = context.store
+        #expect(await eventually { store.songCount(in: parent.id) == 5 })
+
+        let invalidated = Flag()
+        withObservationTracking { _ = store.songCount(in: parent.id) } onChange: { invalidated.set() }
+        try await deps.tracks.delete(ids: [tracks[0].id, tracks[4].id])
+        #expect(await eventually { store.songCount(in: parent.id) == 3 })
+        #expect(invalidated.isSet)
+        #expect(store.songCount(in: child.id) == 1)
+    }
+
+    @Test func tracksArrivingInBatchesKeepTheCountCurrent() async throws {
+        let folder = Folder(name: "Imported")
+        let deps = TestDependencies(folders: [folder])
+        let context = FoldersContext(dependencies: deps)
+        let observer = Task { await context.store.observe() }
+        defer { observer.cancel() }
+        let store = context.store
+        #expect(await eventually { store.isLoaded })
+
+        for batch in 0 ..< 3 {
+            let invalidated = Flag()
+            withObservationTracking { _ = store.songCount(in: folder.id) } onChange: { invalidated.set() }
+            try await deps.tracks.add((0 ..< 10).map { .fixture("B\(batch) \($0)", folderID: folder.id) })
+            #expect(await eventually { store.songCount(in: folder.id) == (batch + 1) * 10 })
+            #expect(invalidated.isSet)
+        }
+    }
+}
+
+/// Set from `withObservationTracking`'s `@Sendable` onChange.
+private final class Flag: @unchecked Sendable { // Touched under the lock only.
+    private let lock = NSLock()
+    private var value = false
+
+    var isSet: Bool {
+        lock.withLock { value }
+    }
+
+    func set() {
+        lock.withLock { value = true }
     }
 }

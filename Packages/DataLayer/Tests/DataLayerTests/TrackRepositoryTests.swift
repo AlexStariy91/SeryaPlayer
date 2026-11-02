@@ -150,4 +150,21 @@ struct TrackRepositoryTests {
         }
         #expect(viewCount == 1000)
     }
+
+    @Test func observationEmitsOnDeleteAndWhenBatchInsertedTracksGetTheirFolder() async throws {
+        let folders = CoreDataFolderRepository(persistence: persistence)
+        let folder = Folder(name: "Imported")
+        try await folders.create(folder)
+        let stream = repository.observeTracks(sortedBy: TrackSort(field: .dateAdded))
+        #expect(try await value(from: stream).isEmpty)
+
+        let tracks = (0 ..< 120).map { makeTrack(title: "Track \($0)", folderID: folder.id) }
+        try await repository.add(tracks)
+        let linked = try await value(from: stream) { $0.count == 120 && $0.allSatisfy { $0.folderID == folder.id } }
+        #expect(linked.count == 120)
+
+        try await repository.delete(ids: tracks.prefix(20).map(\.id))
+        let afterDelete = try await value(from: stream) { $0.count == 100 }
+        #expect(afterDelete.allSatisfy { $0.folderID == folder.id })
+    }
 }
