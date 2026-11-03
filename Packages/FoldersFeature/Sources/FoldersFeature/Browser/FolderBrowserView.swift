@@ -29,8 +29,9 @@ struct FolderBrowserView: View {
         @Bindable var viewModel = viewModel
         // Selection exists only while editing. Bound outside edit mode, the list mirrors it into the
         // collection view's own selection: a tapped folder can stay highlighted after navigating back,
-        // and every cell pays for selection bookkeeping while scrolling.
-        List(selection: isEditing ? $viewModel.selection : nil) {
+        // and every cell pays for selection bookkeeping while scrolling. iOS 26 needs it bound from the start
+        // to show checkmarks, so there it is bound but empty outside edit mode (see `EditingSelection`).
+        List(selection: EditingSelection.binding($viewModel.selection, isEditing: isEditing)) {
             if let results = viewModel.searchResults, viewModel.isSearching {
                 searchContent(results)
             } else {
@@ -38,6 +39,7 @@ struct FolderBrowserView: View {
             }
         }
         .listStyle(.plain)
+        .pinnedSectionHeaders()
         .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: searchPrompt)
         .task(id: viewModel.searchKey) {
             // Debounce: a newer keystroke cancels this task before it searches.
