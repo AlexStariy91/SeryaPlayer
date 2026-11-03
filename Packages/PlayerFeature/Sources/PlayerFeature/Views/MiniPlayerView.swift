@@ -15,7 +15,7 @@ struct MiniPlayerView: View {
         HStack(spacing: Spacing.m) {
             Button(action: onOpen) {
                 HStack(spacing: Spacing.m) {
-                    ArtworkView(url: viewModel.thumbnailURL, size: .mini)
+                    MiniPlayerArtwork(url: viewModel.thumbnailURL)
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
                         Text(viewModel.track?.title ?? String(localized: "Not Playing", bundle: .module))
                             .font(AppFont.rowTitle)

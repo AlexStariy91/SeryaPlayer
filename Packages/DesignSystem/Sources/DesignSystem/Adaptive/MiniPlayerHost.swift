@@ -103,3 +103,65 @@ private struct MiniPlayerContentInsetModifier: ViewModifier {
             .contentMargins(.bottom, inset, for: .scrollIndicators)
     }
 }
+
+public extension View {
+    /// Makes the mini player content the source of the full player's zoom transition.
+    ///
+    /// - iOS 26: the accessory's own glass is the source; no background of ours covers it.
+    /// - iOS 18: the zoom snapshots the source, so it gets the bar's background and corners (a solid color: the
+    ///   source only takes `Color` backgrounds), otherwise collapsing ends on a plain sharp-cornered rectangle.
+    @ViewBuilder
+    func miniPlayerTransitionSource(id: some Hashable, in namespace: Namespace.ID) -> some View {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                matchedTransitionSource(id: id, in: namespace)
+            } else {
+                legacyMiniPlayerTransitionSource(id: id, in: namespace)
+            }
+        #else
+            legacyMiniPlayerTransitionSource(id: id, in: namespace)
+        #endif
+    }
+
+    private func legacyMiniPlayerTransitionSource(id: some Hashable, in namespace: Namespace.ID) -> some View {
+        matchedTransitionSource(id: id, in: namespace) { source in
+            source
+                .background(Color(uiColor: .secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
+        }
+    }
+}
+
+/// The mini player's artwork. 44 pt on the iOS 18 bar; on iOS 26 it is sized for the bottom accessory,
+/// smaller when the accessory sits inline next to a minimized tab bar.
+public struct MiniPlayerArtwork: View {
+    private let url: URL?
+
+    public init(url: URL?) {
+        self.url = url
+    }
+
+    public var body: some View {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                AccessoryArtwork(url: url)
+            } else {
+                ArtworkView(url: url, size: .mini)
+            }
+        #else
+            ArtworkView(url: url, size: .mini)
+        #endif
+    }
+}
+
+#if compiler(>=6.2)
+    @available(iOS 26, *)
+    private struct AccessoryArtwork: View {
+        let url: URL?
+        @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+        var body: some View {
+            ArtworkView(url: url, size: .custom(placement == .inline ? 24 : 32))
+        }
+    }
+#endif
