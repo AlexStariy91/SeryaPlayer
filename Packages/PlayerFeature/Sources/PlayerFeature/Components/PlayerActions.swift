@@ -83,6 +83,8 @@ private struct IconButtonLabel: View {
     var text: String?
     /// The countdown is frozen (playback is paused): the digits are slightly dimmed.
     var isDimmed = false
+    /// Off for a menu label: the menu draws the highlight itself (see `SleepTimerButton`).
+    var drawsHighlight = true
 
     var body: some View {
         Group {
@@ -100,11 +102,18 @@ private struct IconButtonLabel: View {
         .frame(width: text == nil ? 44 : 64, height: 44)
         .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
         .background {
-            if isOn {
-                RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
-                    .fill(.white.opacity(0.2))
+            if isOn, drawsHighlight {
+                IconHighlight()
             }
         }
+    }
+}
+
+/// The translucent rounded square behind an icon button that is on.
+private struct IconHighlight: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: Radius.m, style: .continuous)
+            .fill(.white.opacity(0.2))
     }
 }
 
@@ -134,10 +143,18 @@ struct SleepTimerButton: View {
                     systemImage: state.isActive ? "moon.zzz.fill" : "moon.zzz",
                     isOn: state.isActive,
                     text: countdownText(at: context.date),
-                    isDimmed: isFrozen
+                    isDimmed: isFrozen,
+                    drawsHighlight: false
                 )
             }
             .menuIndicator(.hidden)
+            // Behind the menu, not inside its label: on iOS 26 the label is clipped to its old size while the
+            // menu closes, so a highlight that widens as the countdown starts lost its rounded corners.
+            .background {
+                if state.isActive {
+                    IconHighlight()
+                }
+            }
             // A Menu label takes the accent colour; the other buttons in the row are white or grey.
             .tint(state.isActive ? .primary : .secondary)
             .accessibilityLabel(Text("Sleep Timer", bundle: .module))
