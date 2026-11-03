@@ -19,11 +19,11 @@ struct MiniPlayerView: View {
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
                         Text(viewModel.track?.title ?? String(localized: "Not Playing", bundle: .module))
                             .font(AppFont.rowTitle)
-                            .foregroundStyle(SemanticColor.textPrimary)
+                            .foregroundStyle(MiniPlayerStyle.primary)
                         if let artist = viewModel.track?.artist, !artist.isEmpty {
                             Text(artist)
                                 .font(AppFont.rowSubtitle)
-                                .foregroundStyle(SemanticColor.textSecondary)
+                                .foregroundStyle(MiniPlayerStyle.secondary)
                         }
                     }
                     .lineLimit(1)
@@ -55,7 +55,7 @@ struct MiniPlayerView: View {
             .accessibilityLabel(Text("Next Track", bundle: .module))
         }
         .font(.title3)
-        .foregroundStyle(SemanticColor.textPrimary)
+        .foregroundStyle(MiniPlayerStyle.primary)
         .buttonStyle(.plain)
         .miniPlayerContentPadding()
         .frame(maxHeight: .infinity)

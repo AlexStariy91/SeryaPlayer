@@ -52,17 +52,18 @@ private struct MiniPlayerHostModifier<Accessory: View>: ViewModifier {
     let isVisible: Bool
     let accessory: Accessory
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
             if #available(iOS 26.1, *) {
-                content.tabViewBottomAccessory(isEnabled: isVisible) { accessory }
+                content.tabViewBottomAccessory(isEnabled: isVisible) { glassAccessory }
             } else if #available(iOS 26, *) {
                 // iOS 26.0 has no `isEnabled:`, and attaching the accessory conditionally would rebuild the
                 // whole `TabView`. Keep the bar attached and leave it empty while nothing is queued.
                 content.tabViewBottomAccessory {
                     if isVisible {
-                        accessory
+                        glassAccessory
                     }
                 }
             } else {
@@ -71,6 +72,13 @@ private struct MiniPlayerHostModifier<Accessory: View>: ViewModifier {
         #else
             legacy(content)
         #endif
+    }
+
+    /// The accessory content in the app's color scheme. Over mixed content (a dark cover under part of the bar)
+    /// iOS 26 gives the accessory a dark scheme while its glass stays light, so labels came out white on light
+    /// glass; the tab bar right below keeps the app's scheme. A known iOS 26 issue (FB21365706).
+    private var glassAccessory: some View {
+        accessory.environment(\.colorScheme, colorScheme)
     }
 
     private func legacy(_ content: Content) -> some View {
@@ -129,6 +137,38 @@ public extension View {
                 .background(Color(uiColor: .secondarySystemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: Radius.l, style: .continuous))
         }
+    }
+}
+
+/// Text and glyph styles of the mini player's content.
+///
+/// - iOS 26: hierarchical styles. The accessory's glass picks its light or dark look from what is behind it and
+///   makes hierarchical content legible on it; a fixed `UIColor` resolves on its own and came out white on light
+///   glass over a dark cover.
+/// - iOS 18: the semantic label colors on the material bar.
+public enum MiniPlayerStyle {
+    public static var primary: AnyShapeStyle {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                AnyShapeStyle(.primary)
+            } else {
+                AnyShapeStyle(SemanticColor.textPrimary)
+            }
+        #else
+            AnyShapeStyle(SemanticColor.textPrimary)
+        #endif
+    }
+
+    public static var secondary: AnyShapeStyle {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                AnyShapeStyle(.secondary)
+            } else {
+                AnyShapeStyle(SemanticColor.textSecondary)
+            }
+        #else
+            AnyShapeStyle(SemanticColor.textSecondary)
+        #endif
     }
 }
 
