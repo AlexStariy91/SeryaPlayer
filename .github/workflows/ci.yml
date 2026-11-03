@@ -12,10 +12,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# The image defaults to Xcode 16.4; the build jobs use Xcode 26.3 (iOS 26 SDK) so the Liquid Glass branches
+# compile. Tests still run on an iOS 18 simulator (the image has 18.5 and 18.6, not the 18.1 used for references).
 jobs:
   unit:
     name: Build & unit tests
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
@@ -27,11 +31,26 @@ jobs:
     name: UI & snapshot tests
     if: github.event_name == 'pull_request'
     runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen xcbeautify
       - run: scripts/test.sh ui
+
+  unit-ios26:
+    name: Build & unit tests (iOS 26)
+    # Runs next to the iOS 18 jobs, so it adds runner time but not wall-clock time. Snapshot suites skip on iOS 26.
+    if: github.event_name == 'pull_request'
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen xcbeautify
+      - run: SIM_OS=26 scripts/test.sh unit
 
   lint:
     name: SwiftLint & SwiftFormat
