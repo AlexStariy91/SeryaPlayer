@@ -1,14 +1,15 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-02
+> Updated: 2026-11-03
 
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
 artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer (#16), rate and position memory (#17),
 visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
-(#21); the app is iPhone only. Next: stage 10 polish.
+(#21); the app is iPhone only. Xcode 26.3 installed locally: `xcode26` verifies the build and the
+iOS 26 paths with no change on iOS 18. Next: stage 10 polish.
 
 ## Workstreams and waves
 
@@ -37,6 +38,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 3 | `list-bars` | 9 | DesignSystem, LibraryFeature, FoldersFeature | Sonnet | ✅ #19 |
 | 3 | `folders-fixes` | — | FoldersFeature, LibraryFeature | Sonnet | ✅ #20 |
 | 3 | `resume-glitch` | — | Playback | Opus | ✅ #21 |
+| 4 | `xcode26` | 10 | DesignSystem, scripts, CI | Opus | in progress |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -107,12 +109,13 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
   occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
-- Toolchain drift: CI runs Xcode 16.4 and the latest SwiftFormat; local is Xcode 16.1 and SwiftFormat 0.64.4.
+- Toolchain drift: CI runs Xcode 16.4 and the latest SwiftFormat; local is Xcode 26.3 (16.1 kept) and SwiftFormat 0.64.4.
   CI is the reference — run `brew upgrade swiftformat` locally.
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
 - A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
-- Xcode 26: once installed, verify the build and add iOS 26 to CI.
+- Xcode 26.3 installed 2026-11-03 (macOS 15.7.5 allows up to 26.3; 26.4+ needs Tahoe 26.2). `xcode26` verifies
+  the build and adds iOS 26 to tests and CI. iOS 18 must stay pixel-identical (existing snapshot references).
 
 ---
 
