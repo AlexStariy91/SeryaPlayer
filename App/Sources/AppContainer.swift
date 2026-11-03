@@ -97,6 +97,10 @@ final class AppContainer {
         accentColorID = settings.accentColorID
         player.apply(settings.equalizer)
         player.setRate(settings.playbackRate)
+
+        // One-time repair of Windows-1251 tags that earlier imports stored as Latin-1 mojibake.
+        let tagTextMigration = TagTextMigration(persistence: persistence, defaults: environment.defaults)
+        Task { _ = try? await tagTextMigration.runIfNeeded() }
     }
 
     // MARK: - Use cases
