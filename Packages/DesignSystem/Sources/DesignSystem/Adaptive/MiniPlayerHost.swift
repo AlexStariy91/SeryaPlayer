@@ -55,8 +55,16 @@ private struct MiniPlayerHostModifier<Accessory: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
-            if #available(iOS 26, *) {
+            if #available(iOS 26.1, *) {
                 content.tabViewBottomAccessory(isEnabled: isVisible) { accessory }
+            } else if #available(iOS 26, *) {
+                // iOS 26.0 has no `isEnabled:`, and attaching the accessory conditionally would rebuild the
+                // whole `TabView`. Keep the bar attached and leave it empty while nothing is queued.
+                content.tabViewBottomAccessory {
+                    if isVisible {
+                        accessory
+                    }
+                }
             } else {
                 legacy(content)
             }
