@@ -57,7 +57,7 @@ struct MiniPlayerView: View {
         .font(.title3)
         .foregroundStyle(SemanticColor.textPrimary)
         .buttonStyle(.plain)
-        .padding(.horizontal, Spacing.s)
+        .miniPlayerContentPadding()
         .frame(maxHeight: .infinity)
         .sensoryFeedback(.impact(weight: .light), trigger: nextTaps)
         .sensoryFeedback(.impact(weight: .light), trigger: playTaps)

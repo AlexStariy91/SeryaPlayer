@@ -154,6 +154,26 @@ public struct MiniPlayerArtwork: View {
     }
 }
 
+public extension View {
+    /// Horizontal insets of the mini player's content row.
+    ///
+    /// - iOS 18: 8 pt inside the rounded bar.
+    /// - iOS 26: the capsule's round ends make an inset equal to the artwork's top and bottom inset look
+    ///   cramped, so the artwork sits further in; the trailing buttons' 44 pt frames already bring their own room.
+    @ViewBuilder
+    func miniPlayerContentPadding() -> some View {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                modifier(AccessoryContentPadding())
+            } else {
+                padding(.horizontal, Spacing.s)
+            }
+        #else
+            padding(.horizontal, Spacing.s)
+        #endif
+    }
+}
+
 #if compiler(>=6.2)
     @available(iOS 26, *)
     private struct AccessoryArtwork: View {
@@ -162,6 +182,22 @@ public struct MiniPlayerArtwork: View {
 
         var body: some View {
             ArtworkView(url: url, size: .custom(placement == .inline ? 24 : 32))
+        }
+    }
+
+    @available(iOS 26, *)
+    private struct AccessoryContentPadding: ViewModifier {
+        @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+        func body(content: Content) -> some View {
+            // Expanded: a 48 pt capsule, 32 pt artwork 8 pt from the top and bottom. At 14 pt from the leading end
+            // the gap between the artwork's corner and the capsule's curve is about as wide as those 8 pt
+            // (at 8 pt the corner almost touched the curve). Inline: a 46 pt capsule and 24 pt artwork.
+            // The trailing padding puts the next-track glyph as far from its end as the artwork is from its own.
+            let inline = placement == .inline
+            content
+                .padding(.leading, inline ? 12 : 14)
+                .padding(.trailing, inline ? 5 : 7)
         }
     }
 #endif
