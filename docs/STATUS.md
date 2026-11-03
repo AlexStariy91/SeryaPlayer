@@ -104,6 +104,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-11-02. Pause/resume (#21): pause fades out over 80 ms on a fader mixer after the player, then pauses the node
   and the engine; resume fades in. No reschedule on resume. TimePitch is out of the chain at 1× (it added ~85 ms of
   latency). The engine must not keep running while paused: iOS infers Control Center's play state from audio output.
+- 2026-11-03. iOS 26: the tab bar does not minimize on scroll (no `tabBarMinimizeBehavior` in `RootView`), by the
+  user's choice. `adaptiveTabBarMinimize()` and the inline mini player artwork size are ready if that changes.
 
 ## Open questions
 
