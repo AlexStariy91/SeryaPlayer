@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import SwiftUI
 
@@ -18,10 +19,9 @@ struct TrackActionsPresenter: ViewModifier {
                     TagEditorView(viewModel: TagEditorViewModel(track: track, editTags: actions.editTags), artwork: context.artwork)
                 }
             }
-            .confirmationDialog(
+            .destructiveConfirmation(
                 deletionTitle,
-                isPresented: $actions.isConfirmingDeletion,
-                titleVisibility: .visible
+                isPresented: $actions.isConfirmingDeletion
             ) {
                 Button(String(localized: "Delete", bundle: .module), role: .destructive) {
                     Task { await actions.confirmDeletion() }

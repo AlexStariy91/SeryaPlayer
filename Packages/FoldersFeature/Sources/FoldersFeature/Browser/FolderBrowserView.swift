@@ -282,14 +282,13 @@ private struct FolderDialogs: ViewModifier {
                     Task { await viewModel.commitName(for: prompt) }
                 }
             }
-            .confirmationDialog(
+            .destructiveConfirmation(
                 viewModel.pendingDeletion?.title ?? "",
                 isPresented: Binding(get: { viewModel.pendingDeletion != nil }, set: {
                     if !$0 {
                         viewModel.cancelDeletion()
                     }
                 }),
-                titleVisibility: .visible,
                 presenting: viewModel.pendingDeletion
             ) { request in
                 if request.folderTrackCount > 0 {
@@ -304,7 +303,6 @@ private struct FolderDialogs: ViewModifier {
                         Task { await viewModel.performDeletion(request, policy: .moveTracksToRoot) }
                     }
                 }
-                Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
             } message: { request in
                 Text(deletionMessage(request))
             }
