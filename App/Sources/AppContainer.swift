@@ -97,10 +97,13 @@ final class AppContainer {
         accentColorID = settings.accentColorID
         player.apply(settings.equalizer)
         player.setRate(settings.playbackRate)
+        repairTagText(defaults: environment.defaults)
+    }
 
-        // One-time repair of Windows-1251 tags that earlier imports stored as Latin-1 mojibake.
-        let tagTextMigration = TagTextMigration(persistence: persistence, defaults: environment.defaults)
-        Task { _ = try? await tagTextMigration.runIfNeeded() }
+    /// One-time repair of Windows-1251 tags that earlier imports stored as Latin-1 mojibake.
+    private func repairTagText(defaults: UserDefaults) {
+        let migration = TagTextMigration(persistence: persistence, defaults: defaults)
+        Task { _ = try? await migration.runIfNeeded() }
     }
 
     // MARK: - Use cases
