@@ -161,7 +161,7 @@ struct SleepTimerButton: View {
             .accessibilityValue(accessibilityValue(at: context.date))
             .accessibilityAddTraits(state.isActive ? .isSelected : [])
         }
-        .animation(.snappy, value: state.isActive)
+        .menuLabelAnimation(.snappy, value: state.isActive)
     }
 
     private var state: SleepTimerState {
