@@ -29,6 +29,7 @@ struct RootView: View {
                 .miniPlayerContentInset()
             }
         }
+        .sensoryFeedback(.impact(weight: .heavy), trigger: router.selectedTab)
         .modifier(PlayerFeature.host(dependencies: container) {
             EqualizerFeature.makeSheet(dependencies: container)
         })
