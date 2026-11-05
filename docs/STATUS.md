@@ -106,9 +106,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   latency). The engine must not keep running while paused: iOS infers Control Center's play state from audio output.
 - 2026-11-03. iOS 26: the tab bar does not minimize on scroll (no `tabBarMinimizeBehavior` in `RootView`), by the
   user's choice. `adaptiveTabBarMinimize()` and the inline mini player artwork size are ready if that changes.
-- 2026-11-05. iOS 26 decisions (PR #22): Folders section headers scroll with the content instead of pinning
-  (`scrollEdgeEffectStyle(.hard)` pins them natively but leaves background tabs in the old theme). Left as iOS 26
+- 2026-11-05. iOS 26 decisions (PR #22): Folders keeps the stock plain list with pinned section headers and no
+  header background, as on iOS 18 (the user tried grouped, row-coloured and header-background variants and chose
+  stock). Never use `scrollEdgeEffectStyle(.hard)`: it leaves background tabs in the old theme. Left as iOS 26
   system behaviour: the opaque flash on the zoom dismiss of the full player, and the cross-fade on tab switches.
+  The full player swipe-dismiss from the sliders (PR #24) was rejected after a device check.
 
 ## Open questions
 
