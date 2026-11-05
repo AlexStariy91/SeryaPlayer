@@ -131,6 +131,26 @@ public extension View {
         #endif
     }
 
+    /// The presentation background of the full player zoomed from the mini player. Apply it to the presented
+    /// view, next to `.navigationTransition(.zoom(…))`; the view must draw its own opaque background.
+    ///
+    /// - iOS 26: clear. A swipe-down dismiss collapses the presentation into the bottom accessory, and the
+    ///   presentation's default opaque background (`systemBackground`) stays clipped to the accessory's capsule
+    ///   for about a second after the content has faded, covering the accessory's glass.
+    /// - iOS 18: the system default; the bar there is a material we draw, and the zoom ends on its snapshot.
+    @ViewBuilder
+    func miniPlayerZoomPresentationBackground() -> some View {
+        #if compiler(>=6.2)
+            if #available(iOS 26, *) {
+                presentationBackground(.clear)
+            } else {
+                self
+            }
+        #else
+            self
+        #endif
+    }
+
     private func legacyMiniPlayerTransitionSource(id: some Hashable, in namespace: Namespace.ID) -> some View {
         matchedTransitionSource(id: id, in: namespace) { source in
             source
