@@ -1,15 +1,16 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-03
+> Updated: 2026-11-05
 
 ## Now
 
 **Waves 1 and 2 — done; stage 3 checked on an iPhone.** Device feedback fixed (#13), Lock Screen placeholder
 artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer (#16), rate and position memory (#17),
 visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
-(#21); the app is iPhone only. Xcode 26.3 installed locally: `xcode26` verifies the build and the
-iOS 26 paths with no change on iOS 18. Next: stage 10 polish.
+(#21); the app is iPhone only. Xcode 26 (#22): builds with the iOS 26 SDK, iOS 26 paths fixed after device
+checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23).
+Next: stage 10 polish.
 
 ## Workstreams and waves
 
@@ -38,7 +39,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 3 | `list-bars` | 9 | DesignSystem, LibraryFeature, FoldersFeature | Sonnet | ✅ #19 |
 | 3 | `folders-fixes` | — | FoldersFeature, LibraryFeature | Sonnet | ✅ #20 |
 | 3 | `resume-glitch` | — | Playback | Opus | ✅ #21 |
-| 4 | `xcode26` | 10 | DesignSystem, scripts, CI | Opus | in progress |
+| 4 | `xcode26` | 10 | DesignSystem, PlayerFeature, FoldersFeature, scripts, CI | Opus | ✅ #22 |
+| — | `tag-encoding` | — | DataLayer, App | Opus | ✅ #23 |
+| — | `player-dismiss` | — | DesignSystem, PlayerFeature | Opus | ❌ #24 closed (rejected after device check) |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -116,13 +119,15 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
   occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
-- Toolchain drift: CI runs Xcode 16.4 and the latest SwiftFormat; local is Xcode 26.3 (16.1 kept) and SwiftFormat 0.64.4.
+- Toolchain drift: CI builds with Xcode 26.3 (lint on the image default) and the latest SwiftFormat; local is Xcode 26.3
+  (16.1 kept) and SwiftFormat 0.64.4. Local SwiftLint 0.53 crashes under Xcode 26.3: lint with `DEVELOPER_DIR` = Xcode 16.1.
   CI is the reference — run `brew upgrade swiftformat` locally.
 
 - Whether to exclude `Media/` from iCloud backup (large libraries).
 - A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
-- Xcode 26.3 installed 2026-11-03 (macOS 15.7.5 allows up to 26.3; 26.4+ needs Tahoe 26.2). `xcode26` verifies
-  the build and adds iOS 26 to tests and CI. iOS 18 must stay pixel-identical (existing snapshot references).
+- Xcode 26.3 is the newest Xcode this Mac (macOS 15.7.5) can run; 26.4+ needs Tahoe 26.2.
+- Library perf tests (`groupsTenThousandTracks`, `handlesTenThousandTracksWithFastSearch`) use wall-clock limits
+  that slow CI runners occasionally miss on the iOS 26 job; loosen them if they start failing often.
 
 ---
 
@@ -141,7 +146,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] DesignSystem: adaptiveGlass, adaptiveButtonStyle, #1C283F accent
 - [x] DesignSystem: tokens, typography, accent palette
 - [x] swift-snapshot-testing
-- [ ] Verification on iOS 26 (needs Xcode 26)
+- [x] Verification on iOS 26 (#22, checked on an iPhone with iOS 26)
 
 ### Stage 1. Domain layer — ✅
 - [x] QueueEngine: next/previous (>3 s restarts), Fisher–Yates shuffle with the current track first, restoring the original order, repeat off/all/one, Play Next, Play Last, move, remove
@@ -228,6 +233,12 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Log
 
+- 2026-11-05 — Xcode 26.3 installed side by side with 16.1. #22: one compile fix (26.1 accessory API), then four
+  rounds of iOS 26 device feedback: mini player content on the accessory glass and legible text, sleep timer label,
+  Select checkmarks, delete alert, plurals; a theme bug caused by `scrollEdgeEffectStyle(.hard)` (found with a
+  minimal sample, reverted). Folders header experiments ended on the stock list. #23: CP1251 tag repair with a
+  one-time library migration. #24 (slider swipe-dismiss) closed. All checked on an iPhone with iOS 26 (Xcode 26.3)
+  and in compatibility mode (Xcode 16.1). Clean Build Folder when switching Xcodes: they share DerivedData.
 - 2026-11-02 — live bars in list rows (#19); device feedback: Folders counts and back button (#20), click and gap on
   pause/resume and Control Center state (#21); iPhone only. All checked on an iPhone. GitHub's macOS runners were
   short all evening: several jobs were cancelled unstarted after 15 min and had to be rerun. Next: stage 10 polish.

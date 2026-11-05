@@ -185,6 +185,6 @@ One UI codebase; the differences are hidden in DesignSystem.
 
 ## Current toolchain
 
-Locally Xcode 16.1 (iOS 18.1 SDK). Liquid Glass code is wrapped in `#if compiler(>=6.2)` and
-turns on automatically after moving to Xcode 26. Once Xcode 26 is installed: verify the build and add
-an iOS 26 simulator to `scripts/test.sh` and CI.
+Locally Xcode 26.3 (iOS 26 SDK, the default) and Xcode 16.1 side by side; the project builds with both, so Liquid
+Glass code stays wrapped in `#if compiler(>=6.2)`. `SIM_OS=26 scripts/test.sh unit` runs on an iOS 26 simulator
+(default: iOS 18). CI builds with Xcode 26.3, tests on iOS 18 and runs unit tests on iOS 26 for PRs.
