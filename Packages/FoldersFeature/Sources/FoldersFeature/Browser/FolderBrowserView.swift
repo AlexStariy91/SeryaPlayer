@@ -39,7 +39,6 @@ struct FolderBrowserView: View {
             }
         }
         .listStyle(.plain)
-        .pinnedSectionHeaders()
         .searchable(text: $viewModel.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: searchPrompt)
         .task(id: viewModel.searchKey) {
             // Debounce: a newer keystroke cancels this task before it searches.
@@ -92,6 +91,7 @@ struct FolderBrowserView: View {
                 }
             } header: {
                 Text("Folders", bundle: .module)
+                    .pinnedSectionHeader()
             }
         }
         if !viewModel.tracks.isEmpty {
@@ -117,6 +117,7 @@ struct FolderBrowserView: View {
                 }
             } header: {
                 Text("Songs", bundle: .module)
+                    .pinnedSectionHeader()
             }
         }
     }
@@ -133,6 +134,7 @@ struct FolderBrowserView: View {
                 }
             } header: {
                 Text("Folders", bundle: .module)
+                    .pinnedSectionHeader()
             }
         }
         if !results.tracks.isEmpty {
@@ -147,6 +149,7 @@ struct FolderBrowserView: View {
                 }
             } header: {
                 Text("Songs", bundle: .module)
+                    .pinnedSectionHeader()
             }
         }
     }

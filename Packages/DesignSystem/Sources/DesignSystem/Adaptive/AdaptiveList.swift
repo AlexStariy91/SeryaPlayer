@@ -1,14 +1,24 @@
 import SwiftUI
 
 public extension View {
-    /// For plain lists with pinned section headers. iOS 26 gives a pinned header no background of its own:
-    /// a hard top scroll edge puts it on the bars' backdrop instead of over the rows. No-op on iOS 18, where
-    /// pinned headers have their own background.
+    /// The content of a plain list's section header that pins while scrolling.
+    ///
+    /// - iOS 26: a pinned header has no background of its own, so rows scrolled under it showed through its text.
+    ///   The header gets the list's background, edge to edge, with the system header's insets (16 pt leading,
+    ///   10 pt above and below), so its text sits where it did. A hard top scroll edge effect (the first approach)
+    ///   also covered the rows, but it left the navigation bar, its glass buttons, search field and the status bar
+    ///   in the old appearance when the light/dark mode changed while the tab was in the background.
+    /// - iOS 18: unchanged; pinned headers have their own background.
     @ViewBuilder
-    func pinnedSectionHeaders() -> some View {
+    func pinnedSectionHeader() -> some View {
         #if compiler(>=6.2)
             if #available(iOS 26, *) {
-                scrollEdgeEffectStyle(.hard, for: .top)
+                frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 16)
+                    .padding(.vertical, 10)
+                    .background(.background)
+                    .listRowInsets(EdgeInsets())
             } else {
                 self
             }
