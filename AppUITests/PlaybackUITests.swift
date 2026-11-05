@@ -24,6 +24,7 @@ final class PlaybackUITests: XCTestCase {
         let before = bravo.count
         next.tap()
         expectation(for: NSPredicate(format: "count > %d", before), evaluatedWith: bravo)
-        waitForExpectations(timeout: 5)
+        // Generous: on a loaded CI runner loading the next file took over 5 s (PR #22, 2026-11-03).
+        waitForExpectations(timeout: 20)
     }
 }
