@@ -1,7 +1,7 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-05
+> Updated: 2026-11-06
 
 ## Now
 
@@ -9,7 +9,8 @@
 artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer (#16), rate and position memory (#17),
 visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
 (#21); the app is iPhone only. Xcode 26 (#22): builds with the iOS 26 SDK, iOS 26 paths fixed after device
-checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23).
+checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). In progress: `mini-glass-flash` (the mini
+player is opaque for a moment after the swipe-dismiss on iOS 26).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -42,6 +43,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | 4 | `xcode26` | 10 | DesignSystem, PlayerFeature, FoldersFeature, scripts, CI | Opus | ✅ #22 |
 | — | `tag-encoding` | — | DataLayer, App | Opus | ✅ #23 |
 | — | `player-dismiss` | — | DesignSystem, PlayerFeature | Opus | ❌ #24 closed (rejected after device check) |
+| — | `tab-haptics` | — | App | orchestrator + user | ✅ #25 |
+| — | `mini-glass-flash` | — | DesignSystem, PlayerFeature | Opus | in progress |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -112,7 +115,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-11-05. iOS 26 decisions (PR #22): Folders keeps the stock plain list with pinned section headers and no
   header background, as on iOS 18 (the user tried grouped, row-coloured and header-background variants and chose
   stock). Never use `scrollEdgeEffectStyle(.hard)`: it leaves background tabs in the old theme. Left as iOS 26
-  system behaviour: the opaque flash on the zoom dismiss of the full player, and the cross-fade on tab switches.
+  system behaviour: the opaque flash on the zoom dismiss of the full player (reopened on 2026-11-06, unproven),
+  and the cross-fade on tab switches.
   The full player swipe-dismiss from the sliders (PR #24) was rejected after a device check.
 
 ## Open questions
