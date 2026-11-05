@@ -3,7 +3,7 @@ import Domain
 import Foundation
 
 /// Reads tags with `AVURLAsset`. Missing tags come back as `nil`; the import use case falls back
-/// to the file name.
+/// to the file name. Text mislabelled as Latin-1 (Windows-1251 ID3 tags) is repaired by `TagTextRepair`.
 public struct MetadataReader: MetadataReading {
     public init() {}
 
@@ -104,7 +104,7 @@ private struct Tags {
         for item in items(for: identifiers) {
             let value = try? await item.load(.stringValue)
             if let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty {
-                return value
+                return TagTextRepair.repair(value)
             }
         }
         return nil
