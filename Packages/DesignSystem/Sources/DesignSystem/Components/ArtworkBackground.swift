@@ -25,9 +25,14 @@ public struct ArtworkBackground: View {
         .accessibilityHidden(true)
     }
 
-    /// Spreads 1–4 colors over the 9 mesh points; falls back to the accent when empty.
+    /// Dark neutral greys for a track without artwork: graphite rather than a colour that isn't the track's.
+    static let noArtworkColors: [Color] = [
+        Color(white: 0.24), Color(white: 0.16), Color(white: 0.2), Color(white: 0.12),
+    ]
+
+    /// Spreads 1–4 colors over the 9 mesh points; graphite when empty.
     private var meshColors: [Color] {
-        let base = colors.isEmpty ? [AccentPalette.serya.color] : Array(colors.prefix(4))
+        let base = colors.isEmpty ? Self.noArtworkColors : Array(colors.prefix(4))
         let order = [0, 1, 2, 3, 0, 1, 2, 3, 0]
         return order.map { base[$0 % base.count] }
     }
@@ -35,4 +40,8 @@ public struct ArtworkBackground: View {
 
 #Preview("Background") {
     ArtworkBackground(colors: [.indigo, .pink, .orange, .teal])
+}
+
+#Preview("Background, no artwork") {
+    ArtworkBackground(colors: [])
 }
