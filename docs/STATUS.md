@@ -10,7 +10,7 @@ artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer 
 visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
 (#21); the app is iPhone only. Xcode 26 (#22): builds with the iOS 26 SDK, iOS 26 paths fixed after device
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23).
-Next: stage 10 polish.
+Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
 
