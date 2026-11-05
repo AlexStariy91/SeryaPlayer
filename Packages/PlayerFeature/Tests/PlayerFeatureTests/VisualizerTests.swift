@@ -31,6 +31,7 @@ struct VisualizerTests {
 }
 
 /// Reference images are recorded on iPhone 16 / iOS 18.1 at 2x, like `SnapshotTests`.
+@Suite(.enabled(if: SnapshotHost.isIOS18, "Reference images are iOS 18 renders"))
 @MainActor
 struct VisualizerSnapshotTests {
     private func check(

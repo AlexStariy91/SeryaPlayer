@@ -5,6 +5,7 @@ import Testing
 import UIKit
 
 /// Reference images are recorded on iPhone 16 / iOS 18.1 at 2x. Delete a reference to re-record it.
+@Suite(.enabled(if: SnapshotHost.isIOS18, "Reference images are iOS 18 renders"))
 @MainActor
 struct SnapshotTests {
     private struct Variant {
@@ -107,5 +108,13 @@ struct SnapshotTests {
             }
             .padding(Spacing.screenMargin)
         }
+    }
+}
+
+enum SnapshotHost {
+    /// References are iOS 18 renders (recorded on iOS 18.1, tolerant enough for CI's iOS 18.x).
+    /// iOS 26 draws controls differently (Liquid Glass), so these suites are skipped there.
+    static var isIOS18: Bool {
+        ProcessInfo.processInfo.operatingSystemVersion.majorVersion == 18
     }
 }

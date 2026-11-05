@@ -55,10 +55,52 @@
     },
     "%lld songs are inside. Delete them from the device or keep them in the library?" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld song is inside. Delete it from the device or keep it in the library?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld songs are inside. Delete them from the device or keep them in the library?"
+                }
+              }
+            }
+          }
+        },
         "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Песен внутри: %lld. Удалить их с устройства или оставить в медиатеке?"
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Внутри %lld песни. Удалить их с устройства или оставить в медиатеке?"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Внутри %lld песен. Удалить их с устройства или оставить в медиатеке?"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Внутри %lld песня. Удалить её с устройства или оставить в медиатеке?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Внутри %lld песни. Удалить их с устройства или оставить в медиатеке?"
+                }
+              }
+            }
           }
         }
       }
@@ -145,20 +187,104 @@
     },
     "Delete %lld items?" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld item?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld items?"
+                }
+              }
+            }
+          }
+        },
         "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить элементы (%lld)?"
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld элемента?"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld элементов?"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld элемент?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld элемента?"
+                }
+              }
+            }
           }
         }
       }
     },
     "Delete %lld songs?" : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld song?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld songs?"
+                }
+              }
+            }
+          }
+        },
         "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить песни (%lld)?"
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld песни?"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld песен?"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld песню?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Удалить %lld песни?"
+                }
+              }
+            }
           }
         }
       }

@@ -1,3 +1,4 @@
+import DesignSystem
 import Domain
 import SwiftUI
 
@@ -40,14 +41,13 @@ private struct PresetEditAlerts: ViewModifier {
                 Button(String(localized: "Save", bundle: .module)) { commitName() }
                 Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
             }
-            .confirmationDialog(
+            .destructiveConfirmation(
                 String(localized: "Delete this preset?", bundle: .module),
                 isPresented: Binding(get: { deleteTarget != nil }, set: {
                     if !$0 {
                         edit = nil
                     }
-                }),
-                titleVisibility: .visible
+                })
             ) {
                 if let preset = deleteTarget {
                     Button(String(localized: "Delete", bundle: .module), role: .destructive) {

@@ -29,8 +29,9 @@ struct FolderBrowserView: View {
         @Bindable var viewModel = viewModel
         // Selection exists only while editing. Bound outside edit mode, the list mirrors it into the
         // collection view's own selection: a tapped folder can stay highlighted after navigating back,
-        // and every cell pays for selection bookkeeping while scrolling.
-        List(selection: isEditing ? $viewModel.selection : nil) {
+        // and every cell pays for selection bookkeeping while scrolling. iOS 26 needs it bound from the start
+        // to show checkmarks, so there it is bound but empty outside edit mode (see `EditingSelection`).
+        List(selection: EditingSelection.binding($viewModel.selection, isEditing: isEditing)) {
             if let results = viewModel.searchResults, viewModel.isSearching {
                 searchContent(results)
             } else {
@@ -280,14 +281,13 @@ private struct FolderDialogs: ViewModifier {
                     Task { await viewModel.commitName(for: prompt) }
                 }
             }
-            .confirmationDialog(
+            .destructiveConfirmation(
                 viewModel.pendingDeletion?.title ?? "",
                 isPresented: Binding(get: { viewModel.pendingDeletion != nil }, set: {
                     if !$0 {
                         viewModel.cancelDeletion()
                     }
                 }),
-                titleVisibility: .visible,
                 presenting: viewModel.pendingDeletion
             ) { request in
                 if request.folderTrackCount > 0 {
@@ -302,7 +302,6 @@ private struct FolderDialogs: ViewModifier {
                         Task { await viewModel.performDeletion(request, policy: .moveTracksToRoot) }
                     }
                 }
-                Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
             } message: { request in
                 Text(deletionMessage(request))
             }

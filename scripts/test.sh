@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Usage: scripts/test.sh [unit|ui|all]   (default: unit)
 # Generates the project and runs tests on the first available iPhone simulator with iOS 18.
+#   SIM_OS=26 scripts/test.sh unit   runs on the newest iOS 26 runtime instead (snapshot suites skip there).
+#   SIM_ID=<udid>                    pins the simulator (snapshot references: iPhone 16 / iOS 18.1).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 KIND="${1:-unit}"
+SIM_OS="${SIM_OS:-18}"
 
 command -v xcodegen >/dev/null || { echo "XcodeGen is required: brew install xcodegen"; exit 1; }
 # Regenerate only when project.yml (or the file layout) changed: rewriting the project under an open
@@ -17,9 +20,9 @@ fi
 DEVICE_ID="${SIM_ID:-$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
 d=json.load(sys.stdin)["devices"]
-ids=[x["udid"] for rt,devs in sorted(d.items(),reverse=True) if "iOS-18" in rt for x in devs if x["name"].startswith("iPhone")]
-print(ids[0] if ids else "")')}"
-[ -n "$DEVICE_ID" ] || { echo "No iPhone simulator with iOS 18 found"; exit 1; }
+ids=[x["udid"] for rt,devs in sorted(d.items(),reverse=True) if "iOS-"+sys.argv[1]+"-" in rt for x in devs if x["name"].startswith("iPhone")]
+print(ids[0] if ids else "")' "$SIM_OS")}"
+[ -n "$DEVICE_ID" ] || { echo "No iPhone simulator with iOS $SIM_OS found"; exit 1; }
 
 run() {
   xcodebuild -project SeryaPlayer.xcodeproj -scheme "$1" \

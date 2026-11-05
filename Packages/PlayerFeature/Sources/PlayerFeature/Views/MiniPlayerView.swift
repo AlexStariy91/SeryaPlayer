@@ -15,15 +15,15 @@ struct MiniPlayerView: View {
         HStack(spacing: Spacing.m) {
             Button(action: onOpen) {
                 HStack(spacing: Spacing.m) {
-                    ArtworkView(url: viewModel.thumbnailURL, size: .mini)
+                    MiniPlayerArtwork(url: viewModel.thumbnailURL)
                     VStack(alignment: .leading, spacing: Spacing.xxs) {
                         Text(viewModel.track?.title ?? String(localized: "Not Playing", bundle: .module))
                             .font(AppFont.rowTitle)
-                            .foregroundStyle(SemanticColor.textPrimary)
+                            .foregroundStyle(MiniPlayerStyle.primary)
                         if let artist = viewModel.track?.artist, !artist.isEmpty {
                             Text(artist)
                                 .font(AppFont.rowSubtitle)
-                                .foregroundStyle(SemanticColor.textSecondary)
+                                .foregroundStyle(MiniPlayerStyle.secondary)
                         }
                     }
                     .lineLimit(1)
@@ -55,9 +55,9 @@ struct MiniPlayerView: View {
             .accessibilityLabel(Text("Next Track", bundle: .module))
         }
         .font(.title3)
-        .foregroundStyle(SemanticColor.textPrimary)
+        .foregroundStyle(MiniPlayerStyle.primary)
         .buttonStyle(.plain)
-        .padding(.horizontal, Spacing.s)
+        .miniPlayerContentPadding()
         .frame(maxHeight: .infinity)
         .sensoryFeedback(.impact(weight: .light), trigger: nextTaps)
         .sensoryFeedback(.impact(weight: .light), trigger: playTaps)
