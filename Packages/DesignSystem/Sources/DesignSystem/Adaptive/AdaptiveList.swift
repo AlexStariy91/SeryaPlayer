@@ -1,29 +1,23 @@
 import SwiftUI
 
 public extension View {
-    /// The content of a plain list's section header that pins while scrolling.
+    /// The list style for a list of titled sections.
     ///
-    /// - iOS 26: a pinned header has no background of its own, so rows scrolled under it showed through its text.
-    ///   The header gets the list's background, edge to edge, with the system header's insets (16 pt leading,
-    ///   10 pt above and below), so its text sits where it did. A hard top scroll edge effect (the first approach)
-    ///   also covered the rows, but it left the navigation bar, its glass buttons, search field and the status bar
-    ///   in the old appearance when the light/dark mode changed while the tab was in the background.
-    /// - iOS 18: unchanged; pinned headers have their own background.
+    /// - iOS 26: `.grouped`, whose section headers scroll with the content. A plain list pins its headers with no
+    ///   background, so scrolled rows showed through them. The two remedies tried didn't hold up: a hard top scroll
+    ///   edge effect left a background tab's navigation bar and status bar in the old appearance after a light/dark
+    ///   change, and a header background left rows visible between the bar and the pinned header.
+    /// - iOS 18: `.plain`, with pinned headers that have their own background.
     @ViewBuilder
-    func pinnedSectionHeader() -> some View {
+    func sectionedListStyle() -> some View {
         #if compiler(>=6.2)
             if #available(iOS 26, *) {
-                frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 16)
-                    .padding(.trailing, 16)
-                    .padding(.vertical, 10)
-                    .background(.background)
-                    .listRowInsets(EdgeInsets())
+                listStyle(.grouped)
             } else {
-                self
+                listStyle(.plain)
             }
         #else
-            self
+            listStyle(.plain)
         #endif
     }
 }
