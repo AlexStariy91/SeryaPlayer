@@ -54,22 +54,18 @@ public struct TimelineSlider<Center: View>: View {
                 .frame(height: height)
                 .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if dragValue == nil {
-                                onScrubbingChanged(true)
-                            }
-                            let ratio = min(max(value.location.x / max(width, 1), 0), 1)
-                            dragValue = ratio * duration
-                        }
-                        .onEnded { value in
-                            let ratio = min(max(value.location.x / max(width, 1), 0), 1)
-                            dragValue = nil
-                            onScrubbingChanged(false)
-                            onSeek(ratio * duration)
-                        }
-                )
+                .sliderDrag { x in
+                    if dragValue == nil {
+                        onScrubbingChanged(true)
+                    }
+                    let ratio = min(max(x / max(width, 1), 0), 1)
+                    dragValue = ratio * duration
+                } onEnded: { x in
+                    let ratio = min(max(x / max(width, 1), 0), 1)
+                    dragValue = nil
+                    onScrubbingChanged(false)
+                    onSeek(ratio * duration)
+                }
                 .animation(.snappy(duration: 0.2), value: isDragging)
             }
             .frame(height: 28)

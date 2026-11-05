@@ -25,14 +25,12 @@ struct VolumeSlider: View {
             .frame(height: height)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        isDragging = true
-                        volume.set(Float(min(max(value.location.x / max(width, 1), 0), 1)))
-                    }
-                    .onEnded { _ in isDragging = false }
-            )
+            .sliderDrag { x in
+                isDragging = true
+                volume.set(Float(min(max(x / max(width, 1), 0), 1)))
+            } onEnded: { _ in
+                isDragging = false
+            }
             .animation(.snappy(duration: 0.2), value: isDragging)
         }
         .background(alignment: .topLeading) {
