@@ -7,12 +7,16 @@ public extension View {
     ///   background, so scrolled rows showed through them. The two remedies tried didn't hold up: a hard top scroll
     ///   edge effect left a background tab's navigation bar and status bar in the old appearance after a light/dark
     ///   change, and a header background left rows visible between the bar and the pinned header.
+    ///   The grouped grey backdrop is replaced with the row colour (rows themselves are left stock, so Select mode
+    ///   keeps its highlight), which removes the grey strips between sections.
     /// - iOS 18: `.plain`, with pinned headers that have their own background.
     @ViewBuilder
     func sectionedListStyle() -> some View {
         #if compiler(>=6.2)
             if #available(iOS 26, *) {
                 listStyle(.grouped)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground))
             } else {
                 listStyle(.plain)
             }
