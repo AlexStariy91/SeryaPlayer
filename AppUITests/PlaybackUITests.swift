@@ -34,24 +34,36 @@ final class PlayerDismissUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// iOS 26: a vertical swipe that starts on the timeline or the volume slider collapses the full player
-    /// (the sliders only take horizontal drags), and a horizontal drag still scrubs without closing it.
+    /// A vertical swipe that starts on the timeline or the volume slider collapses the full player
+    /// (the sliders only take horizontal drags), while horizontal drags and taps still scrub without closing it.
     @MainActor
-    func testSwipeDownFromSlidersClosesPlayer() throws {
-        guard #available(iOS 26, *) else {
-            throw XCTSkip("The sliders take every drag before iOS 26")
-        }
+    func testSwipeDownFromSlidersClosesPlayer() {
         let app = XCUIApplication.launchForUITests()
         app.buttons["All Tracks"].firstMatch.tap()
         let alpha = app.staticTexts["Alpha"].firstMatch
         XCTAssertTrue(alpha.waitForExistence(timeout: 10))
         alpha.tap()
-        let miniPlayer = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Alpha'")).firstMatch
+        // The mini player's label is just the title. Match it exactly (list rows read "Paused, Alpha, 0:06"), and
+        // accept any fixture: on a slow runner the six-second clip can end and the queue moves on.
+        let miniPlayer = app.buttons.matching(NSPredicate(format: "label IN {'Alpha', 'Bravo', 'Charlie'}")).firstMatch
         XCTAssertTrue(miniPlayer.waitForExistence(timeout: 5))
         let close = app.buttons["Close Player"]
+        miniPlayer.tap()
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        sleep(1) // let the zoom transition finish
+        app.buttons["Pause"].firstMatch.tap()
+
+        // The timeline still scrubs sideways and seeks on a tap (the fixtures are six seconds long).
+        let timeline = app.descendants(matching: .any)["Playback position"].firstMatch
+        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.2))
+            .press(forDuration: 0, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.3)))
+        XCTAssertEqual(timeline.value as? String, "zero seconds of six seconds")
+        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.2)).tap()
+        XCTAssertNotEqual(timeline.value as? String, "zero seconds of six seconds", "a tap didn't seek")
 
         for slider in ["Playback position", "Volume"] {
             if !close.exists {
+                XCTAssertTrue(miniPlayer.waitForExistence(timeout: 10))
                 miniPlayer.tap()
             }
             XCTAssertTrue(close.waitForExistence(timeout: 5))
@@ -67,7 +79,7 @@ final class PlayerDismissUITests: XCTestCase {
             // Down: the zoom transition's dismiss pan takes it.
             let start = element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
             start.press(forDuration: 0, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 100)), withVelocity: 1500, thenHoldForDuration: 0)
-            XCTAssertTrue(close.waitForNonExistence(timeout: 5), "\(slider): swiping down didn't close the player")
+            XCTAssertTrue(close.waitForNonExistence(timeout: 10), "\(slider): swiping down didn't close the player")
         }
     }
 }
