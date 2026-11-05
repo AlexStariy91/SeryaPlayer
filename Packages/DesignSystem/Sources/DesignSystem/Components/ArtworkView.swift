@@ -50,36 +50,17 @@ public struct ArtworkView: View {
     }
 
     private var placeholder: some View {
-        ArtworkPlaceholder(side: size.points)
+        ZStack {
+            Rectangle().fill(SemanticColor.fill)
+            Image(systemName: "music.note")
+                .font(.system(size: size.points * 0.4, weight: .regular))
+                .foregroundStyle(SemanticColor.textTertiary)
+        }
     }
 
     private func load() async {
         guard let url, let image = await ArtworkCache.shared.image(for: url, maxPixel: maxPixel), !Task.isCancelled else { return }
         loaded = Loaded(url: url, image: image)
-    }
-}
-
-/// The tile shown for a track without artwork: an opaque grey diagonal gradient with a near-white note, the same
-/// look as the Lock Screen placeholder (`NowPlayingPlaceholder` in the App target). Fixed colours, so it reads the
-/// same on the full player's coloured background, the mini player's glass or material, and light and dark lists.
-struct ArtworkPlaceholder: View {
-    let side: CGFloat
-
-    static let topLeading = Color(white: 0.62)
-    static let bottomTrailing = Color(white: 0.36)
-    static let note = Color(white: 0.96)
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Self.topLeading, Self.bottomTrailing],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            Image(systemName: "music.note")
-                .font(.system(size: side * 0.4, weight: .regular))
-                .foregroundStyle(Self.note)
-        }
     }
 }
 
