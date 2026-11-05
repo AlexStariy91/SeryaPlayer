@@ -106,6 +106,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   latency). The engine must not keep running while paused: iOS infers Control Center's play state from audio output.
 - 2026-11-03. iOS 26: the tab bar does not minimize on scroll (no `tabBarMinimizeBehavior` in `RootView`), by the
   user's choice. `adaptiveTabBarMinimize()` and the inline mini player artwork size are ready if that changes.
+- 2026-11-05. iOS 26 decisions (PR #22): Folders section headers scroll with the content instead of pinning
+  (`scrollEdgeEffectStyle(.hard)` pins them natively but leaves background tabs in the old theme). Left as iOS 26
+  system behaviour: the opaque flash on the zoom dismiss of the full player, and the cross-fade on tab switches.
 
 ## Open questions
 
