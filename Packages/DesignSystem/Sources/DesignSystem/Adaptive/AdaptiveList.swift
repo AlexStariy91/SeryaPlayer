@@ -1,48 +1,5 @@
 import SwiftUI
 
-public extension View {
-    /// The list style for a list of titled sections.
-    ///
-    /// - iOS 26: `.grouped`, whose section headers scroll with the content. A plain list pins its headers with no
-    ///   background, so scrolled rows showed through them. The two remedies tried didn't hold up: a hard top scroll
-    ///   edge effect left a background tab's navigation bar and status bar in the old appearance after a light/dark
-    ///   change, and a header background left rows visible between the bar and the pinned header.
-    ///   The grouped grey backdrop is replaced with `systemBackground` (white / black), and rows get the same colour
-    ///   through `sectionedListRowBackground()`, so there are no grey strips and dark mode matches the other
-    ///   screens. The row background replaces the grey selection highlight; the checkmark remains.
-    /// - iOS 18: `.plain`, with pinned headers that have their own background.
-    @ViewBuilder
-    func sectionedListStyle() -> some View {
-        #if compiler(>=6.2)
-            if #available(iOS 26, *) {
-                listStyle(.grouped)
-                    .scrollContentBackground(.hidden)
-                    .background(Color(uiColor: .systemBackground))
-            } else {
-                listStyle(.plain)
-            }
-        #else
-            listStyle(.plain)
-        #endif
-    }
-}
-
-public extension View {
-    /// The row background that goes with `sectionedListStyle()`: `systemBackground` on iOS 26, stock elsewhere.
-    @ViewBuilder
-    func sectionedListRowBackground() -> some View {
-        #if compiler(>=6.2)
-            if #available(iOS 26, *) {
-                listRowBackground(Color(uiColor: .systemBackground))
-            } else {
-                self
-            }
-        #else
-            self
-        #endif
-    }
-}
-
 /// The selection binding for a `List` that selects rows only in edit mode.
 public enum EditingSelection {
     /// - iOS 18: bound only while editing. Bound outside edit mode, the list mirrors it into the collection
