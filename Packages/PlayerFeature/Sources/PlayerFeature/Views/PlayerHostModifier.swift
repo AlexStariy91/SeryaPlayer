@@ -28,6 +28,7 @@ struct PlayerHostModifier<EqualizerSheet: View>: ViewModifier {
             .fullScreenCover(isPresented: $showsFullPlayer) {
                 FullPlayerView(viewModel: viewModel, equalizerSheet: equalizerSheet)
                     .navigationTransition(.zoom(sourceID: Self.transitionID, in: namespace))
+                    .miniPlayerZoomPresentationBackground()
             }
             .onChange(of: viewModel.isQueued) { _, isQueued in
                 if !isQueued {

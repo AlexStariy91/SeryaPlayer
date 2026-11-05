@@ -21,7 +21,7 @@ struct PlayerArtwork: View {
                 PlayerVisualizer(spectrum: spectrum, colors: colors, side: side)
                     .transition(.opacity)
             } else {
-                ArtworkView(url: url, size: .custom(side))
+                ArtworkView(url: url, size: .custom(side), placeholderStyle: .prominent)
                     .shadow(color: .black.opacity(isPlaying ? 0.35 : 0.15), radius: isPlaying ? 24 : 10, y: isPlaying ? 12 : 4)
                     .transition(.opacity)
             }
