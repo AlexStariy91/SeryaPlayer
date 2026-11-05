@@ -75,6 +75,7 @@ struct FolderBrowserView: View {
                     }
                     .tag(FolderItem.folder(folder.id))
                     .contextMenu { folderMenu(folder) }
+                    .sectionedListRowBackground()
                     .swipeActions(edge: .trailing) {
                         // No destructive role: SwiftUI would remove the row before the deletion is
                         // confirmed, and the real removal then crashes the list.
@@ -104,6 +105,7 @@ struct FolderBrowserView: View {
                     ) { viewModel.play(track) }
                         .tag(FolderItem.track(track.id))
                         .contextMenu { trackMenu(track) }
+                        .sectionedListRowBackground()
                         .swipeActions(edge: .trailing) {
                             // No destructive role: see the folder row above.
                             Button {
@@ -129,6 +131,7 @@ struct FolderBrowserView: View {
                         FolderRow(folder: folder, songCount: viewModel.songCount(in: folder))
                     }
                     .contextMenu { folderMenu(folder) }
+                    .sectionedListRowBackground()
                 }
             } header: {
                 Text("Folders", bundle: .module)
@@ -143,6 +146,7 @@ struct FolderBrowserView: View {
                         resolver: viewModel.artwork
                     ) { viewModel.playSearchResult(track) }
                         .contextMenu { trackMenu(track) }
+                        .sectionedListRowBackground()
                 }
             } header: {
                 Text("Songs", bundle: .module)
