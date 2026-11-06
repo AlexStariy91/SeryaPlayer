@@ -42,9 +42,15 @@ final class AppContainer {
     let importProgress: ImportProgressCenter?
     @ObservationIgnored private let seedDirectory: URL?
 
+    /// Excludes the app's storage from backups first, so the database never exists outside an excluded directory.
+    private static func openPersistence(_ environment: AppEnvironment) throws -> PersistenceController {
+        BackupExclusion.excludeAppStorage(library: environment.libraryURL, documentsInbox: environment.documentsInboxURL)
+        return try PersistenceController(store: environment.store)
+    }
+
     init(environment: AppEnvironment) throws {
         seedDirectory = environment.seedDirectory
-        persistence = try PersistenceController(store: environment.store)
+        persistence = try Self.openPersistence(environment)
 
         trackRepository = CoreDataTrackRepository(persistence: persistence)
         folderRepository = CoreDataFolderRepository(persistence: persistence)
