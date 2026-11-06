@@ -130,6 +130,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   unchanged; `UIStatusBarStyleLightContent` removed. No Icon Composer icon while Xcode 16.1 must build the project.
 - 2026-11-06. CarPlay: no CarPlay UI (no `carplay-audio` entitlement or templates); only remote commands. A real
   CarPlay app needs Apple's entitlement first; not planned yet.
+- 2026-11-06. iCloud backup: keep the iOS default (app data, music included, is backed up and restored with the
+  device). Excluding all app storage was built (#28) and dropped by the user; users can turn off the app's backup
+  in iOS Settings.
 
 ## Open questions
 
@@ -139,7 +142,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   (16.1 kept) and SwiftFormat 0.64.4. Local SwiftLint 0.53 crashes under Xcode 26.3: lint with `DEVELOPER_DIR` = Xcode 16.1.
   CI is the reference — run `brew upgrade swiftformat` locally.
 
-- Whether to exclude `Media/` from iCloud backup (large libraries).
 - A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
 - Xcode 26.3 is the newest Xcode this Mac (macOS 15.7.5) can run; 26.4+ needs Tahoe 26.2.
 - Library perf tests (`groupsTenThousandTracks`, `handlesTenThousandTracksWithFastSearch`) use wall-clock limits
