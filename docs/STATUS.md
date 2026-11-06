@@ -10,7 +10,7 @@ artwork added (#14). Wave 3 steps 1 and 2 done: Settings tab (#15), sleep timer 
 visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and back button (#20), clean pause/resume
 (#21); the app is iPhone only. Xcode 26 (#22): builds with the iOS 26 SDK, iOS 26 paths fixed after device
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). Mini player glass after the swipe-dismiss on
-iOS 26 and a graphite look for tracks without artwork (#26). In progress: `launch-icon`.
+iOS 26 and a graphite look for tracks without artwork (#26). Launch screen and icon in the Library's colours (#27).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -45,7 +45,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `player-dismiss` | — | DesignSystem, PlayerFeature | Opus | ❌ #24 closed (rejected after device check) |
 | — | `tab-haptics` | — | App | orchestrator + user | ✅ #25 |
 | — | `mini-glass-flash` | — | DesignSystem, PlayerFeature, App | Opus | ✅ #26 |
-| — | `launch-icon` | — | App resources, project.yml | Sonnet | in progress |
+| — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -125,6 +125,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   placeholder everywhere was tried and rejected (too heavy).
 - 2026-11-06. The orchestrator doesn't write code; even `App/` and `project.yml` changes go to a session whose brief
   allows them. A "system bug" claim is proven the way the user agrees to, not with a separate sample app by default.
+- 2026-11-06. Launch screen and icon (#27): the launch background is white/black per theme (the Library's
+  `systemBackground`, per the HIG) with the waveform logo kept; light icon on white, dark icon on black, tinted
+  unchanged; `UIStatusBarStyleLightContent` removed. No Icon Composer icon while Xcode 16.1 must build the project.
+- 2026-11-06. CarPlay: no CarPlay UI (no `carplay-audio` entitlement or templates); only remote commands. A real
+  CarPlay app needs Apple's entitlement first; not planned yet.
 
 ## Open questions
 
