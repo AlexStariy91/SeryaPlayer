@@ -133,6 +133,10 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-11-06. iCloud backup: keep the iOS default (app data, music included, is backed up and restored with the
   device). Excluding all app storage was built (#28) and dropped by the user; users can turn off the app's backup
   in iOS Settings.
+- 2026-11-06. Accessibility: a light audit (iOS 18.1, read-only) found VoiceOver in good shape. Known gaps, left
+  as is by the user's choice: at accessibility text sizes the player/mini player/track row titles truncate to one
+  line, the full player's actions row is cramped and the mini player's buttons grow large; the speed button and
+  the grabber are 28 pt tall; the visualizer ignores Reduce Motion; Increase Contrast isn't handled.
 
 ## Open questions
 
@@ -247,7 +251,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ### Stage 10. Polish
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
-- [ ] Accessibility, Instruments, full run on iOS 18 and 26
+- [x] Accessibility: audited, gaps accepted (see Decisions, 2026-11-06)
+- [ ] Instruments, full run on iOS 18 and 26
 
 ## Log
 
