@@ -12,8 +12,12 @@ public final class CoreDataTrackRepository: TrackRepository {
         self.persistence = persistence
     }
 
+    /// Track lists are big and every observer re-derives its screens from them, so bursts of writes (import batches,
+    /// a play record per track start) are coalesced into at most one list per `observationInterval`.
+    static let observationInterval = Duration.milliseconds(300)
+
     public func observeTracks(sortedBy sort: TrackSort) -> AsyncStream<[Track]> {
-        FetchedResultsObserver.stream(in: persistence) {
+        FetchedResultsObserver.stream(in: persistence, minimumInterval: Self.observationInterval) {
             Self.request(sortedBy: sort)
         } transform: { objects in
             objects.map { $0.toDomain() }
