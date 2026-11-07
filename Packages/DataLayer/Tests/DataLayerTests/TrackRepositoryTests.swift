@@ -167,4 +167,49 @@ struct TrackRepositoryTests {
         let afterDelete = try await value(from: stream) { $0.count == 100 }
         #expect(afterDelete.allSatisfy { $0.folderID == folder.id })
     }
+
+    /// An import writes in chunks and every track start writes a play record; observers must get those bursts
+    /// coalesced, yet always end with the latest state.
+    @Test func burstsOfWritesReachObserversCoalesced() async throws {
+        let stream = repository.observeTracks(sortedBy: TrackSort())
+        let received = Task {
+            var lists: [[Track]] = []
+            for await list in stream {
+                lists.append(list)
+                if list.count == 30, list.allSatisfy({ $0.playCount == 1 }) {
+                    break
+                }
+            }
+            return lists
+        }
+        let timeout = Task {
+            try await Task.sleep(for: .seconds(20))
+            received.cancel()
+        }
+        defer { timeout.cancel() }
+        // Spaced out, so a reader that keeps up would see every write if nothing coalesced them.
+        let tracks = (0 ..< 30).map { makeTrack(title: "Track \($0)") }
+        for track in tracks {
+            try await repository.add([track])
+            try await Task.sleep(for: .milliseconds(15))
+        }
+        for track in tracks {
+            try await repository.markPlayed(id: track.id, at: .now)
+            try await Task.sleep(for: .milliseconds(15))
+        }
+        let lists = await received.value
+        #expect(lists.last?.count == 30)
+        #expect(lists.count < 15, "published \(lists.count) lists for 60 writes")
+    }
+
+    @Test func aSingleWriteAfterAQuietPeriodIsPublishedAtOnce() async throws {
+        let stream = repository.observeTracks(sortedBy: TrackSort())
+        #expect(try await value(from: stream).isEmpty)
+        try await Task.sleep(for: CoreDataTrackRepository.observationInterval)
+        let clock = ContinuousClock()
+        let started = clock.now
+        try await repository.add([makeTrack(title: "Now")])
+        _ = try await value(from: stream) { $0.count == 1 }
+        #expect(clock.now - started < CoreDataTrackRepository.observationInterval)
+    }
 }
