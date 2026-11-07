@@ -83,7 +83,17 @@ final class AllTracksViewModel {
         results = found
     }
 
+    /// A list that differs only in play statistics (a track started) is not republished: the rows don't show them,
+    /// and re-rendering 10k rows on every track change stalls the main thread. With the Play Count sort the order
+    /// changes, so that list is published as usual.
     private func apply(_ list: [Track]) async {
+        if hasLoaded {
+            let current = tracks
+            let isSame = await Task.detached(priority: .userInitiated) { list.hasSameCatalogData(as: current) }.value
+            if isSame {
+                return
+            }
+        }
         tracks = list
         index = nil
         generation += 1
