@@ -116,7 +116,7 @@ struct TagTextMigrationTests {
 
     init() throws {
         persistence = try PersistenceController(store: .inMemory)
-        tracks = CoreDataTrackRepository(persistence: persistence)
+        tracks = CoreDataTrackRepository(persistence: persistence, observationInterval: .zero)
     }
 
     @Test func repairsStoredTracksInPlace() async throws {

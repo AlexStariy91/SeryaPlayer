@@ -96,10 +96,11 @@ final class FetchedResultsObserver<Object: NSManagedObject, Value: Sendable>: NS
             publish()
             return
         }
-        // Too soon after the last one: publish the state as of the end of the interval instead.
+        // Too soon after the last one: publish the state as of the end of the interval instead. User-initiated, as
+        // screens wait for it: at utility QoS a busy system (an import, a loaded CI runner) can hold it back for seconds.
         isPublishScheduled = true
         let delay = Int(((lastPublish + minimumInterval - now) / .milliseconds(1)).rounded(.up))
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .milliseconds(delay)) { [weak self] in
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + .milliseconds(delay)) { [weak self] in
             guard let self else { return }
             context.perform {
                 self.isPublishScheduled = false
