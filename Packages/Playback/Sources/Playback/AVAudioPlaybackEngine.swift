@@ -67,6 +67,10 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
     private var isEnginePaused = false
     /// Segments scheduled so far; lets tests check that resuming from a pause doesn't reschedule.
     private(set) var scheduledSegmentCount = 0
+    /// Engine starts so far; lets tests check that an automatic track change keeps the engine running.
+    private(set) var engineStartCount = 0
+    /// The pending pause of an engine left idle by `load`; `play()` cancels it.
+    private var idlePauseTask: Task<Void, Never>?
     private var resumePosition: TimeInterval = 0
     /// Wall-clock fallback for `currentTime` when the node can't report its time (right after
     /// `play()` or after the engine was stopped behind our back).
@@ -152,7 +156,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if !isPlaying, engine.isRunning {
             // Loaded paused (the end of a track with the "End of Track" sleep timer, a skip while
             // paused): an engine left rendering silence keeps the app "playing" for iOS.
-            engine.pause()
+            pauseIdleEngineSoon()
         }
         stopNode()
         let newFile = try AVAudioFile(forReading: url)
@@ -173,6 +177,8 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
 
     public func play() throws {
         guard file != nil else { throw PlaybackEngineError.noFileLoaded }
+        idlePauseTask?.cancel()
+        idlePauseTask = nil
         try session.activate()
         if isPausePending {
             // Play during the fade-out: the node never stopped, so just ramp back up.
@@ -185,6 +191,7 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         if !engine.isRunning {
             engine.prepare()
             try engine.start()
+            engineStartCount += 1
             // An engine stopped behind our back may have dropped the node's schedule; one paused by
             // `pause()` still has it.
             if !isEnginePaused {
@@ -435,6 +442,19 @@ public final class AVAudioPlaybackEngine: PlaybackEngine {
         needsSchedule = true
         isEnginePaused = false
         playbackAnchor = nil
+    }
+
+    /// Pauses the engine on the next main-actor turn unless `play()` comes first. A track that ends loads the next one
+    /// with the engine idle, and the service plays it right away: pausing and restarting the engine there blocked
+    /// the main thread on every automatic track change.
+    private func pauseIdleEngineSoon() {
+        idlePauseTask?.cancel()
+        idlePauseTask = Task { [weak self] in
+            guard let self, !Task.isCancelled else { return }
+            idlePauseTask = nil
+            guard !isPlaying, !isPausePending, engine.isRunning else { return }
+            engine.pause()
+        }
     }
 
     /// Built in a nonisolated context on purpose: a closure formed inside a `@MainActor` method would
