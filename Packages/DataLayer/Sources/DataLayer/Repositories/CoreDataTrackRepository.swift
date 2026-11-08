@@ -98,7 +98,9 @@ public final class CoreDataTrackRepository: TrackRepository {
             let result = try context.execute(request) as? NSBatchInsertResult
             return result?.result as? [NSManagedObjectID] ?? []
         }
-        persistence.mergeBatchChanges([NSInsertedObjectsKey: insertedIDs])
+        // Observers learn about the rows only after their folders are linked: a track seen without its folder
+        // would briefly show up as a loose song at the library root. Merged even if linking fails, as the rows exist.
+        defer { persistence.mergeBatchChanges([NSInsertedObjectsKey: insertedIDs]) }
 
         // Batch inserts cannot set relationships, so folders are linked in a regular save.
         let withFolders = tracks.filter { $0.folderID != nil }

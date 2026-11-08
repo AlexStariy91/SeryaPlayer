@@ -202,6 +202,41 @@ struct TrackRepositoryTests {
         #expect(lists.count < 15, "published \(lists.count) lists for 60 writes")
     }
 
+    /// The Folders root lists tracks with no folder as loose songs, so a batch-inserted track must never reach
+    /// observers before its folder is linked.
+    @Test func batchInsertedTracksReachObserversOnlyWithTheirFolder() async throws {
+        let folders = CoreDataFolderRepository(persistence: persistence)
+        let folder = Folder(name: "Importing")
+        try await folders.create(folder)
+        let stream = repository.observeTracks(sortedBy: TrackSort())
+        let received = Task {
+            var lists: [[Track]] = []
+            for await list in stream {
+                lists.append(list)
+                if list.count == 120 {
+                    break
+                }
+            }
+            return lists
+        }
+        let timeout = Task {
+            try await Task.sleep(for: .seconds(20))
+            received.cancel()
+        }
+        defer { timeout.cancel() }
+        // After a quiet period the first change is published at once, so an intermediate state would show.
+        try await Task.sleep(for: CoreDataTrackRepository.observationInterval * 2)
+
+        let tracks = (0 ..< 120).map { makeTrack(title: "Track \($0)", folderID: folder.id) }
+        #expect(tracks.count >= CoreDataTrackRepository.batchInsertThreshold)
+        try await repository.add(tracks)
+
+        let lists = await received.value
+        #expect(lists.last?.count == 120)
+        let loose = lists.map { $0.count { $0.folderID == nil } }
+        #expect(loose.allSatisfy { $0 == 0 }, "tracks without a folder per published list: \(loose)")
+    }
+
     @Test func aSingleWriteAfterAQuietPeriodIsPublishedAtOnce() async throws {
         let stream = repository.observeTracks(sortedBy: TrackSort())
         #expect(try await value(from: stream).isEmpty)
