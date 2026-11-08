@@ -1,7 +1,7 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-06
+> Updated: 2026-11-08
 
 ## Now
 
@@ -11,6 +11,7 @@ visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and
 (#21); the app is iPhone only. Xcode 26 (#22): builds with the iOS 26 SDK, iOS 26 paths fixed after device
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). Mini player glass after the swipe-dismiss on
 iOS 26 and a graphite look for tracks without artwork (#26). Launch screen and icon in the Library's colours (#27).
+Perf audit at 10k tracks (iOS 18.1 and 26.3), then main-thread stalls on library writes and track changes fixed (#29).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -46,6 +47,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `tab-haptics` | — | App | orchestrator + user | ✅ #25 |
 | — | `mini-glass-flash` | — | DesignSystem, PlayerFeature, App | Opus | ✅ #26 |
 | — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
+| — | `perf-audit` | — | measurement only (harness on local branch `ws/perf-audit`) | Sonnet | ✅ report, no PR |
+| — | `perf-fix` | — | Domain, DataLayer, Library, Folders, Playback, PlayerFeature | Opus | ✅ #29 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -137,9 +140,21 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   as is by the user's choice: at accessibility text sizes the player/mini player/track row titles truncate to one
   line, the full player's actions row is cramped and the mini player's buttons grow large; the speed button and
   the grabber are 28 pt tall; the visualizer ignores Reduce Motion; Increase Contrast isn't handled.
+- 2026-11-08. Performance (#29): a perf audit (simulator, 10k tracks, Release, iOS 18.1 and 26.3) found scrolling,
+  memory and foreground CPU fine, and main-thread stalls on every library write. Fixed: play-statistics writes no
+  longer re-map the library; library/folder state is derived off the main actor; track-list updates are coalesced
+  (300 ms, user-initiated QoS); import saves in batches of 50, tracks saved with their folder in one write; automatic
+  track changes keep the audio engine running (an idle engine pauses on the next main-actor turn); on iOS 26 track
+  changes no longer re-set the mini player accessory. Checked on an iPhone. Deferred: background CPU (visualizer tap
+  may run with no visible view), search latency, launch time at 10k, ~15 ms `AVAudioPlayerNode` stop+play per
+  automatic change. ~70% CPU (of one core) during a fast fling of a 1,000-row list is normal SwiftUI `List` cost.
 
 ## Open questions
 
+- Import progress panel overlaps the navigation title inconsistently (sometimes under the large title, sometimes
+  covering it); pre-existing, seen on device 2026-11-08, to fix later.
+- Perf harness (`AppUITests/PerfUITests.swift`, `App/Sources/PerfSupport.swift`, `scripts/perf/`) lives only on
+  the local branch `ws/perf-audit` (8bd97f1); decide whether to land it as opt-in tooling.
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
   occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
 - Toolchain drift: CI builds with Xcode 26.3 (lint on the image default) and the latest SwiftFormat; local is Xcode 26.3
@@ -252,10 +267,15 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 ### Stage 10. Polish
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
 - [x] Accessibility: audited, gaps accepted (see Decisions, 2026-11-06)
-- [ ] Instruments, full run on iOS 18 and 26
+- [x] Performance: audited at 10k tracks on iOS 18.1 and 26.3, stalls fixed (#29)
+- [ ] Full run on iOS 18 and 26
 
 ## Log
 
+- 2026-11-08 — perf audit (measure only) on the simulator at 10k tracks, then #29: library-write and
+  track-change stalls fixed after two device rounds (auto-advance hitch from the engine pause/start and the iOS 26
+  accessory; imported tracks flashing as loose songs in Folders). CI timeouts in DataLayer tests fixed by making
+  observer tests timer-free.
 - 2026-11-05 — Xcode 26.3 installed side by side with 16.1. #22: one compile fix (26.1 accessory API), then four
   rounds of iOS 26 device feedback: mini player content on the accessory glass and legible text, sleep timer label,
   Select checkmarks, delete alert, plurals; a theme bug caused by `scrollEdgeEffectStyle(.hard)` (found with a
