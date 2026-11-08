@@ -10,6 +10,10 @@ final class PlayerViewModel {
     typealias ColorExtractor = @Sendable (URL) async -> [Color]
 
     private(set) var snapshot: PlaybackSnapshot
+    /// Something is queued, so the mini player shows. Kept apart from `snapshot` and changed only when it flips: the
+    /// view hosting the mini player reads it, and on iOS 26 every update of that view re-sets the tab bar's bottom
+    /// accessory, which rebuilds the tab bar. Read through `snapshot`, that happened on every track change.
+    private(set) var isQueued: Bool
     /// Large artwork for the full player.
     private(set) var artworkURL: URL?
     /// Small artwork for the mini player.
@@ -51,6 +55,7 @@ final class PlayerViewModel {
         self.colorExtractor = colorExtractor
         self.spectrum = spectrum
         snapshot = player.snapshot
+        isQueued = !player.snapshot.queue.isEmpty
         sleepTimerState = sleepTimer.state
         progress = PlaybackProgress(player: player, interval: progressInterval) { rate in
             // The speed is one global setting: remember it for the next launch.
@@ -65,10 +70,6 @@ final class PlayerViewModel {
     }
 
     // MARK: - Derived state
-
-    var isQueued: Bool {
-        !snapshot.queue.isEmpty
-    }
 
     /// The track shown by the players: the loaded one, or the current queue item before anything is loaded.
     var track: Track? {
@@ -135,6 +136,10 @@ final class PlayerViewModel {
     private func apply(_ snapshot: PlaybackSnapshot) {
         if snapshot != self.snapshot {
             self.snapshot = snapshot
+        }
+        let queued = !snapshot.queue.isEmpty
+        if queued != isQueued {
+            isQueued = queued
         }
     }
 

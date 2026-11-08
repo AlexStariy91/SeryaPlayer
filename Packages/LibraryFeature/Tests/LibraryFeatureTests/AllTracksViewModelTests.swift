@@ -2,6 +2,7 @@ import Domain
 import DomainTestSupport
 import Foundation
 @testable import LibraryFeature
+import Observation
 import Testing
 
 @MainActor
@@ -97,6 +98,40 @@ struct AllTracksViewModelTests {
         await viewModel.search()
         try await deps.tracks.add([.make("Brand New")])
         #expect(await eventually { viewModel.visibleTracks.map(\.title) == ["Brand New"] })
+    }
+
+    /// Rows don't show play statistics, so a play record must not republish (and re-render) the whole list.
+    @Test func playRecordDoesNotRepublishTheList() async throws {
+        let deps = TestDependencies(tracks: library)
+        let viewModel = AllTracksViewModel(tracks: deps.tracks, settings: deps.settings)
+        let observing = Task { await viewModel.observe() }
+        defer { observing.cancel() }
+        #expect(await eventually { viewModel.tracks.count == 3 })
+        let invalidated = Flag()
+        withObservationTracking { _ = viewModel.tracks } onChange: { invalidated.set() }
+
+        try await deps.tracks.markPlayed(id: library[0].id, at: Date())
+        // Nothing observable happens for a skipped list, so give the in-memory stream time to deliver it.
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(!invalidated.isSet)
+        #expect(viewModel.tracks.first { $0.id == library[0].id }?.playCount == 5)
+
+        try await deps.tracks.add([.make("Delta")])
+        #expect(await eventually { viewModel.tracks.count == 4 })
+        #expect(invalidated.isSet)
+        #expect(viewModel.tracks.first { $0.id == library[0].id }?.playCount == 6)
+    }
+
+    @Test func playRecordReordersThePlayCountSort() async throws {
+        let deps = TestDependencies(tracks: library, settings: AppSettings(librarySort: TrackSort(field: .playCount, ascending: false)))
+        let viewModel = AllTracksViewModel(tracks: deps.tracks, settings: deps.settings)
+        let observing = Task { await viewModel.observe() }
+        defer { observing.cancel() }
+        #expect(await eventually { viewModel.tracks.map(\.title) == ["Charlie", "Bravo", "alpha"] })
+        for _ in 0 ..< 5 {
+            try await deps.tracks.markPlayed(id: library[0].id, at: Date())
+        }
+        #expect(await eventually { viewModel.tracks.map(\.title) == ["Bravo", "Charlie", "alpha"] })
     }
 
     @Test func handlesTenThousandTracksWithFastSearch() async {

@@ -3,6 +3,7 @@ import DomainTestSupport
 import Foundation
 @testable import PlayerFeature
 import SwiftUI
+import Synchronization
 import Testing
 
 @MainActor
@@ -89,6 +90,35 @@ struct PlayerViewModelTests {
         #expect(viewModel.artworkURL == URL(fileURLWithPath: "/art/art1-large"))
         #expect(viewModel.thumbnailURL == URL(fileURLWithPath: "/art/art1-thumb"))
         #expect(viewModel.backgroundColors == [.red, .blue])
+    }
+
+    @Test func trackChangesDoNotUpdateTheMiniPlayerHost() async {
+        // The host reads only `isQueued`; on iOS 26 each update of it rebuilds the tab bar.
+        let player = RecordingPlayer(snapshot: playing(at: 0))
+        player.snapshotsToSend = [playing(at: 1), playing(at: 2, isPlaying: false), playing(at: 3)]
+        let viewModel = makeViewModel(player: player)
+        let changed = Flag()
+        withObservationTracking {
+            _ = viewModel.isQueued
+        } onChange: {
+            changed.set()
+        }
+
+        await viewModel.observePlayback()
+
+        #expect(viewModel.isQueued)
+        #expect(viewModel.track?.id == tracks[3].id)
+        #expect(!changed.isSet)
+    }
+
+    @Test func emptyingTheQueueHidesTheMiniPlayer() async {
+        let player = RecordingPlayer(snapshot: playing(at: 0))
+        player.snapshotsToSend = [PlaybackSnapshot()]
+        let viewModel = makeViewModel(player: player)
+
+        await viewModel.observePlayback()
+
+        #expect(!viewModel.isQueued)
     }
 
     @Test func playPauseDoesNotReloadArtwork() async {
@@ -190,5 +220,18 @@ struct PlayerViewModelTests {
         settings.save(updated)
 
         #expect(await waitUntil { viewModel.isEqualizerActive })
+    }
+}
+
+/// Set from an observation callback, which may run on any thread.
+private final class Flag: Sendable {
+    private let value = Mutex(false)
+
+    var isSet: Bool {
+        value.withLock { $0 }
+    }
+
+    func set() {
+        value.withLock { $0 = true }
     }
 }

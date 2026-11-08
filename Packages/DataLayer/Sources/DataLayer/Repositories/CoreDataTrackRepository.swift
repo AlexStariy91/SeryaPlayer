@@ -3,17 +3,29 @@ import Domain
 import Foundation
 
 public final class CoreDataTrackRepository: TrackRepository {
-    /// From this many tracks on, `add` uses `NSBatchInsertRequest` instead of managed objects.
+    /// From this many folderless tracks on, `add` uses `NSBatchInsertRequest` instead of managed objects.
     static let batchInsertThreshold = 50
 
-    private let persistence: PersistenceController
+    /// Track lists are big and every observer re-derives its screens from them, so bursts of writes (import batches,
+    /// a play record per track start) are coalesced into at most one list per `observationInterval`.
+    static let defaultObservationInterval = Duration.milliseconds(300)
 
-    public init(persistence: PersistenceController) {
+    private let persistence: PersistenceController
+    private let observationInterval: Duration
+
+    public convenience init(persistence: PersistenceController) {
+        self.init(persistence: persistence, observationInterval: Self.defaultObservationInterval)
+    }
+
+    /// - Parameter observationInterval: `.zero` publishes every change; tests that are not about coalescing use it,
+    ///   so they don't depend on when the trailing publish of a burst runs.
+    init(persistence: PersistenceController, observationInterval: Duration) {
         self.persistence = persistence
+        self.observationInterval = observationInterval
     }
 
     public func observeTracks(sortedBy sort: TrackSort) -> AsyncStream<[Track]> {
-        FetchedResultsObserver.stream(in: persistence) {
+        FetchedResultsObserver.stream(in: persistence, minimumInterval: observationInterval) {
             Self.request(sortedBy: sort)
         } transform: { objects in
             objects.map { $0.toDomain() }
@@ -73,7 +85,10 @@ public final class CoreDataTrackRepository: TrackRepository {
 
     public func add(_ tracks: [Track]) async throws {
         guard !tracks.isEmpty else { return }
-        if tracks.count >= Self.batchInsertThreshold {
+        // Batch inserts cannot set relationships, and linking folders in a second save leaves a window in which any
+        // reader (a screen opening mid-import, an observer's first fetch) sees the tracks without their folder, as loose
+        // songs at the library root. So only folderless tracks are batch inserted; the rest is one regular save.
+        if tracks.count >= Self.batchInsertThreshold, tracks.allSatisfy({ $0.folderID == nil }) {
             try await batchInsert(tracks)
         } else {
             try await persistence.performWrite { context in
@@ -95,19 +110,6 @@ public final class CoreDataTrackRepository: TrackRepository {
             return result?.result as? [NSManagedObjectID] ?? []
         }
         persistence.mergeBatchChanges([NSInsertedObjectsKey: insertedIDs])
-
-        // Batch inserts cannot set relationships, so folders are linked in a regular save.
-        let withFolders = tracks.filter { $0.folderID != nil }
-        guard !withFolders.isEmpty else { return }
-        try await persistence.performWrite { context in
-            let folders = try Self.folders(ids: Set(withFolders.compactMap(\.folderID)), in: context)
-            let request = Self.request()
-            request.predicate = NSPredicate(format: "id IN %@", withFolders.map(\.id))
-            let objects = try Dictionary(context.fetch(request).map { ($0.id, $0) }) { first, _ in first }
-            for track in withFolders {
-                objects[track.id]?.folder = track.folderID.flatMap { folders[$0] }
-            }
-        }
     }
 
     public func update(_ track: Track) async throws {

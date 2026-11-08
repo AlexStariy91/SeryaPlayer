@@ -10,7 +10,8 @@ public struct ImportTracksUseCase: Sendable {
     private let batchSize: Int
 
     /// `progressCenter` publishes progress of every import (picker, inbox, Open in…) to the UI.
-    /// New tracks are written in chunks of `batchSize`, so observers refresh once per chunk, not per file.
+    /// New tracks are written in chunks of `batchSize`, so observers refresh once per chunk, not per file
+    /// (and repositories may coalesce those refreshes further).
     public init(
         files: any FileStoring,
         metadata: any MetadataReading,
@@ -18,7 +19,7 @@ public struct ImportTracksUseCase: Sendable {
         tracks: any TrackRepository,
         folders: any FolderRepository,
         progressCenter: ImportProgressCenter? = nil,
-        batchSize: Int = 20
+        batchSize: Int = 50
     ) {
         self.files = files
         self.metadata = metadata

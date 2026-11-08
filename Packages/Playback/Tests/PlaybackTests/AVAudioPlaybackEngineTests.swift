@@ -228,6 +228,35 @@ struct AVAudioPlaybackEngineTests {
         engine.stop()
     }
 
+    @Test func theNextTrackAfterAnEndPlaysOnTheRunningEngine() async throws {
+        // An automatic track change: the file ends, the service loads the next one and plays it at once.
+        try engine.load(url: makeSineFile(seconds: 0.2, sampleRate: 44100, channels: 2), startingAt: 0)
+        try engine.play()
+        #expect(await eventually { !engine.isPlaying })
+        let starts = engine.engineStartCount
+
+        try engine.load(url: makeSineFile(seconds: 1, sampleRate: 44100, channels: 2), startingAt: 0)
+        try engine.play()
+
+        #expect(engine.engineStartCount == starts)
+        #expect(engine.engine.isRunning)
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(engine.engine.isRunning) // the pending idle pause was cancelled
+        engine.stop()
+    }
+
+    @Test func theNextTrackLoadedPausedAfterAnEndLeavesTheEngineIdle() async throws {
+        // "End of Track" sleep timer: the next track is loaded but not played.
+        try engine.load(url: makeSineFile(seconds: 0.2, sampleRate: 44100, channels: 2), startingAt: 0)
+        try engine.play()
+        #expect(await eventually { !engine.isPlaying })
+
+        try engine.load(url: makeSineFile(seconds: 1, sampleRate: 44100, channels: 2), startingAt: 0)
+
+        #expect(await eventually { !engine.engine.isRunning })
+        engine.stop()
+    }
+
     @Test func seekingWhilePausedSchedulesFromTheNewPosition() throws {
         try engine.load(url: makeSineFile(seconds: 2, sampleRate: 44100, channels: 2), startingAt: 0)
         try engine.play()

@@ -15,12 +15,9 @@ final class FoldersStore {
         }
     }
 
-    private(set) var tracks: [Track] = [] {
-        didSet {
-            rebuildTrackIndex()
-            revision += 1
-        }
-    }
+    /// Replaced (with its index) only when the catalog changes: a play-statistics-only change (a track started)
+    /// is skipped, as nothing in this tab shows it. So these tracks may carry older play statistics.
+    private(set) var tracks: [Track] = []
 
     /// Bumped on every change of folders or tracks, so derived work (search) knows when to re-run.
     private(set) var revision = 0
@@ -44,6 +41,10 @@ final class FoldersStore {
     @ObservationIgnored let rowLevels: SpectrumLevelsSource
     @ObservationIgnored private var hasFolders = false
     @ObservationIgnored private var hasTracks = false
+    /// Artwork keys already handed to the resolver, so an update prefetches only the new ones.
+    @ObservationIgnored private var prefetchedArtworkKeys: Set<String> = []
+    /// How many times the track index was rebuilt. For tests.
+    @ObservationIgnored private(set) var trackIndexRebuildCount = 0
 
     /// - Parameter artwork: when given, artwork URLs of new tracks are resolved ahead of the rows that show them.
     init(
@@ -79,11 +80,29 @@ final class FoldersStore {
 
     private func observeTracks() async {
         for await list in trackRepository.observeTracks(sortedBy: TrackSort(field: .title)) {
-            tracks = list
-            hasTracks = true
-            updateLoaded()
-            await artwork?.prefetch(list.lazy.compactMap(\.artworkKey), size: .thumbnail)
+            await apply(list)
         }
+    }
+
+    /// Builds the index off the main actor; publishes nothing when only play statistics changed.
+    func apply(_ list: [Track]) async {
+        let current = hasTracks ? tracks : nil
+        let known = prefetchedArtworkKeys
+        let wantsArtwork = artwork != nil
+        let index = await Task.detached(priority: .userInitiated) {
+            TrackIndex(list, replacing: current, knownArtworkKeys: known, collectArtwork: wantsArtwork)
+        }.value
+        guard let index else { return }
+        tracks = list
+        tracksByFolder = index.tracksByFolder
+        rebuildCounts()
+        revision += 1
+        trackIndexRebuildCount += 1
+        hasTracks = true
+        updateLoaded()
+        guard let artwork, !index.newArtworkKeys.isEmpty else { return }
+        prefetchedArtworkKeys.formUnion(index.newArtworkKeys)
+        await artwork.prefetch(index.newArtworkKeys, size: .thumbnail)
     }
 
     private func observePlayer() async {
@@ -144,12 +163,6 @@ final class FoldersStore {
         rebuildCounts()
     }
 
-    private func rebuildTrackIndex() {
-        let sorted = tracks.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
-        tracksByFolder = Dictionary(grouping: sorted, by: \.folderID)
-        rebuildCounts()
-    }
-
     /// Bottom-up: a folder's count is its own tracks plus its children's counts.
     private func rebuildCounts() {
         var counts: [Folder.ID?: Int] = [:]
@@ -177,5 +190,22 @@ final class FoldersStore {
             }
         }
         return result
+    }
+}
+
+/// Tracks grouped by folder, sorted by title, plus the artwork keys not seen before. Built off the main actor.
+struct TrackIndex {
+    var tracksByFolder: [Folder.ID?: [Track]]
+    var newArtworkKeys: Set<String>
+
+    /// `nil` when `list` differs from `current` only in play statistics.
+    init?(_ list: [Track], replacing current: [Track]?, knownArtworkKeys: Set<String>, collectArtwork: Bool) {
+        if let current, list.hasSameCatalogData(as: current) {
+            return nil
+        }
+        // The repository already sorts by title; the sort keeps folders independent of that.
+        let sorted = list.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        tracksByFolder = Dictionary(grouping: sorted, by: \.folderID)
+        newArtworkKeys = collectArtwork ? Set(list.lazy.compactMap(\.artworkKey)).subtracting(knownArtworkKeys) : []
     }
 }

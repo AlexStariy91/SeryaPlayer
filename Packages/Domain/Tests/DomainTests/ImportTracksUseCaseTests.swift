@@ -192,6 +192,18 @@ struct ImportBatchingTests {
         #expect(tracks.snapshot.count == 7)
     }
 
+    /// Each write makes every library screen re-derive its lists, so a big import must not write per file or in
+    /// tiny chunks.
+    @Test func defaultBatchKeepsWritesFew() async {
+        let folders = InMemoryFolderRepository()
+        let tracks = InMemoryTrackRepository(folders: folders)
+        let useCase = ImportTracksUseCase(
+            files: FakeFileStore(), metadata: FakeMetadataReader(), artwork: FakeArtworkStore(), tracks: tracks, folders: folders
+        )
+        _ = await useCase(urls: Self.urls(120))
+        #expect(tracks.addedBatchSizes == [50, 50, 20])
+    }
+
     @Test func centerReportsProgressAndClearsWhenDone() async {
         let center = ImportProgressCenter()
         let folders = InMemoryFolderRepository()

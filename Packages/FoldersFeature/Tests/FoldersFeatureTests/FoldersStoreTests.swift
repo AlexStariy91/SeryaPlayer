@@ -39,6 +39,47 @@ struct FoldersStoreTests {
         #expect(elapsed < 5, "rebuild of 10k tracks took \(elapsed)s")
     }
 
+    /// Folders show no play statistics, so a play record (one per track start) must not rebuild the index, bump the
+    /// search revision or invalidate the views reading tracks.
+    @Test func playRecordDoesNotRebuildTheTrackIndex() async throws {
+        let folder = Folder(name: "Music")
+        let played = Track.fixture("Song", folderID: folder.id)
+        let deps = TestDependencies(folders: [folder], tracks: [played, .fixture("Other")])
+        let context = FoldersContext(dependencies: deps)
+        let store = context.store
+        let observer = Task { await store.observe() }
+        defer { observer.cancel() }
+        #expect(await eventually { store.isLoaded })
+        let rebuilds = store.trackIndexRebuildCount
+        let revision = store.revision
+        let invalidated = Flag()
+        withObservationTracking { _ = (store.tracks, store.tracks(in: folder.id), store.songCount(in: nil)) } onChange: {
+            invalidated.set()
+        }
+
+        try await deps.tracks.markPlayed(id: played.id, at: Date())
+        // Nothing observable happens for a skipped list, so give the in-memory stream time to deliver it.
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(store.trackIndexRebuildCount == rebuilds)
+        #expect(store.revision == revision)
+        #expect(!invalidated.isSet)
+
+        try await deps.tracks.add([.fixture("New", folderID: folder.id)])
+        #expect(await eventually { store.songCount(in: folder.id) == 2 })
+        #expect(store.trackIndexRebuildCount == rebuilds + 1)
+        #expect(invalidated.isSet)
+    }
+
+    @Test func indexListsOnlyArtworkKeysNotSeenBefore() {
+        var first = Track.fixture("One")
+        first.artworkKey = "a"
+        var second = Track.fixture("Two")
+        second.artworkKey = "b"
+        let index = TrackIndex([first, second, .fixture("Three")], replacing: [first], knownArtworkKeys: ["a"], collectArtwork: true)
+        #expect(index?.newArtworkKeys == ["b"])
+        #expect(TrackIndex([first], replacing: [first], knownArtworkKeys: [], collectArtwork: true) == nil)
+    }
+
     @Test func loadingTracksPrefetchesTheirArtworkURLs() async {
         var withArt = Track.fixture("With Art")
         withArt.artworkKey = "cover"
