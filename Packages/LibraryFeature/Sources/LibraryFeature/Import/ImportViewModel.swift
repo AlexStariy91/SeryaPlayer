@@ -47,25 +47,48 @@ final class ImportViewModel {
 
     /// True while the progress popover is on screen (including its dismissal). The toolbar item that anchors the
     /// popover must outlive it: removing a popover's source button mid-presentation crashes UIKit on iOS 26.
-    private(set) var isDetailsOpen = false
+    @ObservationIgnored private(set) var isDetailsOpen = false {
+        didSet { refreshShowsIndicator() }
+    }
+
     /// A finished import's summary waits for the popover to go: an alert presented over it is dropped.
     @ObservationIgnored private var isSummaryPending = false
 
     /// Whether the toolbar item should exist: while importing, and until the popover is fully gone.
-    var showsIndicator: Bool {
-        isImporting || isDetailsOpen
+    /// Stored and written only on a real change: `@Observable` notifies on every write, and a toolbar that is
+    /// re-evaluated while the popover is appearing makes UIKit replace the popover's source button.
+    private(set) var showsIndicator = false
+
+    private func refreshShowsIndicator() {
+        let shows = isImporting || isDetailsOpen
+        if shows != showsIndicator {
+            showsIndicator = shows
+        }
     }
 
     func detailsDidAppear() {
-        isDetailsOpen = true
+        settleTask?.cancel()
+        if !isDetailsOpen {
+            isDetailsOpen = true
+        }
     }
+
+    /// How long the bar item (and a waiting summary alert) outlive the popover's dismissal animation.
+    /// `onDisappear` can fire before UIKit has finished morphing the popover back into its button.
+    @ObservationIgnored var dismissalSettleDelay: Duration = .milliseconds(700)
+    @ObservationIgnored private var settleTask: Task<Void, Never>?
 
     func detailsDidDisappear() {
         guard isDetailsOpen else { return }
-        isDetailsOpen = false
-        if isSummaryPending {
-            isSummaryPending = false
-            isShowingSummary = true
+        settleTask?.cancel()
+        settleTask = Task {
+            try? await Task.sleep(for: dismissalSettleDelay)
+            guard !Task.isCancelled else { return }
+            isDetailsOpen = false
+            if isSummaryPending {
+                isSummaryPending = false
+                isShowingSummary = true
+            }
         }
     }
 
@@ -73,6 +96,7 @@ final class ImportViewModel {
         let importing = activeProgress != nil
         if importing != isImporting {
             isImporting = importing
+            refreshShowsIndicator()
         }
     }
 

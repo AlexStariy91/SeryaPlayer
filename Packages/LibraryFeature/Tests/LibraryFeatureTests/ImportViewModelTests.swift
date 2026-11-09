@@ -29,6 +29,7 @@ struct ImportViewModelTests {
     /// waits for that (an alert presented over a popover is dropped).
     @Test func completionWhilePopoverIsOpenKeepsAnchorAndDefersSummary() async {
         let importer = TestDependencies().makeContext().importer
+        importer.dismissalSettleDelay = .zero
         importer.detailsDidAppear()
 
         await importer.importURLs([URL(fileURLWithPath: "/import/a.mp3")])
@@ -39,6 +40,9 @@ struct ImportViewModelTests {
         #expect(!importer.isShowingSummary, "summary must wait for the popover to go")
 
         importer.detailsDidDisappear()
+        for _ in 0 ..< 200 where importer.isDetailsOpen {
+            await Task.yield()
+        }
 
         #expect(!importer.showsIndicator)
         #expect(importer.isShowingSummary)

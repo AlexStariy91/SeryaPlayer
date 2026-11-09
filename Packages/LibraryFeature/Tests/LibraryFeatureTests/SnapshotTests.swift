@@ -90,7 +90,7 @@ struct SnapshotTests {
                     .navigationTitle("Library")
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
-                            ImportProgressIndicator(progress: ImportProgress(completed: 340, total: 1000))
+                            ImportProgressRing(progress: ImportProgress(completed: 340, total: 1000))
                         }
                         ToolbarItem(placement: .primaryAction) {
                             Image(systemName: "plus")
