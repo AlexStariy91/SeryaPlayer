@@ -81,7 +81,7 @@ struct SnapshotTests {
         }
     }
 
-    /// The import ring sits in the navigation bar next to "+" and leaves the large title alone.
+    /// The import ring replaces "+" in the navigation bar and leaves the large title alone.
     @Test func homeImporting() async throws {
         let (_, context) = try await loadedContext()
         check("homeImporting") {
@@ -91,9 +91,6 @@ struct SnapshotTests {
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
                             ImportProgressRing(progress: ImportProgress(completed: 340, total: 1000))
-                        }
-                        ToolbarItem(placement: .primaryAction) {
-                            Image(systemName: "plus")
                         }
                     }
             }
@@ -116,6 +113,23 @@ struct SnapshotTests {
         check("allTracks") {
             NavigationStack {
                 AllTracksView(context: context, viewModel: viewModel)
+            }
+        }
+    }
+
+    /// A pushed screen keeps the ring next to its own buttons.
+    @Test func allTracksImporting() async throws {
+        let (deps, context) = try await loadedContext()
+        let viewModel = AllTracksViewModel(tracks: deps.tracks, settings: deps.settings)
+        await viewModel.load()
+        check("allTracksImporting") {
+            NavigationStack {
+                AllTracksView(context: context, viewModel: viewModel)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            ImportProgressRing(progress: ImportProgress(completed: 340, total: 1000))
+                        }
+                    }
             }
         }
     }

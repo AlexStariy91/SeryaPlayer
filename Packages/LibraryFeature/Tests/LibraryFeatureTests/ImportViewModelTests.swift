@@ -25,41 +25,11 @@ struct ImportViewModelTests {
         #expect(deps.tracks.snapshot.count == 3)
     }
 
-    /// A popover can't outlive its anchor: the bar item stays until the popover is gone, and the summary alert
-    /// waits for that (an alert presented over a popover is dropped).
-    @Test func completionWhilePopoverIsOpenKeepsAnchorAndDefersSummary() async {
+    @Test func summaryAppearsAtOnceWhenTheImportEnds() async {
         let importer = TestDependencies().makeContext().importer
-        importer.dismissalSettleDelay = .zero
-        importer.detailsDidAppear()
-
         await importer.importURLs([URL(fileURLWithPath: "/import/a.mp3")])
-
         #expect(!importer.isImporting)
-        #expect(importer.showsIndicator, "the popover's anchor must not be removed while it is presented")
-        #expect(importer.summary != nil)
-        #expect(!importer.isShowingSummary, "summary must wait for the popover to go")
-
-        importer.detailsDidDisappear()
-        for _ in 0 ..< 200 where importer.isDetailsOpen {
-            await Task.yield()
-        }
-
-        #expect(!importer.showsIndicator)
         #expect(importer.isShowingSummary)
-    }
-
-    @Test func completionWithoutPopoverShowsSummaryAtOnce() async {
-        let importer = TestDependencies().makeContext().importer
-        await importer.importURLs([URL(fileURLWithPath: "/import/a.mp3")])
-        #expect(!importer.showsIndicator)
-        #expect(importer.isShowingSummary)
-    }
-
-    @Test func spuriousDismissalDoesNotRaiseTheSummary() {
-        let importer = TestDependencies().makeContext().importer
-        importer.detailsDidDisappear()
-        #expect(!importer.isShowingSummary)
-        #expect(!importer.showsIndicator)
     }
 
     @Test func failuresAreAppendedToTheSummary() {

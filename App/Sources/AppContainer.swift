@@ -40,10 +40,11 @@ final class AppContainer {
     /// Optional to match `LibraryDependencies.importProgress`; a non-optional property would not satisfy
     /// the requirement and the protocol extension's `nil` would be used instead.
     let importProgress: ImportProgressCenter?
-    @ObservationIgnored private let seedDirectory: URL?
+    /// UI tests only: the seed folder imported on launch and whether to keep the import's progress open.
+    @ObservationIgnored private let seed: (directory: URL?, holdsImportOpen: Bool)
 
     init(environment: AppEnvironment) throws {
-        seedDirectory = environment.seedDirectory
+        seed = (environment.seedDirectory, environment.holdsImportOpen)
         persistence = try PersistenceController(store: environment.store)
 
         trackRepository = CoreDataTrackRepository(persistence: persistence)
@@ -123,9 +124,24 @@ final class AppContainer {
 
     /// Restores the queue (paused) and picks up files dropped into the inboxes while the app was closed.
     func didLaunch() async {
-        if let seedDirectory {
+        if let seedDirectory = seed.directory {
+            if seed.holdsImportOpen { // UI tests only
+                for tick in 1 ... 16 {
+                    importProgress?.report(ImportProgress(completed: tick, total: 200))
+                    try? await Task.sleep(for: .milliseconds(250)) // time for the test to see the ring on an empty library
+                }
+            }
             let urls = (try? FileManager.default.contentsOfDirectory(at: seedDirectory, includingPropertiesForKeys: nil)) ?? []
             _ = await importTracks(urls: urls.sorted { $0.lastPathComponent < $1.lastPathComponent })
+            if seed.holdsImportOpen { // UI tests only
+                for tick in 1 ... 60 { // a steadily advancing import, like a real one
+                    importProgress?.report(ImportProgress(completed: tick, total: 200))
+                    let busyUntil = Date().addingTimeInterval(0.2) // a real import keeps the main thread busy
+                    while Date() < busyUntil {}
+                    try? await Task.sleep(for: .milliseconds(150))
+                }
+                importProgress?.finish()
+            }
         }
         await player.restore()
         _ = await inboxProcessor.process()

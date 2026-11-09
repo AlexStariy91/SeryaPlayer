@@ -36,67 +36,19 @@ final class ImportViewModel {
         didSet { refreshIsImporting() }
     }
 
-    /// What the banner shows: this view model's own import, else one running elsewhere.
+    /// What the ring shows: this view model's own import, else one running elsewhere.
     var activeProgress: ImportProgress? {
         progress ?? externalProgress
     }
 
-    /// Stored, not derived from `activeProgress`: views that only care whether an import runs (the toolbar item's
-    /// presence, the disabled "+") must not be invalidated by every progress tick.
+    /// Stored, not derived from `activeProgress`: views that only care whether an import runs (the toolbar's
+    /// ring/"+" swap) must not be invalidated by every progress tick. Written only on a real change.
     private(set) var isImporting = false
-
-    /// True while the progress popover is on screen (including its dismissal). The toolbar item that anchors the
-    /// popover must outlive it: removing a popover's source button mid-presentation crashes UIKit on iOS 26.
-    @ObservationIgnored private(set) var isDetailsOpen = false {
-        didSet { refreshShowsIndicator() }
-    }
-
-    /// A finished import's summary waits for the popover to go: an alert presented over it is dropped.
-    @ObservationIgnored private var isSummaryPending = false
-
-    /// Whether the toolbar item should exist: while importing, and until the popover is fully gone.
-    /// Stored and written only on a real change: `@Observable` notifies on every write, and a toolbar that is
-    /// re-evaluated while the popover is appearing makes UIKit replace the popover's source button.
-    private(set) var showsIndicator = false
-
-    private func refreshShowsIndicator() {
-        let shows = isImporting || isDetailsOpen
-        if shows != showsIndicator {
-            showsIndicator = shows
-        }
-    }
-
-    func detailsDidAppear() {
-        settleTask?.cancel()
-        if !isDetailsOpen {
-            isDetailsOpen = true
-        }
-    }
-
-    /// How long the bar item (and a waiting summary alert) outlive the popover's dismissal animation.
-    /// `onDisappear` can fire before UIKit has finished morphing the popover back into its button.
-    @ObservationIgnored var dismissalSettleDelay: Duration = .milliseconds(700)
-    @ObservationIgnored private var settleTask: Task<Void, Never>?
-
-    func detailsDidDisappear() {
-        guard isDetailsOpen else { return }
-        settleTask?.cancel()
-        settleTask = Task {
-            try? await Task.sleep(for: dismissalSettleDelay)
-            guard !Task.isCancelled else { return }
-            isDetailsOpen = false
-            if isSummaryPending {
-                isSummaryPending = false
-                isShowingSummary = true
-            }
-        }
-    }
 
     private func refreshIsImporting() {
         let importing = activeProgress != nil
         if importing != isImporting {
             isImporting = importing
-            refreshShowsIndicator()
         }
     }
 
@@ -140,10 +92,6 @@ final class ImportViewModel {
         await listener.value
         progress = nil
         summary = ImportSummary(result)
-        if isDetailsOpen {
-            isSummaryPending = true
-        } else {
-            isShowingSummary = true
-        }
+        isShowingSummary = true
     }
 }

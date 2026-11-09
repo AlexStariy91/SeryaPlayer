@@ -2,9 +2,7 @@ import DesignSystem
 import Domain
 import SwiftUI
 
-/// The progress ring itself. One view for every state (preparing, running, finished), so the bar item that
-/// hosts it is never replaced mid-import: on iOS 26 a popover morphs out of its source button and crashes
-/// UIKit if that view is swapped or removed while the popover is up.
+/// The progress ring itself. One view for every state (preparing, running), so it is never replaced mid-import.
 struct ImportProgressRing: View {
     let progress: ImportProgress
 
@@ -31,79 +29,34 @@ struct ImportProgressRing: View {
     }
 }
 
-/// The bar item: the ring plus a popover with the counts. The popover is only ever opened and closed by the
-/// user. The item outlives the import until the popover is gone (`ImportViewModel.showsIndicator`), and the
-/// popover shows a "done" state if the import ends while it is open.
+/// The ring bound to the import: a plain, non-interactive progress indicator (no button, no popover). It
+/// observes progress itself, so the toolbar that hosts it is not rebuilt per tick.
 struct ImportProgressIndicator: View {
     let importer: ImportViewModel
-    @State private var isShowingDetails = false
 
     var body: some View {
-        Button {
-            isShowingDetails = true
-        } label: {
-            ImportProgressRing(progress: importer.activeProgress ?? ImportProgress(completed: 1, total: 1))
-        }
-        .popover(isPresented: $isShowingDetails) {
-            ImportProgressDetails(importer: importer)
-                .presentationCompactAdaptation(.popover)
-                .onAppear(perform: importer.detailsDidAppear)
-                .onDisappear(perform: importer.detailsDidDisappear)
-        }
-        .onDisappear {
-            // The item left the hierarchy (screen popped): make sure the bar does not wait for a popover.
-            importer.detailsDidDisappear()
-        }
-        .accessibilityLabel(label)
-        .accessibilityIdentifier("library.importProgress")
+        ImportProgressRing(progress: importer.activeProgress ?? ImportProgress(completed: 1, total: 1))
+            .accessibilityElement()
+            .accessibilityLabel(label)
+            .accessibilityAddTraits(.updatesFrequently)
+            .accessibilityIdentifier("library.importProgress")
     }
 
     private var label: String {
-        guard let progress = importer.activeProgress else {
-            return String(localized: "Import Complete", bundle: .module)
+        guard let progress = importer.activeProgress, progress.total > 0 else {
+            return String(localized: "Preparing Import…", bundle: .module)
         }
-        return progress.total > 0
-            ? String(localized: "Importing, \(progress.completed) of \(progress.total)", bundle: .module)
-            : String(localized: "Preparing Import…", bundle: .module)
-    }
-}
-
-private struct ImportProgressDetails: View {
-    let importer: ImportViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
-            if let progress = importer.activeProgress {
-                if progress.total > 0 {
-                    Text("Importing \(progress.completed) of \(progress.total)", bundle: .module)
-                        .monospacedDigit()
-                    ProgressView(value: Double(progress.completed), total: Double(progress.total))
-                } else {
-                    Text("Preparing Import…", bundle: .module)
-                    ProgressView().progressViewStyle(.linear)
-                }
-            } else {
-                Text("Import Complete", bundle: .module)
-                if let summary = importer.summary {
-                    Text(summary.message)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .font(.subheadline)
-        .padding()
-        .frame(minWidth: 220, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        return String(localized: "Importing, \(progress.completed) of \(progress.total)", bundle: .module)
     }
 }
 
 extension View {
-    /// Adds the import progress ring as a trailing toolbar item while an import runs. Apply on every Library
-    /// screen so progress stays visible while browsing.
+    /// Adds the import progress ring as a trailing toolbar item while an import runs. Apply on every pushed
+    /// Library screen so progress stays visible while browsing; Library home swaps it in for "+" instead.
     func importProgressIndicator(_ importer: ImportViewModel) -> some View {
         toolbar {
             // Only presence is read here; the ring observes progress itself, so the toolbar is not rebuilt per tick.
-            if importer.showsIndicator {
+            if importer.isImporting {
                 ToolbarItem(placement: .primaryAction) {
                     ImportProgressIndicator(importer: importer)
                 }
