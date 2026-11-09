@@ -48,7 +48,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `tab-haptics` | — | App | orchestrator + user | ✅ #25 |
 | — | `mini-glass-flash` | — | DesignSystem, PlayerFeature, App | Opus | ✅ #26 |
 | — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
-| — | `perf-audit` | — | measurement only (harness on local branch `ws/perf-audit`) | Sonnet | ✅ report, no PR |
+| — | `perf-audit` | — | measurement only (harness discarded 2026-11-09) | Sonnet | ✅ report, no PR |
 | — | `perf-fix` | — | Domain, DataLayer, Library, Folders, Playback, PlayerFeature | Opus | ✅ #29 |
 | — | `import-banner` | — | LibraryFeature, DesignSystem, App (UI-test hook) | Sonnet | ✅ #30 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
@@ -164,15 +164,16 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 ## Open questions
 
-- Perf harness (`AppUITests/PerfUITests.swift`, `App/Sources/PerfSupport.swift`, `scripts/perf/`) lives only on
-  the local branch `ws/perf-audit` (8bd97f1); decide whether to land it as opt-in tooling.
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
   occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
+- UI tests are not run on iOS 26 (CI or locally by default); `EqualizerUITests.testDeletingTheActivePresetKeepsPlaying`
+  fails on the iOS 26.3 simulator, app behaviour verified on device.
 - Toolchain drift: CI builds with Xcode 26.3 (lint on the image default) and the latest SwiftFormat; local is Xcode 26.3
   (16.1 kept) and SwiftFormat 0.64.4. Local SwiftLint 0.53 crashes under Xcode 26.3: lint with `DEVELOPER_DIR` = Xcode 16.1.
   CI is the reference — run `brew upgrade swiftformat` locally.
 
-- A rate change from a remote command (Control Center, headphones) isn't persisted to settings (minor).
+- A rate change from a remote command (`changePlaybackRateCommand`, e.g. CarPlay) isn't persisted to settings.
+  Not reachable on the user's iPhone (no rate control in Control Center or the widget); left as is.
 - Xcode 26.3 is the newest Xcode this Mac (macOS 15.7.5) can run; 26.4+ needs Tahoe 26.2.
 - Library perf tests (`groupsTenThousandTracks`, `handlesTenThousandTracksWithFastSearch`) use wall-clock limits
   that slow CI runners occasionally miss on the iOS 26 job; loosen them if they start failing often.
@@ -286,7 +287,9 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - 2026-11-09 — #30: import progress ring instead of the banner, after several device rounds (a popover crash on
   iOS 26 on push, the ring starting non-empty, a button-like glass platter, a late-drawn track). Background CPU
   check closed by code review. `EqualizerUITests.testDeletingTheActivePresetKeepsPlaying` fails on the iOS 26.3
-  simulator locally (also before #30; CI's UI job runs iOS 18 and is green).
+  simulator locally (also before #30). Deleting the active preset works on an iPhone with iOS 26 (selection falls
+  back to Custom), so the test's iOS 26 navigation is the likely culprit. CI runs UI and snapshot tests on iOS 18
+  only; iOS 26 gets unit tests only. The perf harness (`ws/perf-audit`) was discarded by the user's decision.
 
 - 2026-11-08 — perf audit (measure only) on the simulator at 10k tracks, then #29: library-write and
   track-change stalls fixed after two device rounds (auto-advance hitch from the engine pause/start and the iOS 26
