@@ -245,7 +245,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] Playlists: CRUD, track picker, drag to reorder, collage cover
 - [x] Folders: tree, CRUD, move, delete with a choice, manual order, multi-select with Select All, play/shuffle a folder (context menu), search
 - [x] Empty states
-- [ ] 10,000 tracks scroll smoothly (fixed for 150+ in #13; not measured at 10,000)
+- [x] 10,000 tracks scroll smoothly (fixed for 150+ in #13; measured fine at 10,000 in the perf audit, #29)
 - [x] View model tests, playlist UI test, snapshots
 
 ### Stage 6. Equalizer — `equalizer`
