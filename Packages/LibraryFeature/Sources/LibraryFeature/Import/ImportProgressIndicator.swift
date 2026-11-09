@@ -76,14 +76,24 @@ struct ImportProgressIndicator: View {
     }
 }
 
+/// Reads the live progress so only this small view (not the toolbar) updates per tick.
+private struct ImportProgressObserver: View {
+    let importer: ImportViewModel
+
+    var body: some View {
+        ImportProgressIndicator(progress: importer.activeProgress ?? ImportProgress(completed: 0, total: 0))
+    }
+}
+
 extension View {
     /// Adds the import progress ring as a trailing toolbar item while an import runs. Apply on every Library
     /// screen so progress stays visible while browsing.
     func importProgressIndicator(_ importer: ImportViewModel) -> some View {
         toolbar {
-            if let progress = importer.activeProgress {
+            // Only presence is read here; the ring observes progress itself, so the toolbar is not rebuilt per tick.
+            if importer.isImporting {
                 ToolbarItem(placement: .primaryAction) {
-                    ImportProgressIndicator(progress: progress)
+                    ImportProgressObserver(importer: importer)
                 }
             }
         }
