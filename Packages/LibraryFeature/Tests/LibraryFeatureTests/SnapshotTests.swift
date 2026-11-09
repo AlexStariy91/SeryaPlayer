@@ -81,6 +81,25 @@ struct SnapshotTests {
         }
     }
 
+    /// The import ring sits in the navigation bar next to "+" and leaves the large title alone.
+    @Test func homeImporting() async throws {
+        let (_, context) = try await loadedContext()
+        check("homeImporting") {
+            NavigationStack {
+                LibraryHomeView(context: context)
+                    .navigationTitle("Library")
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            ImportProgressIndicator(progress: ImportProgress(completed: 340, total: 1000))
+                        }
+                        ToolbarItem(placement: .primaryAction) {
+                            Image(systemName: "plus")
+                        }
+                    }
+            }
+        }
+    }
+
     @Test func emptyLibrary() async throws {
         let (_, context) = try await loadedContext(tracks: [])
         check("empty") {

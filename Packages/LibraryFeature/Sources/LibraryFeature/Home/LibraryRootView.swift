@@ -17,14 +17,8 @@ struct LibraryRootView: View {
         @Bindable var importer = context.importer
         NavigationStack(path: $path) {
             LibraryHomeView(context: context)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if let progress = importer.activeProgress {
-                        ImportProgressBanner(progress: progress)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                }
-                .animation(.default, value: importer.isImporting)
                 .navigationTitle(Text("Library", bundle: .module))
+                .importProgressIndicator(importer)
                 .toolbar { toolbar }
                 .navigationDestination(for: LibraryRoute.self, destination: destination)
         }

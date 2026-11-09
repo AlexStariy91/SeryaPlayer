@@ -49,6 +49,7 @@ struct PlaylistDetailView: View {
         }
         .listStyle(.plain)
         .navigationTitle(context.store.playlist(id: viewModel.playlistID)?.name ?? "")
+        .importProgressIndicator(context.importer)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {

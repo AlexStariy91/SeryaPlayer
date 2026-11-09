@@ -24,6 +24,7 @@ struct ArtistsView: View {
         }
         .listStyle(.plain)
         .navigationTitle(Text("Artists", bundle: .module))
+        .importProgressIndicator(context.importer)
         .overlay {
             if context.store.artists.isEmpty {
                 ContentUnavailableView(String(localized: "No Artists", bundle: .module), systemImage: "music.mic")

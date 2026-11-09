@@ -549,6 +549,16 @@
         }
       }
     },
+    "Importing, %lld of %lld" : {
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Импорт, %lld из %lld"
+          }
+        }
+      }
+    },
     "Library" : {
       "localizations" : {
         "ru" : {

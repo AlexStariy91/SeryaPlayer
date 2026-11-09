@@ -31,6 +31,7 @@ struct TrackGroupView: View {
             .listStyle(.plain)
             .navigationTitle(group.kind == .artist ? Strings.artist(group.name) : Strings.album(group.name))
             .navigationBarTitleDisplayMode(.inline)
+            .importProgressIndicator(context.importer)
         } else {
             // The last track of this artist/album was deleted while the screen was open.
             ContentUnavailableView(String(localized: "No Songs", bundle: .module), systemImage: "music.note")

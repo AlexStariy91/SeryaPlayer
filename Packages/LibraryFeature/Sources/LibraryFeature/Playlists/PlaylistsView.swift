@@ -43,6 +43,7 @@ struct PlaylistsView: View {
         }
         .listStyle(.plain)
         .navigationTitle(Text("Playlists", bundle: .module))
+        .importProgressIndicator(context.importer)
         .alert(naming?.title ?? "", isPresented: isNaming) {
             TextField(String(localized: "Name", bundle: .module), text: $name)
             Button(String(localized: "Cancel", bundle: .module), role: .cancel) {}
