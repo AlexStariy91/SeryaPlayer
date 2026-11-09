@@ -90,10 +90,7 @@ public final class CoreDataPlaylistRepository: PlaylistRepository {
             let removed = try context.fetch(request)
             let playlists = Set(removed.compactMap(\.playlist))
             removed.forEach(context.delete)
-            for playlist in playlists {
-                let remaining = playlist.entries.filter { !$0.isDeleted }.sorted { $0.sortIndex < $1.sortIndex }
-                Self.renumber(remaining)
-            }
+            Self.renumberRemainingEntries(in: playlists)
         }
     }
 
@@ -102,6 +99,15 @@ public final class CoreDataPlaylistRepository: PlaylistRepository {
         request.predicate = NSPredicate(format: "playlist.id == %@", playlistID as CVarArg)
         request.sortDescriptors = [NSSortDescriptor(key: "sortIndex", ascending: true)]
         return request
+    }
+
+    /// Renumbers the live entries of each playlist contiguously from 0, keeping their order.
+    /// Call it after deleting entries in the same write.
+    static func renumberRemainingEntries(in playlists: some Sequence<CDPlaylist>) {
+        for playlist in playlists where !playlist.isDeleted {
+            let remaining = playlist.entries.filter { !$0.isDeleted }.sorted { $0.sortIndex < $1.sortIndex }
+            renumber(remaining)
+        }
     }
 
     private static func renumber(_ entries: [CDPlaylistEntry]) {

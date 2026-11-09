@@ -117,6 +117,33 @@ struct PlaylistRepositoryTests {
         #expect(try await value(from: stream) { $0.count == 1 }.map(\.trackID) == [c.id])
     }
 
+    @Test func deletingTracksRenumbersEntriesOfEveryAffectedPlaylist() async throws {
+        let a = makeTrack(title: "A")
+        let b = makeTrack(title: "B")
+        let c = makeTrack(title: "C")
+        try await tracks.add([a, b, c])
+        let first = Playlist(name: "First")
+        let second = Playlist(name: "Second")
+        let untouched = Playlist(name: "Untouched")
+        for playlist in [first, second, untouched] {
+            try await playlists.create(playlist)
+        }
+        try await playlists.append(trackIDs: [a.id, b.id, c.id, a.id, c.id], to: first.id)
+        try await playlists.append(trackIDs: [c.id, b.id, a.id], to: second.id)
+        try await playlists.append(trackIDs: [b.id, c.id], to: untouched.id)
+
+        try await tracks.delete(ids: [a.id])
+
+        let firstEntries = try await value(from: playlists.observeEntries(of: first.id)) { $0.count == 3 }
+        #expect(firstEntries.map(\.trackID) == [b.id, c.id, c.id])
+        #expect(firstEntries.map(\.sortIndex) == [0, 1, 2])
+        let secondEntries = try await value(from: playlists.observeEntries(of: second.id)) { $0.count == 2 }
+        #expect(secondEntries.map(\.trackID) == [c.id, b.id])
+        #expect(secondEntries.map(\.sortIndex) == [0, 1])
+        let untouchedEntries = try await value(from: playlists.observeEntries(of: untouched.id)) { $0.count == 2 }
+        #expect(untouchedEntries.map(\.sortIndex) == [0, 1])
+    }
+
     @Test func moveElementsMatchesSwiftUISemantics() {
         var items = ["a", "b", "c", "d", "e"]
         items.moveElements(fromOffsets: [1, 3], toOffset: 5)

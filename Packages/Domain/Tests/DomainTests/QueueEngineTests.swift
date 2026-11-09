@@ -383,3 +383,125 @@ struct QueueEditingTests {
         #expect(e.current == next)
     }
 }
+
+struct QueueDuplicateOccurrenceTests {
+    @Test func unshuffleKeepsSecondOccurrenceCurrent() {
+        let q = ids(4)
+        let queue = q + [q[0]]
+        for seed in UInt64(1) ... 20 {
+            var rng = SeededGenerator(seed: seed)
+            var e = QueueEngine()
+            e.start(with: queue, at: 4, shuffled: true, using: &rng)
+            #expect(e.current == q[0])
+            e.setShuffle(false, using: &rng)
+            #expect(e.items == queue)
+            #expect(e.currentIndex == 4)
+        }
+    }
+
+    @Test func jumpingToEitherShuffledOccurrenceMapsToDistinctOriginalPositions() {
+        let q = ids(4)
+        let queue = q + [q[0]]
+        for seed in UInt64(1) ... 20 {
+            var rng = SeededGenerator(seed: seed)
+            var shuffled = QueueEngine()
+            shuffled.start(with: queue, at: 1, shuffled: true, using: &rng)
+            let occurrences = shuffled.items.indices.filter { shuffled.items[$0] == q[0] }
+            #expect(occurrences.count == 2)
+            var restored: Set<Int> = []
+            for index in occurrences {
+                var e = shuffled
+                e.jump(to: index)
+                e.setShuffle(false, using: &rng)
+                restored.insert(e.currentIndex ?? -1)
+            }
+            #expect(restored == [0, 4])
+        }
+    }
+
+    @Test func occurrenceSurvivesAppendWhileShuffled() {
+        let q = ids(4)
+        var rng = SeededGenerator(seed: 5)
+        var e = QueueEngine()
+        e.start(with: q, at: 0, shuffled: true, using: &rng)
+        e.append([q[0]])
+        e.jump(to: e.items.count - 1)
+        #expect(e.current == q[0])
+        e.setShuffle(false, using: &rng)
+        #expect(e.items == q + [q[0]])
+        #expect(e.currentIndex == 4)
+    }
+
+    @Test func playNextDuplicateWhileShuffledIsRestoredAfterCurrent() {
+        let q = ids(5)
+        for seed in UInt64(1) ... 20 {
+            var rng = SeededGenerator(seed: seed)
+            var e = QueueEngine()
+            e.start(with: q, at: 2, shuffled: true, using: &rng)
+            e.insertNext([q[2]])
+            #expect(e.items[1] == q[2])
+            e.jump(to: 1)
+            e.setShuffle(false, using: &rng)
+            #expect(e.items == [q[0], q[1], q[2], q[2], q[3], q[4]])
+            #expect(e.currentIndex == 3)
+        }
+    }
+
+    @Test func playNextTwiceKeepsLaterOccurrenceAfterMoreMutations() throws {
+        let q = ids(4)
+        var rng = SeededGenerator(seed: 9)
+        var e = QueueEngine()
+        e.start(with: q, at: 1, shuffled: true, using: &rng)
+        e.insertNext([q[1]])
+        e.append([q[3]])
+        e.move(fromOffsets: [1], toOffset: e.items.count)
+        e.remove(atOffsets: [e.items.count - 1])
+        // Still the original current (first q[1]) is not guaranteed to be at index 0 after the move; jump to the first one.
+        try e.jump(to: #require(e.items.firstIndex(of: q[1])))
+        e.setShuffle(false, using: &rng)
+        #expect(e.items.count == 5)
+        #expect(try e.items[#require(e.currentIndex)] == q[1])
+    }
+
+    @Test func removingOneOccurrenceWhileShuffledKeepsTheOther() throws {
+        let q = ids(3)
+        let queue = q + [q[0]]
+        var rng = SeededGenerator(seed: 4)
+        var e = QueueEngine()
+        e.start(with: queue, at: 3, shuffled: true, using: &rng)
+        // Current is the second q[0] and sits first; remove the other occurrence.
+        let other = try #require(e.items.lastIndex(of: q[0]))
+        e.remove(atOffsets: [other])
+        #expect(e.originalOrder.count == 3)
+        e.setShuffle(false, using: &rng)
+        #expect(e.items == e.originalOrder)
+        #expect(e.current == q[0])
+    }
+
+    @Test func queueWithoutDuplicatesUnshufflesToTheSameIndexAsBefore() throws {
+        let q = ids(8)
+        for seed in UInt64(1) ... 20 {
+            var rng = SeededGenerator(seed: seed)
+            var e = QueueEngine()
+            e.start(with: q, at: 5, shuffled: true, using: &rng)
+            e.jump(to: 3)
+            let id = try #require(e.current)
+            e.setShuffle(false, using: &rng)
+            #expect(e.items == q)
+            #expect(e.currentIndex == q.firstIndex(of: id))
+        }
+    }
+
+    @Test func restoredStateFallsBackToMatchingDuplicatesInOrder() {
+        let q = ids(3)
+        let queue = q + [q[0]]
+        var rng = SeededGenerator(seed: 2)
+        var e = QueueEngine()
+        e.start(with: queue, at: 1, shuffled: true, using: &rng)
+        var restored = QueueEngine(state: e.state(position: 0))
+        #expect(restored == e)
+        restored.setShuffle(false, using: &rng)
+        #expect(restored.items == queue)
+        #expect(restored.current == e.current)
+    }
+}
