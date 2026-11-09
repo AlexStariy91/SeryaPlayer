@@ -279,7 +279,8 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
 - [x] Accessibility: audited, gaps accepted (see Decisions, 2026-11-06)
 - [x] Performance: audited at 10k tracks on iOS 18.1 and 26.3, stalls fixed (#29)
-- [ ] Full run on iOS 18 and 26 (a device checklist was drafted 2026-11-09; the user skipped the run for now)
+- ~~Full run on iOS 18 and 26~~ dropped 2026-11-09 by the user's decision; each change is checked on an iPhone
+  before merging instead
 
 ## Log
 
