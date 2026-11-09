@@ -50,9 +50,12 @@ final class EqualizerUITests: XCTestCase {
         let swipeDelete = app.buttons["Delete"].firstMatch
         XCTAssertTrue(swipeDelete.waitForExistence(timeout: 5))
         swipeDelete.tap()
-        // The confirmation dialog is an action sheet on iPhone.
-        let confirm = app.sheets.buttons["Delete"].firstMatch
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        // The confirmation is an action sheet on iOS 18 and an alert on iOS 26.
+        let sheetDelete = app.sheets.buttons["Delete"].firstMatch
+        let alertDelete = app.alerts.buttons["Delete"].firstMatch
+        let shown = NSPredicate { _, _ in sheetDelete.exists || alertDelete.exists }
+        wait(for: [XCTNSPredicateExpectation(predicate: shown, object: nil)], timeout: 5)
+        let confirm = sheetDelete.exists ? sheetDelete : alertDelete
         confirm.tap()
 
         XCTAssertTrue(app.staticTexts["No Saved Presets"].waitForExistence(timeout: 5))
