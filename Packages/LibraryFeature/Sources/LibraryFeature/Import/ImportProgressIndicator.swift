@@ -6,6 +6,12 @@ import SwiftUI
 /// downloads). Tapping it opens a popover with the counts. Leaves the title area to the system.
 struct ImportProgressIndicator: View {
     let progress: ImportProgress
+    /// Called when the popover has appeared / is completely gone, so the owner can keep this view in the bar
+    /// until then.
+    var onDetailsAppear: () -> Void = {}
+    var onDetailsDisappear: () -> Void = {}
+    /// The popover is dismissed as soon as this turns false (the import finished).
+    var isActive = true
     @State private var isShowingDetails = false
 
     var body: some View {
@@ -15,9 +21,21 @@ struct ImportProgressIndicator: View {
             ring
                 .frame(width: 22, height: 22)
         }
-        .popover(isPresented: $isShowingDetails) {
+        .popover(isPresented: Binding(get: { isShowingDetails && isActive }, set: { isShowingDetails = $0 })) {
             details
                 .presentationCompactAdaptation(.popover)
+                .onAppear(perform: onDetailsAppear)
+                .onDisappear(perform: onDetailsDisappear)
+        }
+        .onChange(of: isActive) { _, active in
+            if !active {
+                isShowingDetails = false
+            }
+        }
+        .onDisappear {
+            // The bar item left the hierarchy (screen popped): no popover may outlive its anchor.
+            isShowingDetails = false
+            onDetailsDisappear()
         }
         .accessibilityLabel(label)
         .accessibilityIdentifier("library.importProgress")
@@ -81,7 +99,12 @@ private struct ImportProgressObserver: View {
     let importer: ImportViewModel
 
     var body: some View {
-        ImportProgressIndicator(progress: importer.activeProgress ?? ImportProgress(completed: 0, total: 0))
+        ImportProgressIndicator(
+            progress: importer.activeProgress ?? ImportProgress(completed: 1, total: 1),
+            onDetailsAppear: importer.detailsDidAppear,
+            onDetailsDisappear: importer.detailsDidDisappear,
+            isActive: importer.isImporting
+        )
     }
 }
 
@@ -91,7 +114,7 @@ extension View {
     func importProgressIndicator(_ importer: ImportViewModel) -> some View {
         toolbar {
             // Only presence is read here; the ring observes progress itself, so the toolbar is not rebuilt per tick.
-            if importer.isImporting {
+            if importer.showsIndicator {
                 ToolbarItem(placement: .primaryAction) {
                     ImportProgressObserver(importer: importer)
                 }

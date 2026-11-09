@@ -45,6 +45,30 @@ final class ImportViewModel {
     /// presence, the disabled "+") must not be invalidated by every progress tick.
     private(set) var isImporting = false
 
+    /// True while the progress popover is on screen (including its dismissal). The toolbar item that anchors the
+    /// popover must outlive it: removing a popover's source button mid-presentation crashes UIKit on iOS 26.
+    private(set) var isDetailsOpen = false
+    /// A finished import's summary waits for the popover to go: an alert presented over it is dropped.
+    @ObservationIgnored private var isSummaryPending = false
+
+    /// Whether the toolbar item should exist: while importing, and until the popover is fully gone.
+    var showsIndicator: Bool {
+        isImporting || isDetailsOpen
+    }
+
+    func detailsDidAppear() {
+        isDetailsOpen = true
+    }
+
+    func detailsDidDisappear() {
+        guard isDetailsOpen else { return }
+        isDetailsOpen = false
+        if isSummaryPending {
+            isSummaryPending = false
+            isShowingSummary = true
+        }
+    }
+
     private func refreshIsImporting() {
         let importing = activeProgress != nil
         if importing != isImporting {
@@ -92,6 +116,10 @@ final class ImportViewModel {
         await listener.value
         progress = nil
         summary = ImportSummary(result)
-        isShowingSummary = true
+        if isDetailsOpen {
+            isSummaryPending = true
+        } else {
+            isShowingSummary = true
+        }
     }
 }
