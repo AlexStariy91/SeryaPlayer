@@ -8,7 +8,7 @@ struct ImportProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(.tertiary, lineWidth: Self.lineWidth)
+            Circle().stroke(Self.trackColor, lineWidth: Self.lineWidth)
             Circle()
                 .trim(from: 0, to: fraction)
                 .stroke(.tint, style: StrokeStyle(lineWidth: Self.lineWidth, lineCap: .round))
@@ -23,6 +23,10 @@ struct ImportProgressRing: View {
     }
 
     private static let lineWidth: CGFloat = 3
+
+    /// A concrete color, not the hierarchical `.tertiary`: a toolbar item inserted during a push or pop resolves
+    /// hierarchical styles only after its transition, so the track was missing for about half a second.
+    private static let trackColor = Color(uiColor: .systemGray4)
 
     private var fraction: Double {
         Self.fraction(of: progress)
