@@ -6,13 +6,19 @@ import Foundation
 ///
 /// Invariant: while shuffle is off, `originalOrder == items`. While it is on, `originalOrder` holds
 /// the order to restore and `items` the shuffled playback order. A track may occur in the queue
-/// more than once; when the original position of a track has to be found, its first occurrence is used.
-public struct QueueEngine: Sendable, Equatable {
+/// more than once, so while shuffled the engine also remembers, for every item, which position of
+/// `originalOrder` it came from (`originalPositions`). That keeps the current occurrence current when
+/// shuffle is turned off. The positions are not persisted: after `init(state:)` they are rebuilt by matching
+/// duplicates in order of appearance, so after a relaunch the occurrence may differ for duplicated tracks.
+public struct QueueEngine: Sendable {
     public private(set) var items: [Track.ID] = []
     public private(set) var originalOrder: [Track.ID] = []
     public private(set) var currentIndex: Int?
     public private(set) var isShuffled = false
     public var repeatMode: RepeatMode = .off
+
+    /// While shuffled: `originalPositions[i]` is the index in `originalOrder` of `items[i]`. Empty otherwise.
+    private var originalPositions: [Int] = []
 
     /// Threshold for "Previous": after this time the button restarts the current track.
     public static let restartThreshold: TimeInterval = 3
@@ -25,6 +31,42 @@ public struct QueueEngine: Sendable, Equatable {
         currentIndex = state.currentIndex
         isShuffled = state.isShuffled
         repeatMode = state.repeatMode
+        if isShuffled {
+            originalPositions = Self.matchPositions(items: items, originalOrder: originalOrder)
+        }
+    }
+
+    private var hasPositions: Bool {
+        !originalPositions.isEmpty && originalPositions.count == items.count
+    }
+
+    /// Index in `originalOrder` of the item at `index`: exact when tracked, else the first occurrence of its ID.
+    private func originalPosition(ofItemAt index: Int) -> Int? {
+        guard items.indices.contains(index) else { return nil }
+        if hasPositions {
+            return originalPositions[index]
+        }
+        return originalOrder.firstIndex(of: items[index])
+    }
+
+    /// Pairs each item with an unused position of the same ID in `originalOrder`, in order of appearance.
+    /// Returns an empty array if `items` is not a permutation of `originalOrder`.
+    private static func matchPositions(items: [Track.ID], originalOrder: [Track.ID]) -> [Int] {
+        var free: [Track.ID: [Int]] = [:]
+        for (position, id) in originalOrder.enumerated().reversed() {
+            free[id, default: []].append(position)
+        }
+        var result: [Int] = []
+        for id in items {
+            guard let position = free[id]?.popLast() else { return [] }
+            result.append(position)
+        }
+        return result
+    }
+
+    public static func == (lhs: QueueEngine, rhs: QueueEngine) -> Bool {
+        lhs.items == rhs.items && lhs.originalOrder == rhs.originalOrder && lhs.currentIndex == rhs.currentIndex
+            && lhs.isShuffled == rhs.isShuffled && lhs.repeatMode == rhs.repeatMode
     }
 
     public var current: Track.ID? {
@@ -47,6 +89,7 @@ public struct QueueEngine: Sendable, Equatable {
         originalOrder = ids
         items = ids
         isShuffled = false
+        originalPositions = []
         currentIndex = ids.isEmpty ? nil : min(max(index, 0), ids.count - 1)
         if shuffled {
             setShuffle(true, using: &rng)
@@ -94,19 +137,23 @@ public struct QueueEngine: Sendable, Equatable {
         isShuffled = enabled
         if enabled {
             originalOrder = items
+            var order = Array(items.indices)
             if let index = currentIndex, items.indices.contains(index) {
-                var rest = items
+                var rest = order
                 let first = rest.remove(at: index)
                 Self.fisherYates(&rest, using: &rng)
-                items = [first] + rest
+                order = [first] + rest
                 currentIndex = 0
             } else {
-                Self.fisherYates(&items, using: &rng)
+                Self.fisherYates(&order, using: &rng)
             }
+            items = order.map { originalOrder[$0] }
+            originalPositions = order
         } else {
-            let currentID = current
+            let restoredIndex = currentIndex.flatMap { originalPosition(ofItemAt: $0) }
             items = originalOrder
-            currentIndex = currentID.flatMap { items.firstIndex(of: $0) }
+            currentIndex = restoredIndex
+            originalPositions = []
         }
     }
 
@@ -114,10 +161,15 @@ public struct QueueEngine: Sendable, Equatable {
     public mutating func insertNext(_ ids: [Track.ID]) {
         guard !ids.isEmpty else { return }
         let position = currentIndex.map { $0 + 1 } ?? items.count
+        let tracked = hasPositions
+        let originalPosition = currentIndex.flatMap { self.originalPosition(ofItemAt: $0) }.map { $0 + 1 } ?? originalOrder.count
         items.insert(contentsOf: ids, at: position)
         if isShuffled {
-            let originalPosition = current.flatMap { id in originalOrder.firstIndex(of: id) }.map { $0 + 1 } ?? originalOrder.count
             originalOrder.insert(contentsOf: ids, at: originalPosition)
+            if tracked {
+                originalPositions = originalPositions.map { $0 >= originalPosition ? $0 + ids.count : $0 }
+                originalPositions.insert(contentsOf: originalPosition ..< originalPosition + ids.count, at: min(position, originalPositions.count))
+            }
         } else {
             originalOrder = items
         }
@@ -126,6 +178,9 @@ public struct QueueEngine: Sendable, Equatable {
     /// Adds to the end of the queue (Play Last).
     public mutating func append(_ ids: [Track.ID]) {
         guard !ids.isEmpty else { return }
+        if hasPositions {
+            originalPositions.append(contentsOf: originalOrder.count ..< originalOrder.count + ids.count)
+        }
         items.append(contentsOf: ids)
         originalOrder.append(contentsOf: ids)
     }
@@ -144,6 +199,9 @@ public struct QueueEngine: Sendable, Equatable {
         let insertionPoint = destination - moving.filter { $0 < destination }.count
         order.insert(contentsOf: moved, at: insertionPoint)
         items = order.map { items[$0] }
+        if hasPositions {
+            originalPositions = order.map { originalPositions[$0] }
+        }
         currentIndex = currentIndex.flatMap { order.firstIndex(of: $0) }
         if !isShuffled {
             originalOrder = items
@@ -155,17 +213,24 @@ public struct QueueEngine: Sendable, Equatable {
     public mutating func remove(atOffsets offsets: IndexSet) {
         let removed = offsets.filter { items.indices.contains($0) }
         guard !removed.isEmpty else { return }
-        let removedIDs = removed.map { items[$0] }
         let removedBeforeCurrent = currentIndex.map { index in removed.filter { $0 < index }.count } ?? 0
         let currentWasRemoved = currentIndex.map { removed.contains($0) } ?? false
 
+        let removedPositions = removed.compactMap { originalPosition(ofItemAt: $0) }
+        let tracked = hasPositions
         for offset in removed.reversed() {
             items.remove(at: offset)
         }
         if isShuffled {
-            for id in removedIDs {
-                if let position = originalOrder.firstIndex(of: id) {
-                    originalOrder.remove(at: position)
+            for position in removedPositions.sorted(by: >) {
+                originalOrder.remove(at: position)
+            }
+            if tracked {
+                for offset in removed.reversed() {
+                    originalPositions.remove(at: offset)
+                }
+                originalPositions = originalPositions.map { position in
+                    position - removedPositions.filter { $0 < position }.count
                 }
             }
         } else {
@@ -189,7 +254,7 @@ public struct QueueEngine: Sendable, Equatable {
         currentIndex = index
     }
 
-    private static func fisherYates(_ array: inout [Track.ID], using rng: inout some RandomNumberGenerator) {
+    private static func fisherYates(_ array: inout [some Any], using rng: inout some RandomNumberGenerator) {
         guard array.count > 1 else { return }
         for i in stride(from: array.count - 1, to: 0, by: -1) {
             let j = Int.random(in: 0 ... i, using: &rng)
