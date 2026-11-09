@@ -89,7 +89,7 @@ struct SnapshotTests {
                 LibraryHomeView(context: context)
                     .navigationTitle("Library")
                     .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
+                        StatusToolbarItem(placement: .primaryAction) {
                             ImportProgressRing(progress: ImportProgress(completed: 340, total: 1000))
                         }
                     }
@@ -126,7 +126,7 @@ struct SnapshotTests {
             NavigationStack {
                 AllTracksView(context: context, viewModel: viewModel)
                     .toolbar {
-                        ToolbarItem(placement: .primaryAction) {
+                        StatusToolbarItem(placement: .primaryAction) {
                             ImportProgressRing(progress: ImportProgress(completed: 340, total: 1000))
                         }
                     }

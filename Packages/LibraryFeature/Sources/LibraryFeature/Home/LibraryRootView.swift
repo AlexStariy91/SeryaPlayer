@@ -47,7 +47,7 @@ struct LibraryRootView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
+        StatusToolbarItem(placement: .primaryAction, hidesBackground: context.importer.isImporting) {
             // One slot: the ring replaces "+" while an import runs (only one import runs at a time), and the
             // observed flag changes on start and end only, never per tick.
             if context.importer.isImporting {

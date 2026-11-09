@@ -41,6 +41,7 @@ struct ImportProgressIndicator: View {
 
     var body: some View {
         ImportProgressRing(progress: importer.activeProgress)
+            .allowsHitTesting(false)
             .accessibilityElement()
             .accessibilityLabel(label)
             .accessibilityAddTraits(.updatesFrequently)
@@ -62,7 +63,7 @@ extension View {
         toolbar {
             // Only presence is read here; the ring observes progress itself, so the toolbar is not rebuilt per tick.
             if importer.isImporting {
-                ToolbarItem(placement: .primaryAction) {
+                StatusToolbarItem(placement: .primaryAction) {
                     ImportProgressIndicator(importer: importer)
                 }
             }
