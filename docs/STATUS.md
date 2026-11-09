@@ -1,7 +1,7 @@
 # STATUS — progress
 
 > Maintained by the orchestrator (the main session). Workstreams don't edit this file; they report in their PRs.
-> Updated: 2026-11-08
+> Updated: 2026-11-09
 
 ## Now
 
@@ -12,6 +12,7 @@ visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). Mini player glass after the swipe-dismiss on
 iOS 26 and a graphite look for tracks without artwork (#26). Launch screen and icon in the Library's colours (#27).
 Perf audit at 10k tracks (iOS 18.1 and 26.3), then main-thread stalls on library writes and track changes fixed (#29).
+Import progress is a toolbar ring instead of the top banner (#30).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -49,6 +50,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
 | — | `perf-audit` | — | measurement only (harness on local branch `ws/perf-audit`) | Sonnet | ✅ report, no PR |
 | — | `perf-fix` | — | Domain, DataLayer, Library, Folders, Playback, PlayerFeature | Opus | ✅ #29 |
+| — | `import-banner` | — | LibraryFeature, DesignSystem, App (UI-test hook) | Sonnet | ✅ #30 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
 ## Decisions and deviations from the plan
@@ -145,14 +147,23 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   longer re-map the library; library/folder state is derived off the main actor; track-list updates are coalesced
   (300 ms, user-initiated QoS); import saves in batches of 50, tracks saved with their folder in one write; automatic
   track changes keep the audio engine running (an idle engine pauses on the next main-actor turn); on iOS 26 track
-  changes no longer re-set the mini player accessory. Checked on an iPhone. Deferred: background CPU (visualizer tap
-  may run with no visible view), search latency, launch time at 10k, ~15 ms `AVAudioPlayerNode` stop+play per
+  changes no longer re-set the mini player accessory. Checked on an iPhone. Deferred: search latency, launch time at 10k, ~15 ms `AVAudioPlayerNode` stop+play per
   automatic change. ~70% CPU (of one core) during a fast fling of a 1,000-row list is normal SwiftUI `List` cost.
+  Background CPU checked 2026-11-09 and closed: the spectrum tap is installed only while a visible view subscribes
+  and the bars and visualizer stop outside `scenePhase == .active` (0% CPU measured with the app in background).
+- 2026-11-09. Import progress (#30): the top banner that overlapped the large title is replaced by a progress ring
+  in the toolbar: in place of "+" on Library home, as a separate item on pushed Library screens. The ring is not
+  interactive and has no glass platter on iOS 26. A tappable popover with details was tried and dropped: on iOS 26
+  it crashed (UIKit "dismiss while transitioning" / "cannot morph from a view not in the hierarchy") when a push
+  detached its source button. After an outside-tap dismissal SwiftUI keeps `isPresented` true for over a second,
+  or never resets it (40 of 40 simulator runs), though the crash itself reproduced only on a device. No sheet
+  (blocks navigation) and no settle delays (timing hacks). The ring's track uses a concrete color: the hierarchical
+  `.tertiary` resolved only after the push/pop transition. Very small imports finish before the ring is
+  noticeable; accepted, the summary alert confirms the result. A second import can't start while one runs
+  (`ImportProgressCenter` tracks one import). Checked on an iPhone (iOS 26).
 
 ## Open questions
 
-- Import progress panel overlaps the navigation title inconsistently (sometimes under the large title, sometimes
-  covering it); pre-existing, seen on device 2026-11-08, to fix later.
 - Perf harness (`AppUITests/PerfUITests.swift`, `App/Sources/PerfSupport.swift`, `scripts/perf/`) lives only on
   the local branch `ws/perf-audit` (8bd97f1); decide whether to land it as opt-in tooling.
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
@@ -268,9 +279,14 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [x] App icon (light, dark, tinted) and native launch screen (#13); an Icon Composer version for iOS 26 later
 - [x] Accessibility: audited, gaps accepted (see Decisions, 2026-11-06)
 - [x] Performance: audited at 10k tracks on iOS 18.1 and 26.3, stalls fixed (#29)
-- [ ] Full run on iOS 18 and 26
+- [ ] Full run on iOS 18 and 26 (a device checklist was drafted 2026-11-09; the user skipped the run for now)
 
 ## Log
+
+- 2026-11-09 — #30: import progress ring instead of the banner, after several device rounds (a popover crash on
+  iOS 26 on push, the ring starting non-empty, a button-like glass platter, a late-drawn track). Background CPU
+  check closed by code review. `EqualizerUITests.testDeletingTheActivePresetKeepsPlaying` fails on the iOS 26.3
+  simulator locally (also before #30; CI's UI job runs iOS 18 and is green).
 
 - 2026-11-08 — perf audit (measure only) on the simulator at 10k tracks, then #29: library-write and
   track-change stalls fixed after two device rounds (auto-advance hitch from the engine pause/start and the iOS 26
