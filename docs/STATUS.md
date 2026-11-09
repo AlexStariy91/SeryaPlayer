@@ -12,7 +12,7 @@ visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). Mini player glass after the swipe-dismiss on
 iOS 26 and a graphite look for tracks without artwork (#26). Launch screen and icon in the Library's colours (#27).
 Perf audit at 10k tracks (iOS 18.1 and 26.3), then main-thread stalls on library writes and track changes fixed (#29).
-Import progress is a toolbar ring instead of the top banner (#30).
+Import progress is a toolbar ring instead of the top banner (#30). CI runs UI tests on iOS 26 too (#31).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -50,6 +50,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
 | — | `perf-audit` | — | measurement only (harness discarded 2026-11-09) | Sonnet | ✅ report, no PR |
 | — | `perf-fix` | — | Domain, DataLayer, Library, Folders, Playback, PlayerFeature | Opus | ✅ #29 |
+| — | `ui-tests-ios26` | — | CI, AppUITests | Sonnet | ✅ #31 |
 | — | `import-banner` | — | LibraryFeature, DesignSystem, App (UI-test hook) | Sonnet | ✅ #30 |
 | 4 | polish | 10 | all | orchestrator + workstreams | waiting |
 
@@ -166,8 +167,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 
 - Known edge cases to revisit: with a track queued twice, turning shuffle off picks the first
   occurrence; deleting tracks leaves gaps in playlist `sortIndex` (order stays correct).
-- UI tests are not run on iOS 26 (CI or locally by default); `EqualizerUITests.testDeletingTheActivePresetKeepsPlaying`
-  fails on the iOS 26.3 simulator, app behaviour verified on device.
 - Toolchain drift: CI builds with Xcode 26.3 (lint on the image default) and the latest SwiftFormat; local is Xcode 26.3
   (16.1 kept) and SwiftFormat 0.64.4. Local SwiftLint 0.53 crashes under Xcode 26.3: lint with `DEVELOPER_DIR` = Xcode 16.1.
   CI is the reference — run `brew upgrade swiftformat` locally.
@@ -283,6 +282,10 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - [ ] Full run on iOS 18 and 26 (a device checklist was drafted 2026-11-09; the user skipped the run for now)
 
 ## Log
+
+- 2026-11-09 — #31: CI job "UI tests (iOS 26)" (pull requests only, ~12 min, parallel). The Equalizer UI test
+  expected an action sheet; on iOS 26 the delete confirmation is an alert. Snapshot tests stay iOS 18 only
+  (references are iOS 18.1; iOS 26 is checked by eye on device before merging).
 
 - 2026-11-09 — #30: import progress ring instead of the banner, after several device rounds (a popover crash on
   iOS 26 on push, the ring starting non-empty, a button-like glass platter, a late-drawn track). Background CPU
