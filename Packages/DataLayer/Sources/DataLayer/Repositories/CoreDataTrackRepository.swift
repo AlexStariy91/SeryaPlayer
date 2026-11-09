@@ -139,9 +139,17 @@ public final class CoreDataTrackRepository: TrackRepository {
         try await persistence.performWrite { context in
             let request = Self.request()
             request.predicate = NSPredicate(format: "id IN %@", ids)
+            // Delete the entries explicitly (the cascade only runs on save, too late to renumber in this write)
+            // and remember their playlists to close the gaps in `sortIndex`.
+            let entryRequest = CDPlaylistEntry.fetchRequest()
+            entryRequest.predicate = NSPredicate(format: "track.id IN %@", ids)
+            let entries = try context.fetch(entryRequest)
+            let affectedPlaylists = Set(entries.compactMap(\.playlist))
+            entries.forEach(context.delete)
             for object in try context.fetch(request) {
                 context.delete(object)
             }
+            CoreDataPlaylistRepository.renumberRemainingEntries(in: affectedPlaylists)
         }
     }
 
