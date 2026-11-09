@@ -41,6 +41,7 @@ struct AllTracksView: View {
             }
         }
         .navigationTitle(Text("All Tracks", bundle: .module))
+        .importProgressIndicator(context.importer)
         .searchable(
             text: $viewModel.query,
             placement: .navigationBarDrawer(displayMode: .always),

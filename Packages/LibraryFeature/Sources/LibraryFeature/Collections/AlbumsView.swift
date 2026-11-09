@@ -21,6 +21,7 @@ struct AlbumsView: View {
             .padding(Spacing.screenMargin)
         }
         .navigationTitle(Text("Albums", bundle: .module))
+        .importProgressIndicator(context.importer)
         .overlay {
             if context.store.albums.isEmpty {
                 ContentUnavailableView(String(localized: "No Albums", bundle: .module), systemImage: "square.stack")

@@ -25,18 +25,31 @@ final class ImportViewModel {
 
     var isPickerPresented = false
     private(set) var source: Source = .files
-    private(set) var progress: ImportProgress?
+    private(set) var progress: ImportProgress? {
+        didSet { refreshIsImporting() }
+    }
+
     private(set) var summary: ImportSummary?
     var isShowingSummary = false
     /// Progress of an import started elsewhere (inbox, "Open in…"), from `ImportProgressCenter`.
-    private(set) var externalProgress: ImportProgress?
-    /// What the banner shows: this view model's own import, else one running elsewhere.
+    private(set) var externalProgress: ImportProgress? {
+        didSet { refreshIsImporting() }
+    }
+
+    /// What the ring shows: this view model's own import, else one running elsewhere.
     var activeProgress: ImportProgress? {
         progress ?? externalProgress
     }
 
-    var isImporting: Bool {
-        activeProgress != nil
+    /// Stored, not derived from `activeProgress`: views that only care whether an import runs (the toolbar's
+    /// ring/"+" swap) must not be invalidated by every progress tick. Written only on a real change.
+    private(set) var isImporting = false
+
+    private func refreshIsImporting() {
+        let importing = activeProgress != nil
+        if importing != isImporting {
+            isImporting = importing
+        }
     }
 
     @ObservationIgnored private let importTracks: ImportTracksUseCase

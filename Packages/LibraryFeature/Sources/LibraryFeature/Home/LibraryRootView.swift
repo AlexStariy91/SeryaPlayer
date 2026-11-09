@@ -17,13 +17,6 @@ struct LibraryRootView: View {
         @Bindable var importer = context.importer
         NavigationStack(path: $path) {
             LibraryHomeView(context: context)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if let progress = importer.activeProgress {
-                        ImportProgressBanner(progress: progress)
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-                }
-                .animation(.default, value: importer.isImporting)
                 .navigationTitle(Text("Library", bundle: .module))
                 .toolbar { toolbar }
                 .navigationDestination(for: LibraryRoute.self, destination: destination)
@@ -54,19 +47,24 @@ struct LibraryRootView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Button(String(localized: "Files…", bundle: .module), systemImage: "doc") {
-                    context.importer.present(.files)
+        StatusToolbarItem(placement: .primaryAction, hidesBackground: context.importer.isImporting) {
+            // One slot: the ring replaces "+" while an import runs (only one import runs at a time), and the
+            // observed flag changes on start and end only, never per tick.
+            if context.importer.isImporting {
+                ImportProgressIndicator(importer: context.importer)
+            } else {
+                Menu {
+                    Button(String(localized: "Files…", bundle: .module), systemImage: "doc") {
+                        context.importer.present(.files)
+                    }
+                    Button(String(localized: "Folder…", bundle: .module), systemImage: "folder") {
+                        context.importer.present(.folder)
+                    }
+                } label: {
+                    Label(String(localized: "Import", bundle: .module), systemImage: "plus")
                 }
-                Button(String(localized: "Folder…", bundle: .module), systemImage: "folder") {
-                    context.importer.present(.folder)
-                }
-            } label: {
-                Label(String(localized: "Import", bundle: .module), systemImage: "plus")
+                .accessibilityIdentifier("library.import")
             }
-            .disabled(context.importer.isImporting)
-            .accessibilityIdentifier("library.import")
         }
     }
 

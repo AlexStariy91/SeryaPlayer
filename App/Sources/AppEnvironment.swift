@@ -14,6 +14,9 @@ struct AppEnvironment {
     var defaults: UserDefaults
     /// UI tests only: audio files imported on launch (`SP_UITEST_SEED_DIR`), so tests start with a library.
     var seedDirectory: URL?
+    /// UI tests only (`SP_UITEST_HOLD_IMPORT=1`): shows import progress before the seed import and keeps it open
+    /// after it, so a test can work with the progress ring while the library fills.
+    var holdsImportOpen = false
 
     static var live: AppEnvironment {
         AppEnvironment(
@@ -37,7 +40,8 @@ struct AppEnvironment {
             playbackStateURL: root.appending(path: "PlaybackState.json"),
             defaults: UserDefaults(suiteName: suiteName) ?? .standard,
             seedDirectory: ProcessInfo.processInfo.environment["SP_UITEST_SEED_DIR"]
-                .map { URL(fileURLWithPath: $0, isDirectory: true) }
+                .map { URL(fileURLWithPath: $0, isDirectory: true) },
+            holdsImportOpen: ProcessInfo.processInfo.environment["SP_UITEST_HOLD_IMPORT"] != nil
         )
     }
 
