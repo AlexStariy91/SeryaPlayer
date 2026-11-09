@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The progress ring itself. One view for every state (preparing, running), so it is never replaced mid-import.
 struct ImportProgressRing: View {
-    let progress: ImportProgress
+    let progress: ImportProgress?
 
     var body: some View {
         ZStack {
@@ -22,9 +22,14 @@ struct ImportProgressRing: View {
 
     private static let lineWidth: CGFloat = 3
 
-    /// A short arc while the total is not known yet, so the ring is never empty.
     private var fraction: Double {
-        guard progress.total > 0 else { return 0.08 }
+        Self.fraction(of: progress)
+    }
+
+    /// The drawn arc. Empty while the import is being prepared (no progress yet, or the total is not known), so
+    /// within one import it only ever grows from empty: `completed` never decreases and `total` is fixed once known.
+    static func fraction(of progress: ImportProgress?) -> Double {
+        guard let progress, progress.total > 0 else { return 0 }
         return min(1, max(0, Double(progress.completed) / Double(progress.total)))
     }
 }
@@ -35,7 +40,7 @@ struct ImportProgressIndicator: View {
     let importer: ImportViewModel
 
     var body: some View {
-        ImportProgressRing(progress: importer.activeProgress ?? ImportProgress(completed: 1, total: 1))
+        ImportProgressRing(progress: importer.activeProgress)
             .accessibilityElement()
             .accessibilityLabel(label)
             .accessibilityAddTraits(.updatesFrequently)

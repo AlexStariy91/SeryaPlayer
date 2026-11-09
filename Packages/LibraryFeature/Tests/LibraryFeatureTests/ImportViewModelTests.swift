@@ -73,3 +73,17 @@ struct ImportActivityTests {
         }
     }
 }
+
+@MainActor
+struct ImportRingFractionTests {
+    /// The sequence an import produces, from the first frame: nothing, "preparing" (0 of 0), the total, then ticks.
+    @Test func fractionNeverDecreasesFromTheFirstFrame() {
+        let sequence: [ImportProgress?] = [nil, ImportProgress(completed: 0, total: 0)]
+            + (0 ... 200).map { ImportProgress(completed: $0, total: 200) }
+        let fractions = sequence.map { ImportProgressRing.fraction(of: $0) }
+
+        #expect(fractions.first == 0, "the ring starts empty, not full or partly drawn")
+        #expect(fractions.last == 1)
+        #expect(zip(fractions, fractions.dropFirst()).allSatisfy { $0 <= $1 })
+    }
+}
