@@ -16,8 +16,10 @@ struct ImportProgressRing: View {
         }
         .padding(Self.lineWidth / 2)
         .frame(width: 22, height: 22)
-        // A determinate `.circular` ProgressView is a spinner on iOS 18, so the ring is drawn.
-        .animation(.default, value: fraction)
+        // A determinate `.circular` ProgressView is a spinner on iOS 18, so the ring is drawn. It is never animated:
+        // ticks arrive often enough to look smooth, and no transaction (a screen push, an item being inserted) may
+        // draw the arc up from empty; the ring always shows the current fraction.
+        .transaction { $0.animation = nil }
     }
 
     private static let lineWidth: CGFloat = 3
