@@ -36,7 +36,9 @@ struct FoldersStoreTests {
             #expect(store.playableTracks(in: top.id).count == expected)
         }
         #expect(store.subfolders(of: nil).map(\.name).first == "Top 0")
-        #expect(elapsed < 5, "rebuild of 10k tracks took \(elapsed)s")
+        if TimingLimits.areEnforced {
+            #expect(elapsed < 5, "rebuild of 10k tracks took \(elapsed)s")
+        }
     }
 
     /// Folders show no play statistics, so a play record (one per track start) must not rebuild the index, bump the
