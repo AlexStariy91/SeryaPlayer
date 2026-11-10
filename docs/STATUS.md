@@ -12,7 +12,7 @@ visualizer (#18), live bars in list rows (#19). Device fixes: Folders counts and
 checks, iOS 18 unchanged; CI builds with Xcode 26.3 and adds an iOS 26 unit run. Windows-1251 tags repaired (#23). Heavy haptic on tab switch (#25). Mini player glass after the swipe-dismiss on
 iOS 26 and a graphite look for tracks without artwork (#26). Launch screen and icon in the Library's colours (#27).
 Perf audit at 10k tracks (iOS 18.1 and 26.3), then main-thread stalls on library writes and track changes fixed (#29).
-Import progress is a toolbar ring instead of the top banner (#30). CI runs UI tests on iOS 26 too (#31). Queue and playlist edge cases fixed (#33).
+Import progress is a toolbar ring instead of the top banner (#30). CI runs UI tests on iOS 26 too (#31). Queue and playlist edge cases fixed (#33). Test time limits checked locally only (#34).
 Next: a few more device remarks from the user (to be collected by the next orchestrator), then stage 10 polish.
 
 ## Workstreams and waves
@@ -50,6 +50,7 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 | — | `launch-icon` | — | App resources, project.yml | Sonnet | ✅ #27 |
 | — | `perf-audit` | — | measurement only (harness discarded 2026-11-09) | Sonnet | ✅ report, no PR |
 | — | `perf-fix` | — | Domain, DataLayer, Library, Folders, Playback, PlayerFeature | Opus | ✅ #29 |
+| — | `ci-timing-asserts` | — | tests, scripts/test.sh, Domain test support | Sonnet | ✅ #34 |
 | — | `queue-edge-cases` | — | Domain, DataLayer | Sonnet | ✅ #33 |
 | — | `ui-tests-ios26` | — | CI, AppUITests | Sonnet | ✅ #31 |
 | — | `import-banner` | — | LibraryFeature, DesignSystem, App (UI-test hook) | Sonnet | ✅ #30 |
@@ -173,8 +174,6 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
 - A rate change from a remote command (`changePlaybackRateCommand`, e.g. CarPlay) isn't persisted to settings.
   Not reachable on the user's iPhone (no rate control in Control Center or the widget); left as is.
 - Xcode 26.3 is the newest Xcode this Mac (macOS 15.7.5) can run; 26.4+ needs Tahoe 26.2.
-- Library perf tests (`groupsTenThousandTracks`, `handlesTenThousandTracksWithFastSearch`) use wall-clock limits
-  that slow CI runners occasionally miss on the iOS 26 job; loosen them if they start failing often.
 
 ---
 
@@ -282,6 +281,11 @@ The next wave starts once the previous wave's PRs are merged and the orchestrato
   before merging instead
 
 ## Log
+
+- 2026-11-10 — #34: wall-clock limits in tests (Library grouping and search at 10k, Folders rebuild at 10k, DataLayer
+  first publish) are enforced locally only, via `DomainTestSupport.TimingLimits`; `scripts/test.sh` forwards `CI` to
+  the simulator as `TEST_RUNNER_CI`. Correctness checks run everywhere. Empty playlists stay after deleting all
+  songs (user's decision, as in Apple Music). No Icon Composer icon.
 
 - 2026-11-09 — #33: turning shuffle off keeps the playing occurrence of a track queued twice (positions are not
   persisted; after a relaunch duplicates are matched in order of appearance); deleting tracks renumbers playlist
