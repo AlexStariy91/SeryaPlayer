@@ -155,8 +155,10 @@ struct AllTracksViewModelTests {
         var index: TrackSearchIndex?
         let build = clock.measure { index = TrackSearchIndex(viewModel.tracks) }
         let scan = clock.measure { _ = index?.matches("artist 12", scope: .all) }
-        // Generous bounds for CI simulators; locally these are a few milliseconds.
-        #expect(build < .seconds(1), "building the index took \(build)")
-        #expect(scan < .milliseconds(500), "one search took \(scan)")
+        // Locally these are a few milliseconds; the limits are not checked on CI (see TimingLimits).
+        if TimingLimits.areEnforced {
+            #expect(build < .seconds(1), "building the index took \(build)")
+            #expect(scan < .milliseconds(500), "one search took \(scan)")
+        }
     }
 }

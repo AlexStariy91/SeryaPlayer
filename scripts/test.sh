@@ -24,6 +24,10 @@ ids=[x["udid"] for rt,devs in sorted(d.items(),reverse=True) if "iOS-"+sys.argv[
 print(ids[0] if ids else "")' "$SIM_OS")}"
 [ -n "$DEVICE_ID" ] || { echo "No iPhone simulator with iOS $SIM_OS found"; exit 1; }
 
+# The tests run inside the simulator and don't see the host environment. xcodebuild forwards TEST_RUNNER_* variables
+# with the prefix stripped, so pass CI on: wall-clock limits in tests are skipped when CI is set.
+if [ -n "${CI:-}" ]; then export TEST_RUNNER_CI="$CI"; fi
+
 run() {
   xcodebuild -project SeryaPlayer.xcodeproj -scheme "$1" \
     -destination "id=$DEVICE_ID" -derivedDataPath build/DD \

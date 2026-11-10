@@ -65,7 +65,9 @@ struct LibraryStoreTests {
         let elapsed = await ContinuousClock().measure { await store.load() }
         #expect(store.artists.count == 300)
         #expect(store.albums.count == 900)
-        #expect(elapsed < .seconds(2), "grouping took \(elapsed)")
+        if TimingLimits.areEnforced {
+            #expect(elapsed < .seconds(2), "grouping took \(elapsed)")
+        }
     }
 
     /// A track start writes a play record. That must refresh Recently Played only: no rebuild of tracks, groups or

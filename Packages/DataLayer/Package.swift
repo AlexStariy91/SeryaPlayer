@@ -20,7 +20,10 @@ let package = Package(
         ),
         .testTarget(
             name: "DataLayerTests",
-            dependencies: ["DataLayer"],
+            dependencies: [
+                "DataLayer",
+                .product(name: "DomainTestSupport", package: "Domain"),
+            ],
             resources: [.copy("Fixtures")]
         ),
     ]

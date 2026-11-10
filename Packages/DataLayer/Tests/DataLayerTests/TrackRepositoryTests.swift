@@ -1,5 +1,6 @@
 @testable import DataLayer
 import Domain
+import DomainTestSupport
 import Foundation
 import Synchronization
 import Testing
@@ -259,7 +260,9 @@ struct TrackRepositoryTests {
         let started = clock.now
         try await repository.add([makeTrack(title: "Now")])
         _ = try await value(from: stream) { $0.count == 1 }
-        #expect(clock.now - started < interval)
+        if TimingLimits.areEnforced {
+            #expect(clock.now - started < interval)
+        }
     }
 }
 
