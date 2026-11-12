@@ -34,8 +34,9 @@ open SeryaPlayer.xcodeproj
 `.xcodeproj` is not checked in: it is generated from `project.yml`. This avoids `project.pbxproj`
 conflicts during parallel work. Run `xcodegen generate` again after `git pull`.
 
-To run on a device, select your Team in Xcode → Signing & Capabilities
-(or set `DEVELOPMENT_TEAM` in `project.yml` locally without committing it).
+To run on a device, create the git-ignored `Configs/Local.xcconfig` with your team ID
+(`DEVELOPMENT_TEAM = ABCDE12345`). `Configs/Base.xcconfig` includes it, so signing survives `xcodegen generate`.
+Don't set `DEVELOPMENT_TEAM` in `project.yml`: it would override the file and end up in git.
 
 ## Tests
 
